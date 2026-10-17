@@ -9,4 +9,5 @@ __pycache__/
 
 # Working notes and the builders' reports: kept locally, not published
 /*.md
+!README.md
 tools/*Report.md

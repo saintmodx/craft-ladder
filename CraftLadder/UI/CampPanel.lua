@@ -10,7 +10,7 @@ local CampPanel = {}
 ns.CampPanel = CampPanel
 
 local ROW_H, HEAD_H = 66, 24
-local panel, rowPool, headPool
+local panel, rowPool, headPool, panelLeft
 
 local hex = UI.Hex
 
@@ -53,17 +53,22 @@ local function makeRow(parent)
     r.price = UI.Label(r, 11, C.text, nil, "RIGHT")
     r.price:SetPoint("TOPRIGHT", -12, -8)
     r.price:SetWidth(130)
-    local function line(size, color, y)
+    r.price:SetWordWrap(true) -- two lines: make, AH
+    -- the name, then what it gives, how to get it and what stands for it, each wrapped under the one above
+    local function line(size, color, above)
         local fs = UI.Label(r, size, color)
-        fs:SetPoint("TOPLEFT", r.icon, "TOPRIGHT", 10, y)
-        fs:SetPoint("RIGHT", r.price, "LEFT", -10, 0)
-        fs:SetWordWrap(false)
+        if above then
+            fs:SetPoint("TOPLEFT", above, "BOTTOMLEFT", 0, -1)
+        else
+            fs:SetPoint("TOPLEFT", r.icon, "TOPRIGHT", 10, 2)
+        end
+        fs:SetWordWrap(above ~= nil)
         return fs
     end
-    r.name = line(13, C.text, 2)
-    r.gives = line(12, C.good, -14)
-    r.source = line(11, C.muted, -30)
-    r.more = line(10, C.dim, -44)
+    r.name = line(13, C.text)
+    r.gives = line(12, C.good, r.name)
+    r.source = line(11, C.muted, r.gives)
+    r.more = line(10, C.dim, r.source)
     r:SetScript("OnEnter", function(self)
         self:SetPanelColors(C.hover, C.hover)
         UI.ItemTooltip(self, self.item, nil, self.extra)
@@ -114,6 +119,16 @@ local function fillRow(r, f, useful, level, lookup, byProf)
     r.extra = extra
 end
 
+-- The row as tall as its text wrapped to `w`, never shorter than its icon and price need.
+local function fitRow(r, w)
+    local h = 6 + 4 -- above the name, below the last line
+    for _, fs in ipairs({ r.name, r.gives, r.source, r.more }) do
+        fs:SetWidth(w)
+        if (fs:GetText() or "") ~= "" then h = h + fs:GetStringHeight() + 1 end
+    end
+    r:SetHeight(math.max(ROW_H - 4, h))
+end
+
 -- Draws the Camp view; Window.Refresh calls it while the menu's Camp entry is picked.
 function CampPanel.Render(frame)
     local s = saved()
@@ -150,6 +165,15 @@ function CampPanel.Render(frame)
             (priceText(src):gsub("\n", ", "))) }
     end
 
+    -- the text as wide as the window is now (Window.lua draws this again once its corner is let go)
+    local panelW = frame:GetWidth() - panelLeft - 12
+    panel.intro:SetWidth(panelW - 28)
+    local top = 12 + panel.intro:GetStringHeight() + 20
+    panel.roleLabel:SetPoint("TOPLEFT", 14, -top)
+    panel.fireLabel:SetPoint("TOPLEFT", 330, -top)
+    panel.scroll:SetPoint("TOPLEFT", 8, -(top + 28))
+    local textW = panelW - 14 - 8 - 206 -- the scroll's and the row's insets, the icon and the price
+
     rowPool:ReleaseAll()
     headPool:ReleaseAll()
     local y = 0
@@ -165,7 +189,8 @@ function CampPanel.Render(frame)
         r:SetPoint("TOPLEFT", 0, -y)
         r:SetPoint("RIGHT", panel.scroll.child, "RIGHT", -8, 0)
         fillRow(r, f, useful, level, lookup, byProf)
-        y = y + ROW_H
+        fitRow(r, textW)
+        y = y + r:GetHeight() + 4
     end
     local order = ns.Camp.Order(role, level, faction)
     local placed, shownMissing = 0, false
@@ -187,13 +212,13 @@ end
 
 -- The panel, where the ladder and its card are (Window.lua's build calls it).
 function CampPanel.Build(frame, left)
-    panel = CreateFrame("Frame", nil, frame)
+    panel, panelLeft = CreateFrame("Frame", nil, frame), left
     panel:SetPoint("TOPLEFT", left, -66)
     panel:SetPoint("BOTTOMRIGHT", -12, 42)
     UI.Panel(panel, C.panel, C.edge, 8)
     panel.intro = UI.Label(panel, 11, C.muted)
     panel.intro:SetPoint("TOPLEFT", 14, -12)
-    panel.intro:SetPoint("RIGHT", -14, 0)
+    panel.intro:SetWordWrap(true)
     panel.intro:SetText("Build a campfire, place camp features around it and sit or craft nearby for a while: each"
         .. " feature gives everyone there its buff. A campfire holds only so many: here they are in the order your"
         .. " role wants them.")
@@ -212,6 +237,7 @@ function CampPanel.Build(frame, left)
     local fireLabel = UI.Label(panel, 11, C.text)
     fireLabel:SetPoint("TOPLEFT", 330, -46)
     fireLabel:SetText("Campfire:")
+    panel.fireLabel = fireLabel
     panel.fires = {}
     for i, f in ipairs(ns.CAMP.fires) do
         local b = UI.Button(panel, ("%s (%d)"):format((f.name:gsub(" Campfire", "")), f.slots), 110, 20, function()

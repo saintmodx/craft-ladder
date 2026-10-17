@@ -785,7 +785,10 @@ end
 
 -- The details and the bar laid out again for the window's size now.
 local function relayout()
-    if ladder and frame:IsShown() then
+    if not frame:IsShown() then return end
+    if frame.camp:IsShown() then
+        ns.CampPanel.Render(frame) -- its rows' text wraps to the new width
+    elseif ladder then
         renderBar()
         renderDetail()
     end

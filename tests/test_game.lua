@@ -103,6 +103,14 @@ local function clickFirstCraft()
         if r.step.kind == "craft" then mock.click(r); return true end
     end
 end
+local function lines()
+    local out = {}
+    for _, c in ipairs(frame.detail.scroll.child.children) do
+        local t = rawget(c, "text")
+        if c.shown and type(t) == "table" then out[#out + 1] = strip(t.text) end
+    end
+    return table.concat(out, "\n")
+end
 expect("title says Craft Ladder", frame.title.text == "Craft Ladder")
 local function shownTabs()
     local n = 0
@@ -299,6 +307,10 @@ mock.click(laterRow)
 expect("First Aid: a recipe an earlier step learns says so, not \"you know it\"; it can't be crafted yet",
     ns.Describe.Learn(laterRow.step.learn):find("earlier in the ladder")
     and strip(frame.detail.craft.note.text) == "Learn the recipe first.")
+laterRow.step.canCook, laterRow.step.fromBags = 3, nil
+mock.click(laterRow)
+expect("... with its reagents in the bags: you have them, not 'you can make them now'",
+    lines():find("You have the reagents for 3%.") and not lines():find("now with what you have"))
 expect("First Aid tab: header", strip(frame.subtitle.text) == "First Aid 133 / 150, the ladder to 300")
 expect("First Aid: the crafting card (Learn it, One craft, Batch)", clickFirstCraft() and craftCard())
 mock.click(rows()[1])
@@ -332,14 +344,6 @@ expect("... and Journeyman's fee: 5s 50c, recorded and used", CraftLadderDB.rank
     and ns.FIRSTAID.ranks[2].cost == 550 and not CraftLadderDB.trainer[3274])
 
 -- the Fishing tab: zones instead of recipes
-local function lines()
-    local out = {}
-    for _, c in ipairs(frame.detail.scroll.child.children) do
-        local t = rawget(c, "text")
-        if c.shown and type(t) == "table" then out[#out + 1] = strip(t.text) end
-    end
-    return table.concat(out, "\n")
-end
 local function caughtNames()
     local out = {}
     for _, f in ipairs(items()) do out[#out + 1] = strip(f.name.text) end
@@ -1142,6 +1146,16 @@ expect("... a warrior's roles: Melee and Tank, Melee picked", frame.camp.roles[1
 expect("... Melee: attack power first, what it gives and how to get it", #campRows > 10
     and strip(campRows[1].name.text) == "Lodestone" and strip(campRows[1].gives.text):find("melee Attack Power")
     and strip(campRows[1].source.text):find("^Mining") and strip(campRows[1].price.text):find("^make "))
+local textW, wide = campRows[1].gives.width, frame:GetWidth()
+expect("... a row as tall as its four lines, each wrapped to the same width", campRows[1].height == 6 + 4 + 4 * 15
+    and campRows[1].more.width == textW and campRows[1].name.width == textW)
+frame:SetWidth(wide + 200)
+ns.Window.Refresh(true)
+campRows = mock.shownChildren(frame.camp.scroll.child, "item")
+expect("... a wider window: the text wraps 200 wider", campRows[1].gives.width == textW + 200
+    and frame.camp.intro.width > 0)
+frame:SetWidth(wide)
+ns.Window.Refresh(true)
 mock.click(frame.camp.roles[2])
 campRows = mock.shownChildren(frame.camp.scroll.child, "item")
 expect("... Tank: Stamina first, the pick saved", strip(campRows[1].name.text) == "First Aid Kit"

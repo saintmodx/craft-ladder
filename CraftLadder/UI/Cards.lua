@@ -459,12 +459,17 @@ local function canMake(step)
     return info and info.numAvailable or step.canCook or 0
 end
 
+-- The character has the recipe (or every character starts with it), so the Craft button can make it.
+local function learned(step)
+    return step.learn.kind == "known" and not step.learn.earlier or step.learn.kind == "start"
+end
+
 local function paintCraft(bar)
     local step, rec = bar.step, bar.rec
     local can, why = canMake(step), nil
     if not rec.makes then
         why = "An enchantment: enchant from the profession window, on the item."
-    elseif not (step.learn.kind == "known" and not step.learn.earlier or step.learn.kind == "start") then
+    elseif not learned(step) then
         why = "Learn the recipe first."
     elseif InCombatLockdown and InCombatLockdown() then
         why = "Not in combat."
@@ -661,7 +666,8 @@ local function craftDetail(step)
         line(("%s %s what you already have: %d crafts%s."):format(BAG_ICON, Verbs(), step.canCook > 0 and step.canCook
             or step.haveMain, step.matCost > 0 and ", plus a few vendor ingredients" or ", nothing to buy"), C.good)
     elseif step.canCook > 0 then
-        line(("You can %s %d now with what you have."):format(prof.verb, step.canCook), C.good)
+        line(learned(step) and ("You can %s %d now with what you have."):format(prof.verb, step.canCook)
+            or ("You have the reagents for %d."):format(step.canCook), C.good)
     elseif step.haveMain > 0 then
         line(("You have the main ingredients for %d; the rest is sold by vendors."):format(step.haveMain), C.good)
     end
@@ -739,7 +745,7 @@ local function profitDetail(step)
         step.vendor and "Sold to a vendor: vendors buy any number." or
             ("%d listed at the auction house now: sell a few at a time."):format(step.listed))
     learnSection(step, rec)
-    if step.payback then line(("Learning it pays back after %d crafts."):format(step.payback), C.good) end
+    if step.payback then line(("Learning it pays back after %d %s."):format(step.payback, step.payback == 1 and "craft" or "crafts"), C.good) end
     recipeNotes(rec, step.learn)
     if step.cooldown then
         line(("Once in %s: the recipe has a cooldown."):format(wait(step.cooldown)), C.warn)

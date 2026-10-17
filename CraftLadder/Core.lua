@@ -215,7 +215,8 @@ local function printLadder(data)
             print(("  %s%s|r%s: one craft costs %s, sells for about %s - |cff40c040+%s|r (%s)%s"):format(
                 s.color ~= "grey" and COLORS[s.color] or "", data.recipes[s.recipe].name, s.made > 1 and (" x" .. s.made) or "", ns.Money(s.cost), ns.Money(s.back),
                 ns.Money(s.profit), s.vendor and "at a vendor" or (s.listed .. " listed"), s.payback and
-                (", learn it for %s: pays back after %d crafts"):format(ns.Money(s.learn.cost), s.payback) or ""))
+                (", learn it for %s: pays back after %d %s"):format(ns.Money(s.learn.cost), s.payback,
+                    s.payback == 1 and "craft" or "crafts") or ""))
         elseif s.kind == "mine" then
             local bars = {}
             for spell, n in pairs(s.bars) do bars[#bars + 1] = ("%d %s"):format(n + 0.5, data.recipes[spell].name) end

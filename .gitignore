@@ -1,0 +1,12 @@
+# Downloads (client tables, CMaNGOS, AllTheThings): re-created by the builders
+tools/cache/
+tools/build.log
+__pycache__/
+*.pyc
+
+# Local editor settings
+.claude/
+
+# Working notes and the builders' reports: kept locally, not published
+/*.md
+tools/*Report.md

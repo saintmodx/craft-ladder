@@ -1,0 +1,43 @@
+Craft Ladder: data sources and credits
+
+Craft Ladder is free software under the GNU General Public License, version 3 (see LICENSE).
+
+The data it ships (Data/*.lua) is built from:
+
+- World of Warcraft: Forever's client tables (Blizzard Entertainment), read through wago.tools: recipes, colours,
+  reagents, tools, items and vendor prices.
+- CMaNGOS classic-db (GPL-3.0, https://github.com/cmangos/classic-db): trainers and their fees, ranks, fishing,
+  what gathering and chests give.
+- Questie and QuestieDB (GPL-3.0, https://github.com/Questie): who sells a recipe, quests, NPCs and where they stand.
+- AllTheThings (MIT, https://github.com/ATTWoWAddon/AllTheThings): Merchant's Favor prices, where recipes are sold,
+  rewarded and dropped, and which aren't out yet. Its notice is below.
+- GatherMate2_Data (kagaro, Xinhuan, Spinx, Marrtin): where nodes, herbs, fishing pools and chests have been seen.
+- What trainers and quartermasters showed in the author's game.
+
+In game, Craft Ladder reads prices from AuctionDB and Auctionator when they're installed; nothing of theirs is
+shipped.
+
+----------------------------------------------------------------------------------------------------------------
+AllTheThings
+
+MIT License
+
+Copyright (c) 2026 AllTheThings WoW Addon
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.

@@ -1,0 +1,2020 @@
+{
+ "trainer": {
+  "2329": {
+   "skill": 15,
+   "cost": 45
+  },
+  "2331": {
+   "skill": 25,
+   "cost": 90
+  },
+  "2332": {
+   "skill": 40,
+   "cost": 135
+  },
+  "2334": {
+   "skill": 50,
+   "cost": 225
+  },
+  "2385": {
+   "skill": 10,
+   "cost": 45
+  },
+  "2386": {
+   "skill": 40,
+   "cost": 180
+  },
+  "2392": {
+   "skill": 25,
+   "cost": 45
+  },
+  "2393": {
+   "skill": 1,
+   "cost": 22
+  },
+  "2394": {
+   "skill": 25,
+   "cost": 45
+  },
+  "2395": {
+   "skill": 40,
+   "cost": 270
+  },
+  "2396": {
+   "skill": 40,
+   "cost": 180
+  },
+  "2397": {
+   "skill": 35,
+   "cost": 180
+  },
+  "2399": {
+   "skill": 60,
+   "cost": 270
+  },
+  "2401": {
+   "skill": 70,
+   "cost": 270
+  },
+  "2402": {
+   "skill": 55,
+   "cost": 225
+  },
+  "2406": {
+   "skill": 80,
+   "cost": 180
+  },
+  "2661": {
+   "skill": 30,
+   "cost": 90
+  },
+  "2662": {
+   "skill": 15,
+   "cost": 45
+  },
+  "2664": {
+   "skill": 65,
+   "cost": 450
+  },
+  "2665": {
+   "skill": 40,
+   "cost": 90
+  },
+  "2666": {
+   "skill": 45,
+   "cost": 180
+  },
+  "2668": {
+   "skill": 80,
+   "cost": 270
+  },
+  "2670": {
+   "skill": 80,
+   "cost": 450
+  },
+  "2671": {
+   "notAtTrainer": true
+  },
+  "2672": {
+   "skill": 95,
+   "cost": 450
+  },
+  "2674": {
+   "skill": 100,
+   "cost": 900
+  },
+  "2675": {
+   "skill": 120,
+   "cost": 900
+  },
+  "2737": {
+   "skill": 15,
+   "cost": 45
+  },
+  "2738": {
+   "skill": 20,
+   "cost": 45
+  },
+  "2739": {
+   "skill": 25,
+   "cost": 45
+  },
+  "2740": {
+   "skill": 85,
+   "cost": 180
+  },
+  "2741": {
+   "skill": 90,
+   "cost": 180
+  },
+  "2742": {
+   "skill": 95,
+   "cost": 180
+  },
+  "2964": {
+   "skill": 55,
+   "cost": 90
+  },
+  "3116": {
+   "skill": 40,
+   "cost": 90
+  },
+  "3117": {
+   "skill": 100,
+   "cost": 900
+  },
+  "3170": {
+   "skill": 15,
+   "cost": 45
+  },
+  "3292": {
+   "skill": 70,
+   "cost": 450
+  },
+  "3293": {
+   "skill": 30,
+   "cost": 225
+  },
+  "3294": {
+   "skill": 45,
+   "cost": 450
+  },
+  "3296": {
+   "skill": 105,
+   "cost": 900
+  },
+  "3319": {
+   "skill": 20,
+   "cost": 45
+  },
+  "3320": {
+   "skill": 25,
+   "cost": 90
+  },
+  "3323": {
+   "skill": 35,
+   "cost": 90
+  },
+  "3324": {
+   "skill": 35,
+   "cost": 180
+  },
+  "3326": {
+   "skill": 50,
+   "cost": 225
+  },
+  "3328": {
+   "skill": 85,
+   "cost": 450
+  },
+  "3331": {
+   "skill": 105,
+   "cost": 450
+  },
+  "3333": {
+   "skill": 110,
+   "cost": 900
+  },
+  "3337": {
+   "skill": 100,
+   "cost": 900
+  },
+  "3491": {
+   "skill": 80,
+   "cost": 540
+  },
+  "3501": {
+   "skill": 140,
+   "cost": 900
+  },
+  "3502": {
+   "skill": 145,
+   "cost": 1125
+  },
+  "3506": {
+   "skill": 130,
+   "cost": 4500
+  },
+  "3508": {
+   "skill": 155,
+   "cost": 6750
+  },
+  "3755": {
+   "skill": 5,
+   "cost": 90
+  },
+  "3757": {
+   "skill": 50,
+   "cost": 180
+  },
+  "3813": {
+   "skill": 125,
+   "cost": 720
+  },
+  "3839": {
+   "skill": 100,
+   "cost": 450
+  },
+  "3840": {
+   "skill": 25,
+   "cost": 90
+  },
+  "3841": {
+   "skill": 35,
+   "cost": 180
+  },
+  "3842": {
+   "skill": 45,
+   "cost": 270
+  },
+  "3843": {
+   "skill": 60,
+   "cost": 360
+  },
+  "3845": {
+   "skill": 55,
+   "cost": 270
+  },
+  "3850": {
+   "skill": 85,
+   "cost": 450
+  },
+  "3852": {
+   "skill": 105,
+   "cost": 675
+  },
+  "3855": {
+   "skill": 100,
+   "cost": 675
+  },
+  "3859": {
+   "skill": 125,
+   "cost": 675
+  },
+  "3866": {
+   "skill": 85,
+   "cost": 225
+  },
+  "3914": {
+   "skill": 25,
+   "cost": 45
+  },
+  "3922": {
+   "skill": 30,
+   "cost": 115
+  },
+  "3923": {
+   "skill": 30,
+   "cost": 130
+  },
+  "3924": {
+   "skill": 50,
+   "cost": 150
+  },
+  "3925": {
+   "skill": 50,
+   "cost": 150
+  },
+  "3926": {
+   "skill": 65,
+   "cost": 225
+  },
+  "3929": {
+   "skill": 75,
+   "cost": 250
+  },
+  "3930": {
+   "skill": 75,
+   "cost": 250
+  },
+  "3931": {
+   "skill": 75,
+   "cost": 250
+  },
+  "3977": {
+   "skill": 60,
+   "cost": 200
+  },
+  "6517": {
+   "skill": 85,
+   "cost": 720
+  },
+  "6521": {
+   "skill": 70,
+   "cost": 360
+  },
+  "6690": {
+   "skill": 110,
+   "cost": 900
+  },
+  "7223": {
+   "skill": 160,
+   "cost": 900
+  },
+  "7408": {
+   "skill": 40,
+   "cost": 270
+  },
+  "7430": {
+   "skill": 50,
+   "cost": 150
+  },
+  "7623": {
+   "skill": 25,
+   "cost": 45
+  },
+  "7624": {
+   "skill": 25,
+   "cost": 45
+  },
+  "7636": {
+   "notAtTrainer": true
+  },
+  "7817": {
+   "skill": 70,
+   "cost": 180
+  },
+  "7818": {
+   "skill": 75,
+   "cost": 90
+  },
+  "8366": {
+   "notAtTrainer": true
+  },
+  "8368": {
+   "notAtTrainer": true
+  },
+  "8465": {
+   "skill": 25,
+   "cost": 45
+  },
+  "8467": {
+   "skill": 85,
+   "cost": 225
+  },
+  "8758": {
+   "skill": 115,
+   "cost": 540
+  },
+  "8760": {
+   "skill": 120,
+   "cost": 540
+  },
+  "8768": {
+   "skill": 125,
+   "cost": 225
+  },
+  "8776": {
+   "skill": 15,
+   "cost": 45
+  },
+  "8778": {
+   "notAtTrainer": true
+  },
+  "8880": {
+   "skill": 25,
+   "cost": 90
+  },
+  "9916": {
+   "skill": 175,
+   "cost": 2250
+  },
+  "9918": {
+   "skill": 175,
+   "cost": 2250
+  },
+  "9920": {
+   "skill": 175,
+   "cost": 2250
+  },
+  "9921": {
+   "skill": 175,
+   "cost": 2250
+  },
+  "9926": {
+   "skill": 180,
+   "cost": 4500
+  },
+  "9928": {
+   "skill": 180,
+   "cost": 4500
+  },
+  "9931": {
+   "skill": 185,
+   "cost": 4500
+  },
+  "9935": {
+   "skill": 190,
+   "cost": 4500
+  },
+  "9983": {
+   "skill": 25,
+   "cost": 90
+  },
+  "9985": {
+   "skill": 100,
+   "cost": 225
+  },
+  "9986": {
+   "skill": 105,
+   "cost": 450
+  },
+  "9987": {
+   "skill": 110,
+   "cost": 450
+  },
+  "9993": {
+   "skill": 185,
+   "cost": 9000
+  },
+  "12045": {
+   "skill": 20,
+   "cost": 45
+  },
+  "12046": {
+   "skill": 50,
+   "cost": 270
+  },
+  "14379": {
+   "skill": 125,
+   "cost": 225
+  },
+  "14380": {
+   "skill": 175,
+   "cost": 2250
+  },
+  "15972": {
+   "skill": 155,
+   "cost": 6750
+  },
+  "19666": {
+   "skill": 75,
+   "cost": 90
+  },
+  "19667": {
+   "skill": 125,
+   "cost": 225
+  },
+  "19668": {
+   "skill": 175,
+   "cost": 2250
+  },
+  "429348": {
+   "notAtTrainer": true
+  },
+  "429351": {
+   "notAtTrainer": true
+  },
+  "430397": {
+   "notAtTrainer": true
+  },
+  "1229504": {
+   "skill": 20,
+   "cost": 90
+  },
+  "1230171": {
+   "skill": 20,
+   "cost": 90
+  },
+  "1230564": {
+   "skill": 20,
+   "cost": 90
+  },
+  "1230656": {
+   "skill": 20,
+   "cost": 100
+  },
+  "1249630": {
+   "skill": 40,
+   "cost": 135
+  },
+  "1249633": {
+   "skill": 40,
+   "cost": 135
+  },
+  "1252229": {
+   "skill": 35,
+   "cost": 90
+  },
+  "1252230": {
+   "skill": 35,
+   "cost": 90
+  },
+  "1252231": {
+   "skill": 35,
+   "cost": 90
+  },
+  "1252237": {
+   "notAtTrainer": true
+  },
+  "1252239": {
+   "notAtTrainer": true
+  },
+  "1252240": {
+   "notAtTrainer": true
+  },
+  "1252241": {
+   "notAtTrainer": true
+  },
+  "1252242": {
+   "notAtTrainer": true
+  },
+  "1252243": {
+   "notAtTrainer": true
+  },
+  "1252244": {
+   "notAtTrainer": true
+  },
+  "1252245": {
+   "notAtTrainer": true
+  },
+  "1252246": {
+   "notAtTrainer": true
+  },
+  "1252247": {
+   "notAtTrainer": true
+  },
+  "1252248": {
+   "notAtTrainer": true
+  },
+  "1252249": {
+   "notAtTrainer": true
+  },
+  "1252250": {
+   "notAtTrainer": true
+  },
+  "1252251": {
+   "notAtTrainer": true
+  },
+  "1252305": {
+   "skill": 150,
+   "cost": 3825
+  },
+  "1252306": {
+   "skill": 150,
+   "cost": 3825
+  },
+  "1252307": {
+   "skill": 150,
+   "cost": 3825
+  },
+  "1252308": {
+   "skill": 150,
+   "cost": 3825
+  },
+  "1252309": {
+   "skill": 150,
+   "cost": 3825
+  },
+  "1257368": {
+   "skill": 35,
+   "cost": 450
+  },
+  "1257369": {
+   "skill": 35,
+   "cost": 450
+  },
+  "1257426": {
+   "skill": 150,
+   "cost": 1305
+  },
+  "1257427": {
+   "skill": 150,
+   "cost": 1305
+  },
+  "1257428": {
+   "skill": 150,
+   "cost": 1305
+  },
+  "1257429": {
+   "skill": 150,
+   "cost": 1305
+  },
+  "1257430": {
+   "skill": 150,
+   "cost": 1305
+  },
+  "1257431": {
+   "skill": 150,
+   "cost": 1305
+  },
+  "1263425": {
+   "notAtTrainer": true
+  },
+  "1317962": {
+   "notAtTrainer": true
+  },
+  "1317963": {
+   "notAtTrainer": true
+  }
+ },
+ "gather": [
+  "mining 1731 1411 0.5285 0.2780 1792095283"
+ ],
+ "favor": {
+  "249476": {
+   "cost": 45,
+   "level": 20
+  },
+  "249477": {
+   "cost": 45,
+   "level": 20
+  },
+  "249478": {
+   "cost": 45,
+   "level": 20
+  },
+  "249479": {
+   "cost": 45
+  },
+  "249480": {
+   "cost": 45
+  },
+  "249481": {
+   "cost": 45
+  },
+  "249482": {
+   "cost": 45,
+   "level": 25
+  },
+  "249483": {
+   "cost": 45,
+   "level": 25
+  },
+  "249484": {
+   "cost": 45,
+   "level": 25
+  },
+  "249485": {
+   "cost": 45,
+   "level": 25
+  },
+  "249493": {
+   "cost": 120,
+   "level": 40
+  },
+  "249494": {
+   "cost": 120,
+   "level": 40
+  },
+  "249495": {
+   "cost": 120,
+   "level": 40
+  },
+  "249496": {
+   "cost": 120
+  },
+  "249502": {
+   "cost": 120
+  },
+  "249503": {
+   "cost": 120
+  },
+  "249504": {
+   "cost": 120
+  },
+  "249505": {
+   "cost": 120
+  },
+  "249506": {
+   "cost": 120,
+   "level": 45
+  },
+  "249507": {
+   "cost": 120,
+   "level": 45
+  },
+  "249508": {
+   "cost": 120,
+   "level": 45
+  },
+  "249509": {
+   "cost": 120,
+   "level": 45
+  },
+  "249510": {
+   "cost": 120
+  },
+  "249525": {
+   "cost": 240
+  },
+  "249526": {
+   "cost": 240
+  },
+  "249529": {
+   "cost": 240,
+   "level": 55
+  },
+  "249530": {
+   "cost": 240,
+   "level": 55
+  },
+  "249532": {
+   "cost": 240,
+   "level": 60
+  },
+  "249534": {
+   "cost": 240
+  },
+  "249535": {
+   "cost": 240
+  },
+  "249536": {
+   "cost": 240
+  },
+  "249537": {
+   "cost": 180,
+   "level": 55
+  },
+  "249538": {
+   "cost": 240
+  },
+  "249539": {
+   "cost": 240
+  },
+  "249885": {
+   "cost": 30,
+   "npc": 248198,
+   "name": "Recipe: Venomous Smoothie"
+  },
+  "249886": {
+   "cost": 30,
+   "level": 5,
+   "npc": 248198,
+   "name": "Recipe: Slimy Smoothie"
+  },
+  "249887": {
+   "cost": 30,
+   "npc": 248198,
+   "name": "Recipe: Mrrggl Smrrthle"
+  },
+  "249888": {
+   "cost": 60,
+   "level": 25,
+   "npc": 248198,
+   "name": "Recipe: Calcified Smoothie"
+  },
+  "249889": {
+   "cost": 60,
+   "level": 35,
+   "npc": 248198,
+   "name": "Recipe: Spicy Smoothie"
+  },
+  "249890": {
+   "cost": 90,
+   "level": 45,
+   "npc": 248198,
+   "name": "Recipe: Wicked Smoothie"
+  },
+  "250364": {
+   "cost": 180,
+   "npc": 248196,
+   "name": "Recipe: Elixir of Cunning"
+  },
+  "250365": {
+   "cost": 180,
+   "npc": 248196,
+   "name": "Recipe: Elixir of the Phalanx"
+  },
+  "250367": {
+   "cost": 45,
+   "npc": 248196,
+   "name": "Recipe: Lesser Cleric's Elixir"
+  },
+  "250369": {
+   "cost": 120,
+   "npc": 248196,
+   "name": "Recipe: Greater Cleric's Elixir"
+  },
+  "250371": {
+   "cost": 120,
+   "npc": 248196,
+   "name": "Recipe: Elixir of Greater Fortitude"
+  },
+  "250372": {
+   "cost": 180,
+   "npc": 248196,
+   "name": "Recipe: Elixir of Wicked Regeneration"
+  },
+  "250373": {
+   "cost": 180,
+   "npc": 248196,
+   "name": "Recipe: Elixir of the Owl"
+  },
+  "250374": {
+   "cost": 180,
+   "npc": 248196,
+   "name": "Recipe: Elixir of Sages"
+  },
+  "250376": {
+   "cost": 45,
+   "npc": 248196,
+   "name": "Recipe: Lesser Mageblood Elixir"
+  },
+  "250377": {
+   "cost": 120,
+   "npc": 248196,
+   "name": "Recipe: Greater Mageblood Elixir"
+  },
+  "250378": {
+   "cost": 45,
+   "npc": 248196,
+   "name": "Recipe: Lesser Arcane Elixir"
+  },
+  "250379": {
+   "cost": 180,
+   "npc": 248196,
+   "name": "Recipe: Elixir of Nature Power"
+  },
+  "250381": {
+   "cost": 45,
+   "npc": 248196,
+   "name": "Recipe: Elixir of Lesser Spirit"
+  },
+  "250383": {
+   "cost": 120,
+   "npc": 248196,
+   "name": "Recipe: Elixir of Greater Spirit"
+  },
+  "250384": {
+   "cost": 180,
+   "npc": 248196,
+   "name": "Recipe: Elixir of the Whale"
+  },
+  "250386": {
+   "cost": 180,
+   "npc": 248196,
+   "name": "Recipe: Elixir of Ferocity"
+  },
+  "250387": {
+   "cost": 240,
+   "npc": 248196,
+   "name": "Recipe: Elixir of the Grizzly"
+  },
+  "250388": {
+   "cost": 45,
+   "npc": 248196,
+   "name": "Recipe: Elixir of Lesser Intellect"
+  },
+  "250978": {
+   "cost": 45,
+   "npc": 248196,
+   "name": "Recipe: Spellblasting Potion"
+  },
+  "250981": {
+   "cost": 180,
+   "npc": 248196,
+   "name": "Recipe: Major Spellblasting Potion"
+  },
+  "250984": {
+   "cost": 45,
+   "npc": 248196,
+   "name": "Recipe: Frenzy Potion"
+  },
+  "250987": {
+   "cost": 240,
+   "npc": 248196,
+   "name": "Recipe: Major Frenzy Potion"
+  },
+  "250990": {
+   "cost": 45,
+   "npc": 248196,
+   "name": "Recipe: Mender's Potion"
+  },
+  "250993": {
+   "cost": 180,
+   "npc": 248196,
+   "name": "Recipe: Major Mender's Potion"
+  },
+  "250994": {
+   "cost": 180,
+   "npc": 248196,
+   "name": "Recipe: Potion of Venomous Blood"
+  },
+  "250995": {
+   "cost": 180,
+   "npc": 248196,
+   "name": "Recipe: Caustic Smog Potion"
+  },
+  "250997": {
+   "cost": 120,
+   "npc": 248196,
+   "name": "Recipe: Dragonfire Potion"
+  },
+  "250998": {
+   "cost": 180,
+   "npc": 248196,
+   "name": "Recipe: Potion of Elemental Purging"
+  },
+  "251355": {
+   "cost": 30,
+   "level": 17
+  },
+  "251356": {
+   "cost": 30,
+   "level": 17
+  },
+  "251357": {
+   "cost": 30,
+   "level": 17
+  },
+  "251358": {
+   "cost": 30,
+   "level": 17
+  },
+  "251359": {
+   "cost": 30,
+   "level": 17
+  },
+  "251360": {
+   "cost": 30,
+   "level": 15
+  },
+  "251361": {
+   "cost": 30,
+   "level": 15
+  },
+  "251362": {
+   "cost": 30,
+   "level": 15
+  },
+  "251363": {
+   "cost": 30,
+   "level": 15
+  },
+  "251364": {
+   "cost": 30,
+   "level": 15
+  },
+  "251365": {
+   "cost": 30,
+   "level": 12
+  },
+  "251366": {
+   "cost": 30,
+   "level": 12
+  },
+  "251367": {
+   "cost": 30,
+   "level": 12
+  },
+  "251368": {
+   "cost": 30,
+   "level": 12
+  },
+  "251369": {
+   "cost": 30,
+   "level": 12
+  },
+  "251370": {
+   "cost": 30,
+   "level": 22
+  },
+  "251371": {
+   "cost": 30,
+   "level": 22
+  },
+  "251372": {
+   "cost": 30,
+   "level": 22
+  },
+  "251373": {
+   "cost": 30,
+   "level": 22
+  },
+  "251374": {
+   "cost": 30,
+   "level": 22
+  },
+  "251375": {
+   "cost": 30,
+   "level": 25
+  },
+  "251376": {
+   "cost": 30,
+   "level": 25
+  },
+  "251377": {
+   "cost": 30,
+   "level": 25
+  },
+  "251378": {
+   "cost": 30,
+   "level": 25
+  },
+  "251379": {
+   "cost": 30,
+   "level": 25
+  },
+  "251380": {
+   "cost": 30,
+   "level": 20
+  },
+  "251381": {
+   "cost": 30,
+   "level": 20
+  },
+  "251382": {
+   "cost": 30,
+   "level": 20
+  },
+  "251383": {
+   "cost": 30,
+   "level": 20
+  },
+  "251384": {
+   "cost": 30,
+   "level": 20
+  },
+  "251413": {
+   "cost": 90,
+   "level": 47
+  },
+  "251414": {
+   "cost": 90,
+   "level": 47
+  },
+  "251415": {
+   "cost": 90,
+   "level": 47
+  },
+  "251416": {
+   "cost": 90,
+   "level": 47
+  },
+  "251417": {
+   "cost": 90,
+   "level": 47
+  },
+  "251418": {
+   "cost": 60,
+   "level": 35
+  },
+  "251419": {
+   "cost": 60,
+   "level": 35
+  },
+  "251420": {
+   "cost": 60,
+   "level": 35
+  },
+  "251421": {
+   "cost": 60,
+   "level": 35
+  },
+  "251422": {
+   "cost": 60,
+   "level": 35
+  },
+  "251423": {
+   "cost": 90,
+   "level": 50
+  },
+  "251424": {
+   "cost": 90,
+   "level": 50
+  },
+  "251425": {
+   "cost": 90,
+   "level": 50
+  },
+  "251426": {
+   "cost": 90
+  },
+  "251427": {
+   "cost": 90,
+   "level": 50
+  },
+  "251428": {
+   "cost": 60,
+   "level": 42
+  },
+  "251429": {
+   "cost": 60,
+   "level": 42
+  },
+  "251430": {
+   "cost": 60,
+   "level": 42
+  },
+  "251431": {
+   "cost": 60,
+   "level": 42
+  },
+  "251432": {
+   "cost": 60,
+   "level": 42
+  },
+  "251433": {
+   "cost": 90,
+   "level": 45
+  },
+  "251434": {
+   "cost": 90,
+   "level": 45
+  },
+  "251435": {
+   "cost": 90,
+   "level": 45
+  },
+  "251436": {
+   "cost": 90,
+   "level": 45
+  },
+  "251437": {
+   "cost": 90,
+   "level": 45
+  },
+  "251447": {
+   "cost": 120,
+   "level": 57
+  },
+  "251448": {
+   "cost": 120,
+   "level": 58
+  },
+  "251449": {
+   "cost": 120,
+   "level": 58
+  },
+  "251465": {
+   "cost": 90,
+   "level": 50
+  },
+  "251466": {
+   "cost": 90,
+   "level": 50
+  },
+  "251471": {
+   "cost": 120,
+   "level": 58
+  },
+  "252765": {
+   "cost": 30,
+   "npc": 248201,
+   "name": "Pattern: Brawler's Leather Belt"
+  },
+  "252766": {
+   "cost": 30,
+   "npc": 248201,
+   "name": "Pattern: Trapper's Leather Belt"
+  },
+  "252767": {
+   "cost": 30,
+   "npc": 248201,
+   "name": "Pattern: Defender's Leather Belt"
+  },
+  "252768": {
+   "cost": 30,
+   "npc": 248201,
+   "name": "Pattern: Totemic Leather Belt"
+  },
+  "252769": {
+   "cost": 30,
+   "npc": 248201,
+   "name": "Pattern: Stormrider's Leather Belt"
+  },
+  "252770": {
+   "cost": 30,
+   "npc": 248201,
+   "name": "Pattern: Wisdom's Leather Belt"
+  },
+  "252777": {
+   "cost": 30,
+   "npc": 248201,
+   "name": "Pattern: Brawler's Leather Gloves"
+  },
+  "252778": {
+   "cost": 30,
+   "npc": 248201,
+   "name": "Pattern: Trapper's Leather Gloves"
+  },
+  "252779": {
+   "cost": 30,
+   "npc": 248201,
+   "name": "Pattern: Defender's Leather Gloves"
+  },
+  "252780": {
+   "cost": 30,
+   "npc": 248201,
+   "name": "Pattern: Totemic Leather Gloves"
+  },
+  "252781": {
+   "cost": 30,
+   "npc": 248201,
+   "name": "Pattern: Stormrider's Leather Gloves"
+  },
+  "252782": {
+   "cost": 30,
+   "npc": 248201,
+   "name": "Pattern: Wisdom's Leather Gloves"
+  },
+  "252786": {
+   "cost": 30,
+   "npc": 248201,
+   "name": "Pattern: Brawler's Leather Boots"
+  },
+  "252787": {
+   "cost": 30,
+   "npc": 248201,
+   "name": "Pattern: Trapper's Leather Boots"
+  },
+  "252788": {
+   "cost": 30,
+   "npc": 248201,
+   "name": "Pattern: Defender's Leather Boots"
+  },
+  "252789": {
+   "cost": 30,
+   "npc": 248201,
+   "name": "Pattern: Totemic Leather Boots"
+  },
+  "252790": {
+   "cost": 30,
+   "npc": 248201,
+   "name": "Pattern: Stormrider's Leather Boots"
+  },
+  "252791": {
+   "cost": 30,
+   "npc": 248201,
+   "name": "Pattern: Wisdom's Leather Boots"
+  },
+  "252798": {
+   "cost": 30,
+   "npc": 248201,
+   "name": "Pattern: Brawler's Leather Hood"
+  },
+  "252799": {
+   "cost": 30,
+   "npc": 248201,
+   "name": "Pattern: Trapper's Leather Hood"
+  },
+  "252800": {
+   "cost": 30,
+   "npc": 248201,
+   "name": "Pattern: Defender's Leather Hood"
+  },
+  "252801": {
+   "cost": 30,
+   "npc": 248201,
+   "name": "Pattern: Totemic Leather Hood"
+  },
+  "252802": {
+   "cost": 30,
+   "npc": 248201,
+   "name": "Pattern: Stormrider's Leather Hood"
+  },
+  "252803": {
+   "cost": 30,
+   "npc": 248201,
+   "name": "Pattern: Wisdom's Leather Hood"
+  },
+  "252805": {
+   "cost": 30,
+   "npc": 248201,
+   "name": "Pattern: Brawler's Leather Tunic"
+  },
+  "252806": {
+   "cost": 30,
+   "npc": 248201,
+   "name": "Pattern: Trapper's Leather Tunic"
+  },
+  "252807": {
+   "cost": 30,
+   "npc": 248201,
+   "name": "Pattern: Defender's Leather Tunic"
+  },
+  "252808": {
+   "cost": 30,
+   "npc": 248201,
+   "name": "Pattern: Totemic Leather Tunic"
+  },
+  "252809": {
+   "cost": 30,
+   "npc": 248201,
+   "name": "Pattern: Stormrider's Leather Tunic"
+  },
+  "252810": {
+   "cost": 30,
+   "npc": 248201,
+   "name": "Pattern: Wisdom's Leather Tunic"
+  },
+  "252820": {
+   "cost": 30,
+   "npc": 248201,
+   "name": "Pattern: Brawler's Leather Legguards"
+  },
+  "252821": {
+   "cost": 30,
+   "npc": 248201,
+   "name": "Pattern: Trapper's Leather Legguards"
+  },
+  "252822": {
+   "cost": 30,
+   "npc": 248201,
+   "name": "Pattern: Defender's Leather Kilt"
+  },
+  "252823": {
+   "cost": 30,
+   "npc": 248201,
+   "name": "Pattern: Totemic Leather Leggings"
+  },
+  "252824": {
+   "cost": 30,
+   "npc": 248201,
+   "name": "Pattern: Stormrider's Leather Kilt"
+  },
+  "252825": {
+   "cost": 30,
+   "npc": 248201,
+   "name": "Pattern: Wisdom's Leather Leggings"
+  },
+  "252834": {
+   "cost": 60,
+   "npc": 248201,
+   "name": "Pattern: Forceful Thick Armor Kit"
+  },
+  "252836": {
+   "cost": 60,
+   "npc": 248201,
+   "name": "Pattern: Prowler's Leather Gloves"
+  },
+  "252837": {
+   "cost": 60,
+   "npc": 248201,
+   "name": "Pattern: Skulker's Leather Gloves"
+  },
+  "252838": {
+   "cost": 60,
+   "npc": 248201,
+   "name": "Pattern: Stalker's Leather Gloves"
+  },
+  "252839": {
+   "cost": 60,
+   "npc": 248201,
+   "name": "Pattern: Warden's Leather Gloves"
+  },
+  "252840": {
+   "cost": 60,
+   "npc": 248201,
+   "name": "Pattern: Skirmisher's Leather Gloves"
+  },
+  "252841": {
+   "cost": 60,
+   "npc": 248201,
+   "name": "Pattern: Skycaller's Leather Gloves"
+  },
+  "252842": {
+   "cost": 60,
+   "npc": 248201,
+   "name": "Pattern: Mender's Leather Gloves"
+  },
+  "252848": {
+   "cost": 60,
+   "npc": 248201,
+   "name": "Pattern: Prowler's Leather Shoulders"
+  },
+  "252849": {
+   "cost": 60,
+   "npc": 248201,
+   "name": "Pattern: Skulker's Leather Shoulder"
+  },
+  "252850": {
+   "cost": 60,
+   "npc": 248201,
+   "name": "Pattern: Warden's Leather Shoulders"
+  },
+  "252851": {
+   "cost": 60,
+   "npc": 248201,
+   "name": "Pattern: Skycaller's Leather Shoulders"
+  },
+  "252852": {
+   "cost": 60,
+   "npc": 248201,
+   "name": "Pattern: Mender's Leather Shoulders"
+  },
+  "252853": {
+   "cost": 90,
+   "npc": 248201,
+   "name": "Pattern: Prowler's Leather Bracers"
+  },
+  "252854": {
+   "cost": 90,
+   "npc": 248201,
+   "name": "Pattern: Skulker's Leather Bracers"
+  },
+  "252855": {
+   "cost": 90,
+   "npc": 248201,
+   "name": "Pattern: Warden's Leather Bracers"
+  },
+  "252856": {
+   "cost": 90,
+   "npc": 248201,
+   "name": "Pattern: Skycaller's Leather Bracers"
+  },
+  "252857": {
+   "cost": 90,
+   "npc": 248201,
+   "name": "Pattern: Mender's Leather Bracers"
+  },
+  "252860": {
+   "cost": 90,
+   "npc": 248201,
+   "name": "Pattern: Prowler's Leather Boots"
+  },
+  "252861": {
+   "cost": 90,
+   "npc": 248201,
+   "name": "Pattern: Skulker's Leather Boots"
+  },
+  "252862": {
+   "cost": 90,
+   "npc": 248201,
+   "name": "Pattern: Warden's Leather Boots"
+  },
+  "252863": {
+   "cost": 90,
+   "npc": 248201,
+   "name": "Pattern: Skycaller's Leather Boots"
+  },
+  "252864": {
+   "cost": 90,
+   "npc": 248201,
+   "name": "Pattern: Mender's Leather Boots"
+  },
+  "252872": {
+   "cost": 90,
+   "npc": 248201,
+   "name": "Pattern: Prowler's Leather Waistguard"
+  },
+  "252873": {
+   "cost": 90,
+   "npc": 248201,
+   "name": "Pattern: Skulker's Leather Waistguard"
+  },
+  "252874": {
+   "cost": 90,
+   "npc": 248201,
+   "name": "Pattern: Warden's Leather Waistguard"
+  },
+  "252875": {
+   "cost": 90,
+   "npc": 248201,
+   "name": "Pattern: Skycaller's Leather Waistguard"
+  },
+  "252876": {
+   "cost": 90,
+   "npc": 248201,
+   "name": "Pattern: Mender's Leather Waistguard"
+  },
+  "252900": {
+   "cost": 60,
+   "npc": 248201,
+   "name": "Pattern: Stalker's Mail Shoulders"
+  },
+  "252901": {
+   "cost": 60,
+   "npc": 248201,
+   "name": "Pattern: Skycaller's Mail Shoulders"
+  },
+  "252902": {
+   "cost": 60,
+   "npc": 248201,
+   "name": "Pattern: Skirmisher's Mail Shoulders"
+  },
+  "252903": {
+   "cost": 60,
+   "npc": 248201,
+   "name": "Pattern: Mender's Mail Shoulders"
+  },
+  "252904": {
+   "cost": 90,
+   "npc": 248201,
+   "name": "Pattern: Stalker's Mail Bracers"
+  },
+  "252905": {
+   "cost": 90,
+   "npc": 248201,
+   "name": "Pattern: Skycaller's Mail Bracers"
+  },
+  "252906": {
+   "cost": 90,
+   "npc": 248201,
+   "name": "Pattern: Skirmisher's Mail Bracers"
+  },
+  "252907": {
+   "cost": 90,
+   "npc": 248201,
+   "name": "Pattern: Mender's Mail Bracers"
+  },
+  "252910": {
+   "cost": 90,
+   "npc": 248201,
+   "name": "Pattern: Stalker's Mail Sabatons"
+  },
+  "252911": {
+   "cost": 90,
+   "npc": 248201,
+   "name": "Pattern: Skycaller's Mail Sabatons"
+  },
+  "252912": {
+   "cost": 90,
+   "npc": 248201,
+   "name": "Pattern: Skirmisher's Mail Sabatons"
+  },
+  "252913": {
+   "cost": 90,
+   "npc": 248201,
+   "name": "Pattern: Mender's Mail Sabatons"
+  },
+  "252922": {
+   "cost": 90,
+   "npc": 248201,
+   "name": "Pattern: Stalker's Mail Belt"
+  },
+  "252923": {
+   "cost": 90,
+   "npc": 248201,
+   "name": "Pattern: Skycaller's Mail Belt"
+  },
+  "252924": {
+   "cost": 90,
+   "npc": 248201,
+   "name": "Pattern: Skirmisher's Mail Belt"
+  },
+  "252925": {
+   "cost": 90,
+   "npc": 248201,
+   "name": "Pattern: Mender's Mail Belt"
+  },
+  "252941": {
+   "cost": 90,
+   "npc": 248201,
+   "name": "Pattern: Mystic Rugged Armor Kit"
+  },
+  "253890": {
+   "cost": 30,
+   "level": 12
+  },
+  "253892": {
+   "cost": 30,
+   "level": 12
+  },
+  "253894": {
+   "cost": 30,
+   "level": 12
+  },
+  "253896": {
+   "cost": 30,
+   "level": 12
+  },
+  "253898": {
+   "cost": 30,
+   "level": 12
+  },
+  "253900": {
+   "cost": 30,
+   "level": 12
+  },
+  "253914": {
+   "cost": 30,
+   "level": 15
+  },
+  "253916": {
+   "cost": 30,
+   "level": 15
+  },
+  "253918": {
+   "cost": 30,
+   "level": 15
+  },
+  "253920": {
+   "cost": 30,
+   "level": 15
+  },
+  "253922": {
+   "cost": 30,
+   "level": 15
+  },
+  "253924": {
+   "cost": 30,
+   "level": 15
+  },
+  "253926": {
+   "cost": 30,
+   "level": 17
+  },
+  "253928": {
+   "cost": 30,
+   "level": 17
+  },
+  "253930": {
+   "cost": 30,
+   "level": 17
+  },
+  "253932": {
+   "cost": 30,
+   "level": 17
+  },
+  "253934": {
+   "cost": 30,
+   "level": 17
+  },
+  "253936": {
+   "cost": 30,
+   "level": 17
+  },
+  "253950": {
+   "cost": 30,
+   "level": 20
+  },
+  "253952": {
+   "cost": 30,
+   "level": 20
+  },
+  "253954": {
+   "cost": 30,
+   "level": 20
+  },
+  "253956": {
+   "cost": 30,
+   "level": 20
+  },
+  "253958": {
+   "cost": 30,
+   "level": 20
+  },
+  "253960": {
+   "cost": 30,
+   "level": 20
+  },
+  "253962": {
+   "cost": 30,
+   "level": 22
+  },
+  "253964": {
+   "cost": 30,
+   "level": 22
+  },
+  "253966": {
+   "cost": 30,
+   "level": 22
+  },
+  "253968": {
+   "cost": 30,
+   "level": 22
+  },
+  "253970": {
+   "cost": 30,
+   "level": 22
+  },
+  "253972": {
+   "cost": 30,
+   "level": 22
+  },
+  "253988": {
+   "cost": 30,
+   "level": 25
+  },
+  "253990": {
+   "cost": 30,
+   "level": 25
+  },
+  "253992": {
+   "cost": 30,
+   "level": 25
+  },
+  "253994": {
+   "cost": 30,
+   "level": 25
+  },
+  "253996": {
+   "cost": 30,
+   "level": 25
+  },
+  "253998": {
+   "cost": 30,
+   "level": 25
+  },
+  "254024": {
+   "cost": 60,
+   "level": 35
+  },
+  "254026": {
+   "cost": 60,
+   "level": 35
+  },
+  "254028": {
+   "cost": 60,
+   "level": 35
+  },
+  "254030": {
+   "cost": 60,
+   "level": 35
+  },
+  "254032": {
+   "cost": 60,
+   "level": 35
+  },
+  "254036": {
+   "cost": 60
+  },
+  "254050": {
+   "cost": 60,
+   "level": 42
+  },
+  "254052": {
+   "cost": 60,
+   "level": 42
+  },
+  "254054": {
+   "cost": 60,
+   "level": 42
+  },
+  "254056": {
+   "cost": 60,
+   "level": 42
+  },
+  "254058": {
+   "cost": 60,
+   "level": 42
+  },
+  "254060": {
+   "cost": 60,
+   "level": 42
+  },
+  "254062": {
+   "cost": 60,
+   "level": 45
+  },
+  "254064": {
+   "cost": 60,
+   "level": 45
+  },
+  "254066": {
+   "cost": 60,
+   "level": 45
+  },
+  "254068": {
+   "cost": 60,
+   "level": 45
+  },
+  "254070": {
+   "cost": 60,
+   "level": 45
+  },
+  "254072": {
+   "cost": 60,
+   "level": 45
+  },
+  "254080": {
+   "cost": 60
+  },
+  "254082": {
+   "cost": 60,
+   "level": 47
+  },
+  "254084": {
+   "cost": 60,
+   "level": 47
+  },
+  "254086": {
+   "cost": 60,
+   "level": 47
+  },
+  "254088": {
+   "cost": 60,
+   "level": 47
+  },
+  "254090": {
+   "cost": 60,
+   "level": 47
+  },
+  "254092": {
+   "cost": 60,
+   "level": 47
+  },
+  "254108": {
+   "cost": 90,
+   "level": 50
+  },
+  "254110": {
+   "cost": 90,
+   "level": 50
+  },
+  "254112": {
+   "cost": 90,
+   "level": 50
+  },
+  "254114": {
+   "cost": 90,
+   "level": 50
+  },
+  "254116": {
+   "cost": 90,
+   "level": 50
+  },
+  "254118": {
+   "cost": 90,
+   "level": 50
+  },
+  "264201": {
+   "cost": 45,
+   "npc": 248200,
+   "name": "Schematic: SAF-T Tabs"
+  },
+  "264202": {
+   "cost": 45,
+   "npc": 248200,
+   "name": "Schematic: SAF-T Dynamite"
+  },
+  "264203": {
+   "cost": 45,
+   "npc": 248200,
+   "name": "Schematic: SAF-T Copper Bomb"
+  },
+  "264204": {
+   "cost": 45,
+   "npc": 248200,
+   "name": "Schematic: EZ-Thro Wrap"
+  },
+  "264205": {
+   "cost": 45,
+   "npc": 248200,
+   "name": "Schematic: EZ-Thro Copper Bomb XL"
+  },
+  "264206": {
+   "cost": 45,
+   "npc": 248200,
+   "name": "Schematic: No Slip SAF-T Padding"
+  },
+  "264209": {
+   "cost": 180,
+   "npc": 248200,
+   "name": "Schematic: SAF-T Bell"
+  },
+  "264211": {
+   "cost": 180,
+   "npc": 248200,
+   "name": "Schematic: EZ-Thro Fireproof Fuse"
+  },
+  "264216": {
+   "cost": 270,
+   "npc": 248200,
+   "name": "Schematic: Emergency Field Cloak"
+  },
+  "264217": {
+   "cost": 270,
+   "level": 40,
+   "npc": 248200,
+   "name": "Schematic: Compact Critter Carrier"
+  },
+  "264220": {
+   "cost": 270,
+   "npc": 248200,
+   "name": "Schematic: SAF-T Disposable Parachute"
+  },
+  "264232": {
+   "cost": 360,
+   "level": 60,
+   "npc": 248200,
+   "name": "Schematic: Ultrasafe Rechargeable Battery"
+  },
+  "264234": {
+   "cost": 360,
+   "level": 60,
+   "npc": 248200,
+   "name": "Schematic: Gnomish Poultryizer"
+  },
+  "264235": {
+   "cost": 360,
+   "npc": 248200,
+   "name": "Schematic: Ultralight Goblin Glider"
+  },
+  "264237": {
+   "cost": 360,
+   "level": 55,
+   "npc": 248200,
+   "name": "Schematic: Stealthman 52"
+  },
+  "271621": {
+   "cost": 1000,
+   "npc": 248196,
+   "name": "Alchemy Certification"
+  },
+  "271625": {
+   "cost": 1000,
+   "npc": 248200,
+   "name": "Engineering Certification"
+  },
+  "271626": {
+   "cost": 1000,
+   "npc": 248201,
+   "name": "Leatherworking Certification"
+  },
+  "274393": {
+   "cost": 240
+  },
+  "274394": {
+   "cost": 240
+  },
+  "274398": {
+   "cost": 240
+  },
+  "274399": {
+   "cost": 240
+  },
+  "274401": {
+   "cost": 240
+  },
+  "280321": {
+   "cost": 180,
+   "level": 30,
+   "npc": 248200,
+   "name": "Schematic: Whimsical Waistwrap"
+  },
+  "280322": {
+   "cost": 180,
+   "level": 30,
+   "npc": 248200,
+   "name": "Schematic: Gizmo Girdle"
+  },
+  "280323": {
+   "cost": 180,
+   "level": 30,
+   "npc": 248200,
+   "name": "Schematic: Clanking Cord"
+  },
+  "280325": {
+   "cost": 180,
+   "level": 40,
+   "npc": 248200,
+   "name": "Schematic: Floppy Goggles"
+  },
+  "280326": {
+   "cost": 180,
+   "level": 40,
+   "npc": 248200,
+   "name": "Schematic: Bent Goggles"
+  },
+  "280327": {
+   "cost": 180,
+   "level": 40,
+   "npc": 248200,
+   "name": "Schematic: Stuckbutton Goggles"
+  },
+  "280328": {
+   "cost": 180,
+   "level": 40,
+   "npc": 248200,
+   "name": "Schematic: Dented Goggles"
+  },
+  "285285": {
+   "cost": 45,
+   "level": 13,
+   "npc": 248200,
+   "name": "Schematic: Satchel of Copper Bombs"
+  },
+  "285286": {
+   "cost": 180,
+   "level": 28,
+   "npc": 248200,
+   "name": "Schematic: Satchel of Bronze Bombs"
+  },
+  "285287": {
+   "cost": 270,
+   "level": 41,
+   "npc": 248200,
+   "name": "Schematic: Satchel of Iron Bombs"
+  },
+  "285288": {
+   "cost": 270,
+   "level": 52,
+   "npc": 248200,
+   "name": "Schematic: Satchel of Dark Iron Bombs"
+  }
+ },
+ "rankFees": {}
+}

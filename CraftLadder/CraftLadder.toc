@@ -1,0 +1,47 @@
+## Interface: 16001
+## Title: Craft Ladder
+## Notes: The cheapest way to level Cooking, First Aid and the crafting professions, and where to level the gathering professions, priced from your last auction house scan.
+## Author: Alex P
+## X-License: GPL-3.0
+## Version: 1.0.0
+## IconTexture: Interface\Icons\INV_Misc_Food_15
+## SavedVariables: CraftLadderDB
+## OptionalDeps: AuctionDB, Auctionator
+## Category: Professions
+## X-Game-Version: WoW Forever 1.60 beta
+## AddonCompartmentFunc: CraftLadder_OnCompartmentClick
+## AddonCompartmentFuncOnEnter: CraftLadder_OnCompartmentEnter
+## AddonCompartmentFuncOnLeave: CraftLadder_OnCompartmentLeave
+
+Core.lua
+Data\Cooking.lua
+Data\FirstAid.lua
+Data\Fishing.lua
+Data\Mining.lua
+Data\Skinning.lua
+Data\Herbalism.lua
+Data\Lockpicking.lua
+Data\Blacksmithing.lua
+Data\Engineering.lua
+Data\Tailoring.lua
+Data\Enchanting.lua
+Data\Alchemy.lua
+Data\Leatherworking.lua
+Data\Poisons.lua
+Data\Camp.lua
+Professions.lua
+Ladder.lua
+Fishing.lua
+Mining.lua
+Prices.lua
+Favor.lua
+Camp.lua
+Describe.lua
+Player.lua
+UI\Widgets.lua
+UI\Window.lua
+UI\Cards.lua
+UI\Menu.lua
+UI\CampPanel.lua
+UI\AuctionTab.lua
+UI\Minimap.lua

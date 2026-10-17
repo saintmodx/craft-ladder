@@ -1,12 +1,10 @@
 # Craft Ladder
 
-A World of Warcraft addon for **WoW Forever**: the cheapest way to 300 in every profession, and where to level the
-gathering ones.
+Craft Ladder is a smart **profession leveling and crafting optimization addon** for **World of Warcraft: Forever**. It helps you find cost-efficient routes from skill 1 to 300 using auction house prices, vendor costs, and materials already in your bags.
 
-**Download:** [Craft Ladder on CurseForge](https://www.curseforge.com/wow/addons/craft-ladder)
+Whether you're leveling **Engineering, Alchemy, Blacksmithing, Tailoring, Cooking**, or gathering professions, Craft Ladder creates a step-by-step plan showing what to craft, how many items you need, where to learn each recipe, and how much it will cost. It also helps you discover profitable crafting opportunities and gathering zones.
 
-Open a profession and Craft Ladder plans it step by step: what to make, how many, where to learn the recipe and what
-the reagents cost, priced from your last auction house scan, the vendors and what's already in your bags.
+**[Download Craft Ladder on CurseForge](https://www.curseforge.com/wow/addons/craft-ladder)**
 
 ![Blacksmithing's ladder in Skill mode, a step's card open](screenshots/ladder.png)
 

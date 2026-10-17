@@ -3,6 +3,8 @@
 A World of Warcraft addon for **WoW Forever**: the cheapest way to 300 in every profession, and where to level the
 gathering ones.
 
+**Download:** [Craft Ladder on CurseForge](https://www.curseforge.com/wow/addons/craft-ladder)
+
 Open a profession and Craft Ladder plans it step by step: what to make, how many, where to learn the recipe and what
 the reagents cost, priced from your last auction house scan, the vendors and what's already in your bags.
 
@@ -68,8 +70,8 @@ Cooking's Food mode: the dishes worth eating for your class.
 
 ## Install
 
-Install it with the CurseForge app, or unzip `CraftLadder` into your WoW Forever client's `Interface\AddOns` folder
-and restart the game.
+Install it from [CurseForge](https://www.curseforge.com/wow/addons/craft-ladder) (or its app), or unzip
+`CraftLadder` into your WoW Forever client's `Interface\AddOns` folder and restart the game.
 
 For auction house prices, install **AuctionDB** (the main source) or **Auctionator** (used when AuctionDB has no
 price) and scan the auction house. Craft Ladder needs neither, but without them it prices by vendors only: reagents

@@ -1,6 +1,6 @@
 # A pushed tag (v1.2.3; with "alpha" or "beta" in it, that kind of release) packages the addon as .pkgmeta says and
 # uploads it to CurseForge (the toc's X-Curse-Project-ID, WoW Forever's version from its Interface) and to GitHub
-# Releases, with the commits since the last tag as its changelog. CF_API_KEY: the CurseForge API token, a repo secret.
+# Releases, with CHANGELOG.md as its changelog. CF_API_KEY: the CurseForge API token, a repo secret.
 name: Release
 
 on:
@@ -20,5 +20,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # the whole history: the changelog and the version come from the tags
+          fetch-depth: 0 # the whole history: the version comes from the tags
+      # nothing goes out with "Unreleased" as its notes or the last version in the toc
+      - name: The changelog and the toc have this version
+        run: |
+          v="${GITHUB_REF_NAME#v}"
+          grep -q "^## $v - " CHANGELOG.md || { echo "CHANGELOG.md has no '## $v - <date>'"; exit 1; }
+          grep -q "^## Version: $v" CraftLadder/CraftLadder.toc || { echo "the toc's Version isn't $v"; exit 1; }
       - uses: BigWigsMods/packager@v2

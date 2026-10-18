@@ -1,6 +1,11 @@
 # Craft Ladder's package for BigWigsMods/packager (.github/workflows/release.yml): the addon is the CraftLadder folder,
-# not the repo's root, so it's moved up and the rest is left out.
+# not the repo's root, so it's moved up and the rest is left out. CHANGELOG.md, written by hand, is the release's
+# changelog on CurseForge and GitHub, and ships in the addon's folder.
 package-as: CraftLadder
+
+manual-changelog:
+  filename: CHANGELOG.md
+  markup-type: markdown
 
 move-folders:
   CraftLadder/CraftLadder: CraftLadder

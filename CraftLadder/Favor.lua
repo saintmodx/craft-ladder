@@ -52,6 +52,21 @@ function Favor.Recipes(data, state, owned, records)
     return steps
 end
 
+-- The Merchant's Favor recipes as the window and the auction house tab show them, from a profession's ladder (base:
+-- ns.Calculate's, with its data, state, mode, quote and opts): Favor.Recipes' steps, each with buy = what one craft
+-- takes as the ladder plans it (what the character has first, then made when cheaper: bars from its ore, else bought)
+-- and matCost (nil: an ingredient has no price). What they make is soulbound: nothing to sell.
+function Favor.Ladder(base, records)
+    local data, state = base.data, base.state
+    local steps = Favor.Recipes(data, state, state.owned, records)
+    local ctx = ns.Ladder.NewContext(data, state, base.quote, base.opts)
+    for _, s in ipairs(steps) do
+        local cost, buy, missing = ns.Ladder.Ingredients(ctx, data.recipes[s.recipe], 1)
+        s.buy, s.matCost = buy, not missing and cost or nil
+    end
+    return { data = data, state = state, mode = base.mode, favor = true, steps = steps }
+end
+
 -- How many recipes a profession sells for Favor (the window shows its Favor button only when there are some).
 function Favor.Count(data)
     local n = 0

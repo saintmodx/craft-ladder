@@ -558,6 +558,22 @@ expect("... a recipe's card: its price (the data's, seen at a quartermaster, or 
     strip(frame.detail.head.title.text) == ns.BLACKSMITHING.recipes[favorRows[1].step.recipe].name
     and lines():find(favorRows[1].step.cost and "Costs %d+ Merchant's Favor" or "Its price: open a quartermaster once")
     and lines():find("From %d+ Blacksmithing %(you: %d+%)"))
+-- its ingredients as the Skill ladder plans them: the bars you have, the rest smelted from your ore, what to buy
+fx.blacksmithing.owned[2841], fx.mining.owned[2770], fx.mining.owned[2771] = 6, 20, 1
+ns.Window.Refresh()
+for _, r in ipairs(rows()) do if r.step.recipe == 1252260 then mock.click(r) end end -- Acolyte's Gloves: 10 Bronze Bar
+local bars
+for _, f in ipairs(items()) do if f.item == 2841 then bars = f end end
+expect("... one craft as the ladder plans it: 6 Bronze Bar yours, 4 smelted from your ore (2 a smelt), 1 Tin Ore to buy",
+    strip(frame.detail.head.title.text) == "Acolyte's Gloves" and bars
+    and strip(bars.name.text):find("^10 .+%(you have 6%)$")
+    and strip(bars.sub.text):find("^Smelt 4 yourself from ") and strip(bars.sub.text):find("2 [^,]+ %(you have them%)")
+    and strip(bars.sub.text):find("2 [^,]+ %(buy 1%)"))
+expect("... and the Craft bar, as on the Skill ladder's cards", frame.detail.craft.shown
+    and strip(frame.detail.craft.note.text):find(ns.Player.Known(ns.BLACKSMITHING)[1252260] and "^Your bags allow %d+%.$"
+        or "Learn the recipe first%."))
+fx.blacksmithing.owned[2841], fx.mining.owned[2770], fx.mining.owned[2771] = nil, nil, nil
+ns.Window.Refresh()
 -- at the quartermaster: its price in favor and the level its tooltip asks are remembered
 local favorRec = ns.BLACKSMITHING.recipes[favorRows[1].step.recipe]
 local itemID, costInfo, costItem = GetMerchantItemID, GetMerchantItemCostInfo, GetMerchantItemCostItem
@@ -1135,6 +1151,18 @@ for _, e in ipairs(mock.shownChildren(ahPanel.scroll.child, "entry")[1].entry.ro
 end
 expect("... Crafts 3: the ingredients of 3 crafts", strip(ahPanel.heading.text):find("of 3 crafts$")
     and oneCraft and threeCrafts.buy > oneCraft.buy)
+-- Favor: the window's Merchant's Favor recipes, a row per recipe with what one craft of it buys here
+mock.click(ahPanel.modes[4])
+local favorSteps, gloves = mock.shownChildren(ahPanel.scroll.child, "entry"), nil
+for _, r in ipairs(favorSteps) do if r.entry.step.recipe == 1252260 then gloves = r end end -- Acolyte's Gloves
+expect("... Favor: the window's Merchant's Favor recipes too, a row per recipe, its status, one craft, no Crafts box",
+    ahPanel.modes[4]:IsShown() and ahPanel.modes[4].active and not ahPanel.modes[3].active and bsProf.favorView
+    and #favorSteps == ns.Favor.Count(ns.ProfessionByKey.blacksmithing) and not ahPanel.crafts:IsShown()
+    and strip(ahPanel.heading.text):find("Merchant's Favor recipes, what one craft of each buys$")
+    and gloves and strip(gloves.sub.text):find("skill 80") and #gloves.entry.rows > 0)
+mock.click(ahPanel.modes[1])
+expect("... and Skill: the window's ladder again", not bsProf.favorView and bsProf.mode == "skill"
+    and not ahPanel.modes[4].active and mock.shownChildren(ahPanel.scroll.child, "entry")[1].entry.step.kind ~= "favor")
 bsProf.mode = nil
 Auctionator = nil
 

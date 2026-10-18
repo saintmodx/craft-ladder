@@ -366,6 +366,17 @@ local function useLevel(item)
     return minLevel or 0, equipLoc ~= nil and equipLoc ~= ""
 end
 
+-- A Merchant's Favor recipe's line under its name (the auction house tab's too): the level to wear what it makes (red
+-- above yours), then known, learn now, or the skill or level it waits for.
+local function favorSub(step, rec, state)
+    local wear = useLevel(rec.makes)
+    return (wear and wear > 1 and ("%slvl %d|r - "):format(wear > state.level and hex(C.bad) or "", wear) or "")
+        .. (step.status == "known" and (step.canMake > 0 and ("known, make %d now"):format(step.canMake) or "known")
+            or step.status == "learn" and ("learn now (skill %d)"):format(rec.learn)
+            or step.status == "skill" and ("skill %d (you %d)"):format(rec.learn, state.skill)
+            or ("level %d (you %d)"):format(step.level, state.level))
+end
+
 local function fillRow(row, step, index)
     row.index, row.step = index, step
     row.icon:SetVertexColor(1, 1, 1) -- a pooled row may have been a red one
@@ -409,12 +420,7 @@ local function fillRow(row, step, index)
         if blocked then row.icon:SetVertexColor(1, 0.15, 0.15) end
         row.name:SetText(rec.name)
         UI.SetColor(row.name, step.status == "known" and C.good or step.status == "learn" and C.gold or C.bad)
-        local wear = useLevel(rec.makes) -- the level the item it makes asks to wear: red above yours
-        row.sub:SetText((wear and wear > 1 and ("%slvl %d|r - "):format(wear > state.level and hex(C.bad) or "", wear) or "")
-            .. (step.status == "known" and (step.canMake > 0 and ("known, make %d now"):format(step.canMake) or "known")
-                or step.status == "learn" and ("learn now (skill %d)"):format(rec.learn)
-                or step.status == "skill" and ("skill %d (you %d)"):format(rec.learn, state.skill)
-                or ("level %d (you %d)"):format(step.level, state.level)))
+        row.sub:SetText(favorSub(step, rec, state))
     elseif step.kind == "food" then
         local rec = prof.recipes[step.recipe]
         row.icon:SetTexture(UI.ItemIcon(rec.makes))
@@ -595,7 +601,7 @@ end
 Window.Shared = { W = W, DETAIL_CW = DETAIL_CW, MENU_W = MENU_W, STEP_COLOR = STEP_COLOR, BAG_ICON = BAG_ICON,
                   RANK_ICON = RANK_ICON, craftsWord = craftsWord, wait = wait, recipeIcon = recipeIcon,
                   toolUsers = toolUsers, gather = gather, duration = duration, barsText = barsText,
-                  useLevel = useLevel, MODE_TIPS = MODE_TIPS }
+                  useLevel = useLevel, favorSub = favorSub, MODE_TIPS = MODE_TIPS }
 
 renderDetail = function() ns.Cards.Render(frame, ladder, lookup, prof, selected) end
 
@@ -1153,9 +1159,7 @@ function Window.Refresh(cached)
     end
     if not ns.Player.Prof(ladder.data).favorView then frame.favorRounds = 0 end
     if ns.Player.Prof(ladder.data).favorView and ns.Favor.Count(ladder.data) > 0 then
-        local state = ladder.state
-        ladder = { data = ladder.data, state = state, mode = ladder.mode, favor = true,
-                   steps = ns.Favor.Recipes(ladder.data, state, state.owned, ns.db.favorPrices or {}) }
+        ladder = ns.Favor.Ladder(ladder, ns.db.favorPrices or {})
         -- the levels to wear what they make come from the game's item data: again once it has loaded them (5 times
         -- at most)
         frame.favorRounds = (frame.favorRounds or 0) + 1

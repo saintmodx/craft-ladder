@@ -1,5 +1,6 @@
 -- Craft Ladder: a tab in the auction house window to buy what the ladder needs. Pick a crafting profession and its
--- mode (Skill, Skill + Gold or Gold, the window's own): a row per step with what it costs there; a click on a step
+-- mode (Skill, Skill + Gold, Gold or Favor: the Merchant's Favor recipes, one craft each; the window's own): a row per
+-- step with what it costs there; a click on a step
 -- unfolds a row per reagent you're short of, with how many to buy and a button: the first click asks the auction house
 -- the exact price, the second buys (the game buys only from a click). With Auctionator, a step's Search button (or a
 -- click on a reagent) opens its Shopping tab with a temporary list of what to buy and how many.
@@ -12,7 +13,9 @@ ns.AuctionTab = AuctionTab
 
 local ROW_H = 34
 local INDENT = 22 -- a reagent's row, under its step
-local MODES = { { "skill", "Skill", 48 }, { "sell", "Skill + Gold", 78 }, { "gold", "Gold", 48 } }
+local MODES = { { "skill", "Skill", 48 }, { "sell", "Skill + Gold", 78 }, { "gold", "Gold", 48 }, { "favor", "Favor", 52 } }
+local FAVOR_TIP = "Merchant's Favor recipes, the supply camps' quartermasters sell them: what one craft of each buys" ..
+    " here, what you have counted first (bars smelted from your ore when that's cheaper)."
 local panel, rowPool, stepPool, profButtons
 local pending -- the purchase waiting for its price or its confirmation: { item, qty, row, total }
 local shown -- the ladder drawn: { data, mode, ladder }; drawn again while nothing it depends on changed
@@ -74,7 +77,7 @@ local function needs(ladder, steps, times)
             if s.learn and s.learn.kind == "ah" then acc[s.learn.item] = { buy = 1, need = 1, have = 0 } end
         end
     end
-    local owned = ladder.mode == "gold" and ladder.state.owned or {}
+    local owned = ladder.mode == "gold" and not ladder.favor and ladder.state.owned or {}
     local rows = {}
     for item, e in pairs(acc) do
         local buy = math.ceil(e.buy - (owned[item] or 0))
@@ -236,13 +239,16 @@ local function makeStep(parent)
     return r
 end
 
--- The ladder drawn, calculated again unless `cached` and it's the same profession and mode.
+-- The ladder drawn, calculated again unless `cached` and it's the same profession and mode. Favor, as the window
+-- shows it: its "Merchant's Favor recipes" bar is on (and the profession has some).
 local function ladderFor(data, cached)
-    local mode = ns.LadderMode(data)
+    local favor = ns.Player.Prof(data).favorView and ns.Favor.Count(data) > 0
+    local mode = favor and "favor" or ns.LadderMode(data)
     local same = shown and shown.data == data and shown.mode == mode
     if not same then opened = nil end -- another profession or mode: the step you're on
     if not (same and cached) then
-        shown = { data = data, mode = mode, ladder = ns.Window.Cached(data) or ns.Calculate(data) }
+        local ladder = ns.Window.Cached(data) or ns.Calculate(data)
+        shown = { data = data, mode = mode, ladder = favor and ns.Favor.Ladder(ladder, ns.db.favorPrices or {}) or ladder }
     end
     return shown.ladder
 end
@@ -267,7 +273,10 @@ local function fillStep(r, e, data, lookup, gold)
     r.icon:SetTexture(rec.makes and UI.ItemIcon(rec.makes) or rec.icon or data.icon)
     r.name:SetText(rec.name)
     UI.SetColor(r.name, s.color ~= "grey" and ns.Window.Shared.STEP_COLOR[s.color] or C.text)
-    if gold then
+    if s.kind == "favor" then -- coloured as the window's list: known, learn now, not yet
+        UI.SetColor(r.name, s.status == "known" and C.good or s.status == "learn" and C.gold or C.bad)
+        r.sub:SetText(ns.Window.Shared.favorSub(s, rec, shown.ladder.state))
+    elseif gold then
         r.sub:SetText(("%s+%s|r a craft, %s"):format(hex(C.good), ns.Money(s.profit),
             s.vendor and "sold to a vendor" or (s.listed .. " listed")))
     elseif s.to > s.from then
@@ -311,10 +320,14 @@ function AuctionTab.Refresh(cached)
     stepPool:ReleaseAll()
     pending = nil
     local tips = data and data.resale and ns.Window.Shared.MODE_TIPS.craft
-    for _, b in ipairs(panel.modes) do b:SetShown(tips ~= nil) end
+    local lastMode
+    for _, b in ipairs(panel.modes) do
+        b:SetShown(tips ~= nil and (b.mode ~= "favor" or ns.Favor.Count(data) > 0))
+        if b:IsShown() then lastMode = b end
+    end
     panel.heading:ClearAllPoints()
-    panel.heading:SetPoint("TOPLEFT", tips and panel.modes[#panel.modes] or panel, tips and "TOPRIGHT" or "TOPLEFT",
-        tips and 12 or 14, tips and -2 or -42)
+    panel.heading:SetPoint("TOPLEFT", lastMode or panel, lastMode and "TOPRIGHT" or "TOPLEFT", lastMode and 12 or 14,
+        lastMode and -2 or -42)
     panel.crafts:Hide()
     panel.craftsLabel:Hide()
     if not data then
@@ -323,10 +336,10 @@ function AuctionTab.Refresh(cached)
         return
     end
     local ladder = ladderFor(data, cached)
-    local gold = ladder.mode == "gold"
+    local gold = ladder.mode == "gold" and not ladder.favor
     for _, b in ipairs(panel.modes) do
-        b:SetActive(b.mode == ladder.mode)
-        b.tooltip = tips and { b.name, tips[b.mode] }
+        b:SetActive(b.mode == shown.mode)
+        b.tooltip = tips and { b.name, tips[b.mode] or FAVOR_TIP }
     end
     panel.crafts:SetShown(gold)
     panel.craftsLabel:SetShown(gold)
@@ -348,6 +361,7 @@ function AuctionTab.Refresh(cached)
         opened = first and { [first] = true } or {}
     end
     panel.heading:SetText(#entries == 0 and ("%s: nothing to buy"):format(data.name)
+        or ladder.favor and ("%s: Merchant's Favor recipes, what one craft of each buys"):format(data.name)
         or gold and ("%s: what earns the most now, the ingredients of %d %s"):format(data.name, crafts,
             crafts == 1 and "craft" or "crafts")
         or ("%s: what each step buys at the auction house"):format(data.name))
@@ -388,13 +402,16 @@ local function build_panel(parent)
             i == 1 and -10 or 0)
         profButtons[i] = b
     end
-    -- the mode, the window's own: switched here, it's switched there
+    -- the mode, the window's own: switched here, it's switched there (Favor: its "Merchant's Favor recipes" bar)
     panel.modes = {}
     for i, m in ipairs(MODES) do
         local b = UI.Button(panel, m[2], m[3], 18, function(self)
-            local data = picked(professions())
-            ns.Player.Prof(data).mode = self.mode
-            ns.Player.Prof(data).favorView = nil
+            local p = ns.Player.Prof(picked(professions()))
+            if self.mode == "favor" then
+                p.favorView = true
+            else
+                p.mode, p.favorView = self.mode, nil
+            end
             ns.Window.Refresh(true) -- calculated there first when the window shows it: drawn here from its cache
             AuctionTab.Refresh(true)
         end)

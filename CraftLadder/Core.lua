@@ -97,15 +97,16 @@ function ns.Calculate(data)
     local build = fishing and ns.Fishing.Build or data.kind == "mining" and ns.Mining.Build
         or data.resale and mode == "gold" and ns.Ladder.Profits or data.food and mode == "food" and ns.Ladder.Food
         or ns.Ladder.Build
-    local ladder = build(data, state, quote, { favor = ns.db.favor, choices = choices, realPrices = ns.Prices.Real(),
-                                               rate = fishing and (ns.Fishing.Rate()) or nil, mode = mode,
-                                               seenPools = fishing and ns.Fishing.SeenPools(data) or nil,
-                                               smelt = data.smelt and { skill = (ns.Player.Skill(ns.MINING)),
-                                                                        recipes = ns.MINING.recipes } or nil,
-                                               standing = ns.Player.Standing,
-                                               vendorOnly = data.resale and mode == "skill" or nil })
+    local opts = { favor = ns.db.favor, choices = choices, realPrices = ns.Prices.Real(),
+                   rate = fishing and (ns.Fishing.Rate()) or nil, mode = mode,
+                   seenPools = fishing and ns.Fishing.SeenPools(data) or nil,
+                   smelt = data.smelt and { skill = (ns.Player.Skill(ns.MINING)), recipes = ns.MINING.recipes } or nil,
+                   standing = ns.Player.Standing,
+                   vendorOnly = data.resale and mode == "skill" or nil }
+    local ladder = build(data, state, quote, opts)
     ladder.mode = mode
     ladder.state, ladder.data = state, data
+    ladder.quote, ladder.opts = quote, opts -- the Merchant's Favor recipes plan their ingredients as the ladder does
     return ladder, lookup, debugprofilestop() - start
 end
 

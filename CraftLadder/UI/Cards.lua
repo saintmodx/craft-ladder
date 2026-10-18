@@ -481,7 +481,7 @@ local function paintCraft(bar)
         .. "closed (the game crafts only with it open)." .. (prof.key == "cooking" and " Cooking needs a fire nearby."
         or "") }
     bar.note:SetText(why and (hex(C.warn) .. why .. "|r")
-        or ("Your bags allow %d; the step needs %d."):format(can, bar.need))
+        or ("Your bags allow %d"):format(can) .. (step.kind == "favor" and "." or ("; the step needs %d."):format(bar.need)))
 end
 
 local function craftClick(bar)
@@ -601,7 +601,7 @@ local function oneCraft(step, rec)
 end
 
 -- A recipe the quartermasters sell for Merchant's Favor: its price, level and skill against yours, where to buy it,
--- what one craft takes.
+-- what one craft takes as the ladder plans it (Favor.Ladder). What it makes is soulbound: nothing to sell.
 local function favorDetail(step)
     local rec, state = prof.recipes[step.recipe], ladder.state
     local have = ns.Favor.Have()
@@ -611,6 +611,8 @@ local function favorDetail(step)
             or ("It needs level %d (you: %d)."):format(step.level, state.level),
         colorsText(rec.colors))
     if step.status == "skill" or step.status == "level" then frame.detail.head.icon:SetVertexColor(1, 0.15, 0.15) end
+    craftBar({ kind = "favor", recipe = step.recipe, crafts = 1, canCook = step.canMake or 0,
+               learn = { kind = step.status == "known" and "known" or "favor" } }, rec)
     section("Merchant's Favor")
     line(step.cost and ("Costs %d Merchant's Favor%s."):format(step.cost, have and (" (you have %d)"):format(have) or "")
         or "Its price: open a quartermaster once and Craft Ladder remembers it.", step.cost and C.text or C.muted)
@@ -626,22 +628,11 @@ local function favorDetail(step)
     local vendors = ns.Describe.Vendors(prof, step.recipe, state.faction, true)
     if #vendors > 0 then section("Quartermaster") end
     for _, v in ipairs(vendors) do placeRow(v.npc, "Merchant's Favor") end
-    section("One craft")
+    section(("One craft: %s"):format(step.matCost and ns.Money(step.matCost) or "?"))
     local items = {}
-    for item in pairs(rec.mats) do items[#items + 1] = item end
+    for item in pairs(step.buy) do items[#items + 1] = item end
     table.sort(items)
-    for _, item in ipairs(items) do
-        local f = get("item")
-        local n, e = rec.mats[item], lookup(item)
-        f.item, f.source = item, ns.Describe.PriceSource(e)
-        f.icon:SetTexture(UI.ItemIcon(item))
-        f.name:SetText(("%d %s"):format(n, ns.Describe.ItemName(item)))
-        f.sub:SetText(("you have %d; %s"):format(state.owned[item] or 0, ns.Describe.PriceSource(e)))
-        UI.SetColor(f.sub, C.muted)
-        f.cost:SetText(e and ns.Money(e.unit * n) or (hex(C.bad) .. "?|r"))
-        place(f, 2)
-    end
-    if step.canMake then line(("Your bags allow %d crafts now."):format(step.canMake), C.good) end
+    for _, item in ipairs(items) do itemRow(item, step.buy[item]) end
 end
 
 -- A recipe's notes: how it's learned isn't confirmed in Forever yet, reputation, specialization.

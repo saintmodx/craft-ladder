@@ -16,9 +16,9 @@ jobs:
     runs-on: ubuntu-latest
     env:
       CF_API_TOKEN: ${{ secrets.CF_API_KEY }}
-      GH_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GITHUB_OAUTH: ${{ secrets.GITHUB_TOKEN }} # the name packager v2 reads (GH_API_TOKEN is newer than v2)
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0 # the whole history: the version comes from the tags
       # nothing goes out with "Unreleased" as its notes or the last version in the toc

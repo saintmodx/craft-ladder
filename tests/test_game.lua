@@ -270,6 +270,23 @@ local foodButton = frame.list.modes[4]
 expect("Cooking: a Food mode", foodButton:IsShown())
 mock.click(foodButton)
 expect("Food: saved, active, its dishes listed", char().prof.cooking.mode == "food" and foodButton.active and #rows() > 0)
+-- a dish's name in its skill-up colour at your skill: orange, grey (no point) white, above your skill red
+local C, cookSkill = ns.UI.C, ns.Player.Skill(ns.COOKING)
+local function sameColor(fs, c) return fs.color[1] == c[1] and fs.color[2] == c[2] and fs.color[3] == c[3] end
+local orangeRow, greyRow, redRow
+for _, r in ipairs(rows()) do
+    local color = ns.Ladder.Color(ns.COOKING.recipes[r.step.recipe].colors, cookSkill)
+    if r.step.needSkill then redRow = redRow or r
+    elseif color == "orange" then orangeRow = orangeRow or r
+    elseif color == "grey" then greyRow = greyRow or r end
+end
+expect("... a dish's name in its skill-up colour: orange, grey white, above your skill red", orangeRow and greyRow
+    and redRow and sameColor(orangeRow.name, C.orange) and sameColor(greyRow.name, C.text)
+    and sameColor(redRow.name, C.bad))
+mock.click(orangeRow)
+expect("... its card: the buff and the level first, then where it turns yellow, green and grey",
+    strip(frame.detail.head.line1.text):find("%(Well Fed%)%. ") and strip(frame.detail.head.line2.text):find("^orange from %d+")
+    and strip(frame.detail.head.line2.text):find("grey %d+$") and sameColor(frame.detail.head.title, C.orange))
 local roles = {}
 for _, h in ipairs(headings()) do roles[#roles + 1] = strip(h.title.text) end
 expect("... a group per role: Melee and Tank for a warrior", table.concat(roles, ",") == "Melee,Tank")

@@ -377,6 +377,13 @@ local function favorSub(step, rec, state)
             or ("level %d (you %d)"):format(step.level, state.level))
 end
 
+-- A dish's colour in Food (the row's name, the card's title): its skill-up colour at your skill, as Gold's rows (grey,
+-- no skill-up: white); red while your skill can't learn it yet.
+local function foodColor(step, rec, skill)
+    local color = ns.Ladder.Color(rec.colors, skill)
+    return step.needSkill and C.bad or color ~= "grey" and STEP_COLOR[color] or C.text
+end
+
 local function fillRow(row, step, index)
     row.index, row.step = index, step
     row.icon:SetVertexColor(1, 1, 1) -- a pooled row may have been a red one
@@ -425,7 +432,7 @@ local function fillRow(row, step, index)
         local rec = prof.recipes[step.recipe]
         row.icon:SetTexture(UI.ItemIcon(rec.makes))
         row.name:SetText(rec.name)
-        UI.SetColor(row.name, step.later and C.muted or C.text)
+        UI.SetColor(row.name, foodColor(step, rec, ladder.state.skill)) -- a dish for later says so in red: "lvl N"
         row.sub:SetText(("%s%s%s%s"):format(step.eat > 1 and ("%slvl %d|r - "):format(step.later and hex(C.bad) or "",
             step.eat) or "", ns.Describe.Buff(step.buff), learnIcon(step.learn),
             step.needSkill and (" - " .. hex(C.bad) .. "skill " .. step.needSkill .. "|r") or ""))
@@ -601,7 +608,7 @@ end
 Window.Shared = { W = W, DETAIL_CW = DETAIL_CW, MENU_W = MENU_W, STEP_COLOR = STEP_COLOR, BAG_ICON = BAG_ICON,
                   RANK_ICON = RANK_ICON, craftsWord = craftsWord, wait = wait, recipeIcon = recipeIcon,
                   toolUsers = toolUsers, gather = gather, duration = duration, barsText = barsText,
-                  useLevel = useLevel, favorSub = favorSub, MODE_TIPS = MODE_TIPS }
+                  useLevel = useLevel, favorSub = favorSub, foodColor = foodColor, MODE_TIPS = MODE_TIPS }
 
 renderDetail = function() ns.Cards.Render(frame, ladder, lookup, prof, selected) end
 

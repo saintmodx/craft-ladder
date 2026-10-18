@@ -760,12 +760,15 @@ local function profitDetail(step)
         " house doesn't say. Prices change: look again before buying.", C.dim)
 end
 
--- Food: one dish for your class: what eating it raises, the level it asks, its recipe, what one costs to cook or buy.
+-- Food: one dish for your class: what eating it raises, the level it asks, its skill-up colours, its recipe, what one
+-- costs to cook or buy.
 local function foodDetail(step)
     local rec, state = prof.recipes[step.recipe], ladder.state
-    headline(UI.ItemIcon(rec.makes), rec.name, step.later and C.muted or C.gold, ns.Describe.Buff(rec.buff) .. " (Well Fed)",
-        step.later and (hex(C.bad) .. ("Needs level %d; you're %d."):format(step.eat, state.level) .. "|r")
-            or step.eat > 1 and ("Level %d: you can eat it."):format(step.eat) or "Any level can eat it.")
+    headline(UI.ItemIcon(rec.makes), rec.name, S.foodColor(step, rec, state.skill),
+        ns.Describe.Buff(rec.buff) .. " (Well Fed). " ..
+            (step.later and (hex(C.bad) .. ("Needs level %d; you're %d."):format(step.eat, state.level) .. "|r")
+                or step.eat > 1 and ("Level %d: you can eat it."):format(step.eat) or "Any level can eat it."),
+        colorsText(rec.colors))
     if step.learn then
         learnSection(step, rec)
     else

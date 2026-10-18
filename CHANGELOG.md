@@ -13,6 +13,8 @@ version numbers [Semantic Versioning](https://semver.org).
 - Auction house tab: a Favor mode next to Skill, Skill + Gold and Gold. A row per Merchant's Favor recipe with what
   one craft of it buys there, Buy and Auctionator's Search as in the other modes.
 - Craft Ladder's own logo in the window's header, on the minimap button and in the addon list.
+- Cooking's Food: each dish shows its skill-up colour at your skill (orange, yellow, green; white once it gives no
+  more points, red while your skill can't learn it), and its card says where it turns yellow, green and grey.
 
 ### Fixed
 

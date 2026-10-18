@@ -3,7 +3,7 @@
 ## Notes: The cheapest way to level Cooking, First Aid and the crafting professions, and where to level the gathering professions, priced from your last auction house scan.
 ## Author: Alex P
 ## X-License: GPL-3.0
-## Version: 1.0.1
+## Version: 1.1.0
 ## IconTexture: Interface\AddOns\CraftLadder\Media\logo
 ## SavedVariables: CraftLadderDB
 ## OptionalDeps: AuctionDB, Auctionator

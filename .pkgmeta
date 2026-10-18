@@ -1,0 +1,12 @@
+# Craft Ladder's package for BigWigsMods/packager (.github/workflows/release.yml): the addon is the CraftLadder folder,
+# not the repo's root, so it's moved up and the rest is left out.
+package-as: CraftLadder
+
+move-folders:
+  CraftLadder/CraftLadder: CraftLadder
+
+ignore:
+  - tools
+  - tests
+  - screenshots
+  - README.md

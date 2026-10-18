@@ -9,6 +9,7 @@
 ## OptionalDeps: AuctionDB, Auctionator
 ## Category: Professions
 ## X-Game-Version: WoW Forever 1.60 beta
+## X-Curse-Project-ID: 1749790
 ## AddonCompartmentFunc: CraftLadder_OnCompartmentClick
 ## AddonCompartmentFuncOnEnter: CraftLadder_OnCompartmentEnter
 ## AddonCompartmentFuncOnLeave: CraftLadder_OnCompartmentLeave

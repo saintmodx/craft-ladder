@@ -114,13 +114,21 @@ local function bagnonBank()
     return bank
 end
 
+-- While the bank is open the game counts it as items move; Bagnon saves its copy only when the bank closes, so until
+-- then that copy still has what was just taken out to the bags (counted twice).
+local bankOpen = false
+local bankFrame = CreateFrame("Frame")
+bankFrame:RegisterEvent("BANKFRAME_OPENED")
+bankFrame:RegisterEvent("BANKFRAME_CLOSED")
+bankFrame:SetScript("OnEvent", function(_, event) bankOpen = event == "BANKFRAME_OPENED" end)
+
 -- How many of each of a profession's items the character has: bags, plus the bank as the game or Bagnon knows it
--- (whichever saw more). Returns owned, and inBank = the bank's part of it.
+-- (whichever saw more; only the game's while the bank is open). Returns owned, and inBank = the bank's part of it.
 function Player.Owned(data)
     local count = (C_Item and C_Item.GetItemCount) or GetItemCount
     local owned, inBank = {}, {}
     if not count then return owned, inBank end
-    local saved = bagnonBank()
+    local saved = not bankOpen and bagnonBank()
     local function add(item)
         if owned[item] == nil then
             local bags = count(item, false) or 0

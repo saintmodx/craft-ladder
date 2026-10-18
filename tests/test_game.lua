@@ -953,6 +953,11 @@ mock.scanCooldown = 432
 SlashCmdList.CRAFTLADDER("cooking")
 expect("5 Raw Longjaw Mud Snapper from Bagnon's bank count", ns.Player.State(ns.COOKING).owned[6289] == 5)
 expect("bags aren't counted twice from Bagnon", (ns.Player.State(ns.COOKING).owned[117] or 0) == 0)
+mock.fire("BANKFRAME_OPENED") -- the game counts the bank now; Bagnon's copy is saved only when it closes
+expect("the bank open: only the game's count of it (the fish just taken out aren't counted twice)",
+    ns.Player.State(ns.COOKING).owned[6289] == nil)
+mock.fire("BANKFRAME_CLOSED")
+expect("... closed: Bagnon's copy counts again", ns.Player.State(ns.COOKING).owned[6289] == 5)
 -- (Strider Stew from the bags' meat pays better: the bank's fish are an option of the first step)
 mock.click(rows()[1])
 local bankFish

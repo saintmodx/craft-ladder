@@ -145,7 +145,6 @@ function CampPanel.Render(frame)
     local fireIndex = s.fire or ns.Camp.BestFire(function(fire) return ns.Camp.Knows(fire, byProf) end)
     local fire = ns.CAMP.fires[fireIndex] or ns.CAMP.fires[1]
 
-    frame.icon:SetTexture(UI.ItemIcon(fire.item))
     frame.subtitle:SetText(("Camp: the buffs a campfire gives, for a level %d %s"):format(level, role))
     -- the role (a class with one has no choice) and the campfire
     for i, b in ipairs(panel.roles) do

@@ -605,7 +605,6 @@ renderDetail = function() ns.Cards.Render(frame, ladder, lookup, prof, selected)
 
 local function renderHeader()
     local state = ladder.state
-    frame.icon:SetTexture(prof.icon)
     frame.subtitle:SetText(state.maxSkill > 0 and ("%s %d / %d, the ladder to 300"):format(prof.name, state.skill,
         state.maxSkill) or ("No %s yet"):format(prof.name))
     local tips, x = MODE_TIPS[prof.key] or MODE_TIPS[prof.kind or (prof.resale and "craft")] or {}, 12
@@ -927,8 +926,7 @@ local function build()
     local icon = frame:CreateTexture(nil, "ARTWORK")
     icon:SetSize(34, 34)
     icon:SetPoint("TOPLEFT", 16, -14)
-    icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-    frame.icon = icon
+    icon:SetTexture(UI.MEDIA .. "logo") -- whatever is shown: the menu and the subtitle say which
     frame.title = UI.Label(frame, 17, C.gold)
     frame.title:SetPoint("TOPLEFT", icon, "TOPRIGHT", 10, -1)
     frame.title:SetText("Craft Ladder")
@@ -1187,7 +1185,6 @@ function Window.Refresh(cached)
         f:SetShown(not idle)
     end
     if idle then
-        frame.icon:SetTexture(134400) -- a question mark
         frame.subtitle:SetText("No profession yet")
         frame.favor:Hide()
         return

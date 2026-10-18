@@ -4,7 +4,7 @@
 ## Author: Alex P
 ## X-License: GPL-3.0
 ## Version: 1.0.1
-## IconTexture: Interface\Icons\INV_Misc_Food_15
+## IconTexture: Interface\AddOns\CraftLadder\Media\logo
 ## SavedVariables: CraftLadderDB
 ## OptionalDeps: AuctionDB, Auctionator
 ## Category: Professions

@@ -19,7 +19,8 @@ Whether you're leveling **Engineering, Alchemy, Blacksmithing, Tailoring, Cookin
 - **Skill + Gold**: level up counting what the auction house pays for what you make: cheaper if it sells.
 - **Gold**: no ladder, just what you can make now that earns the most per craft (for gathering: the zones where an
   hour earns the most at your skill).
-- **Food** (Cooking): the dishes worth eating for your class, grouped by role, by what their Well Fed raises.
+- **Food** (Cooking): the dishes worth eating for your class, grouped by role, by what their Well Fed raises, each in
+  its skill-up colour.
 
 ## What each step tells you
 
@@ -37,7 +38,9 @@ gold an hour each zone earns.
 
 - **Auction house tab**: the ladder as a shopping list, a row per step with its reagents. With Auctionator, its
   Search button opens Auctionator's Shopping tab with exactly what to buy.
-- **Merchant's Favor recipes**: the supply camps' quartermaster recipes, with their favor prices, can join the ladder.
+- **Merchant's Favor recipes**: the supply camps' quartermaster recipes, with their favor prices and what one craft
+  takes (your bars and ore counted first), and a Favor mode in the auction house tab to buy it. They can join the
+  ladder too.
 - **Camp**: what each camp feature gives around a campfire at your level, in the order your role wants them, and how
   to get it.
 - A minimap button and the addon compartment; the window remembers its size, scale and place.

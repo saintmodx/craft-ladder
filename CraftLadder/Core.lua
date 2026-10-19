@@ -136,7 +136,9 @@ local function buyText(lookup, buy)
         local text = ("%d %s"):format(math.ceil(b.need), ns.Describe.ItemName(item))
         if b.have > 0 then text = text .. (" (you have %d)"):format(math.floor(b.have)) end
         if b.make and b.buy > 0 then
-            text = text .. (": %s yourself, %s"):format(b.make.mining and "smelt" or "make", ns.Money(b.cost))
+            local verb, bought = b.make.mining and "smelt" or "make", b.buy - b.make.made
+            text = text .. ": " .. (bought > 1e-9 and ("%s %d yourself, buy %d"):format(verb, math.ceil(b.make.made),
+                math.ceil(bought - 1e-9)) or (verb .. " yourself")) .. ", " .. ns.Money(b.cost)
         elseif b.buy > 0 then
             local e = lookup(item)
             if b.cost then

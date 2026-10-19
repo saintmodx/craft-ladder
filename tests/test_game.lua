@@ -1152,8 +1152,37 @@ local rankRow = mock.shownChildren(ahPanel.scroll.child, "entry")[1]
 mock.click(rankRow)
 expect("... a rank that asks for items: its row says what it teaches, and folds", rankRow.entry.step.kind == "rank"
     and strip(rankRow.name.text) == "Learn Expert Blacksmithing")
+-- a step that smelts 10 of its Bronze Bars and buys the other 10 (stretches joined): the ore and the bought bars
+ns.Calculate = function(d)
+    local ladder, lookup, ms = calculate(d)
+    if d ~= ns.BLACKSMITHING then return ladder, lookup, ms end
+    local craft, mixed = nil, {}
+    for _, s in ipairs(ladder.steps) do craft = craft or s.kind == "craft" and s end
+    for k, v in pairs(craft) do mixed[k] = v end
+    mixed.recipe, mixed.buy = 2668, { [2841] = { need = 20, have = 0, buy = 20, cost = 1075, make = { spell = 2659,
+        crafts = 5, made = 10, mining = true, parts = {
+            [2840] = { need = 5, have = 0, buy = 5, cost = 25, make = { spell = 2657, crafts = 5, made = 5, mining = true,
+                                                                         parts = { [2770] = { need = 5, have = 0, buy = 5, cost = 25 } } } },
+            [3576] = { need = 5, have = 0, buy = 5, cost = 50 } } } } }
+    table.insert(ladder.steps, 1, mixed)
+    return ladder, lookup, ms
+end
+ns.Window.Invalidate()
+ns.AuctionTab.Refresh()
+local mixedRows = {}
+for _, e in ipairs(mock.shownChildren(ahPanel.scroll.child, "entry")[1].entry.rows) do mixedRows[e.item] = e.buy end
+expect("... a step that smelts some bars and buys the rest: the ore, the Tin Bars and the 10 bars it buys",
+    mixedRows[2770] == 5 and mixedRows[3576] == 5 and mixedRows[2841] == 10 and not mixedRows[2840])
+local wasTab = char().tab
+mock.click(tab("blacksmithing"))
+mock.click(rows()[1])
+local mixedBars
+for _, f in ipairs(items()) do if f.item == 2841 then mixedBars = f end end
+expect("... its card: 10 smelted from the ore, the other 10 bought", frame:IsShown() and mixedBars
+    and strip(mixedBars.sub.text) == "Smelt 10 yourself from 5 Copper Ore, 5 Tin Bar, buy the other 10")
 ns.Calculate = calculate
 ns.Window.Invalidate()
+mock.click(tab(wasTab))
 mock.click(ahPanel.modes[3])
 local bsProf = ns.Player.Prof(ns.ProfessionByKey.blacksmithing)
 expect("... Gold: the window's mode switched too, the Crafts box shown", bsProf.mode == "gold"

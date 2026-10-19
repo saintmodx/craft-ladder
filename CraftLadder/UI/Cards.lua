@@ -264,16 +264,16 @@ local function placeRow(npc, right)
 end
 
 -- "11 Copper Ore (buy 6), 11 Tin Ore (buy 6)": what an ingredient that's made is made of, all the way down, and how
--- much of it to buy.
+-- much of it to buy (a part made in some stretches and bought in others: the bought ones too).
 local function madeFrom(make)
     local leaves = {}
     local function walk(parts)
         for item, b in pairs(parts) do
-            if b.make then
-                walk(b.make.parts)
-            else
+            local bought = b.make and b.buy - b.make.made
+            if b.make then walk(b.make.parts) end
+            if not b.make or bought > 1e-9 then
                 local l = leaves[item] or { need = 0, buy = 0 }
-                l.need, l.buy = l.need + b.need, l.buy + b.buy
+                l.need, l.buy = l.need + (bought or b.need), l.buy + (bought or b.buy)
                 leaves[item] = l
             end
         end
@@ -305,7 +305,9 @@ local function itemRow(item, b)
     local source = ns.Describe.PriceSource(e)
     if b.make and b.buy > 0 then
         local what = b.make.mining and "smelt" or prof.verb
-        source = ("%s %d yourself from %s"):format(what, math.ceil(b.buy), madeFrom(b.make))
+        local bought = b.buy - b.make.made
+        source = ("%s %d yourself from %s%s"):format(what, math.ceil(b.make.made), madeFrom(b.make),
+            bought > 1e-9 and (", buy the other %d"):format(math.ceil(bought - 1e-9)) or "")
         f.sub:SetText(source:gsub("^%l", string.upper))
         UI.SetColor(f.sub, C.good)
         f.cost:SetText(ns.Money(b.cost))
@@ -579,7 +581,8 @@ local function oneCraft(step, rec)
         local b, e = step.buy[item], lookup(item)
         local each = (b and b.buy > 0 and b.cost) and b.cost / b.buy or (e and e.unit)
         total = total and each and total + rec.mats[item] * each
-        rows[#rows + 1] = { item = item, each = each, e = e, make = b and b.buy > 0 and b.make }
+        rows[#rows + 1] = { item = item, each = each, e = e, make = b and b.buy > 0 and b.make,
+                            bought = b and b.make and b.buy - b.make.made > 1e-9 }
     end
     section(("One craft%s: %s"):format((rec.yield or 1) > 1 and (" (makes " .. rec.yield .. ")") or "",
         total and ns.Money(total) or "?"))
@@ -589,8 +592,9 @@ local function oneCraft(step, rec)
         f.item = r.item
         f.icon:SetTexture(UI.ItemIcon(r.item))
         f.name:SetText(("%d %s"):format(n, ns.Describe.ItemName(r.item)))
-        local from = r.make and ((r.make.mining and "smelt" or prof.verb) .. " yourself")
-            or r.e and (r.e.source == "vendor" and "vendor" or "auction house")
+        local where = r.e and (r.e.source == "vendor" and "vendor" or "auction house")
+        local from = r.make and ((r.make.mining and "smelt" or prof.verb) .. " yourself"
+            .. (r.bought and where and (" and " .. where) or "")) or where
         f.sub:SetText(r.each and ("%s each, %s"):format(ns.Money(r.each), from or "") or "no price")
         UI.SetColor(f.sub, r.make and C.good or r.each and C.muted or C.bad)
         f.cost:SetText(r.each and ns.Money(n * r.each) or (hex(C.bad) .. "?|r"))

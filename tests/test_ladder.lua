@@ -435,6 +435,26 @@ check("... 5 Smelt Bronze (2 bars each)", bronze[2841].make.crafts, 5)
 check("... for 5 Copper Ore and 5 Tin Ore", bronze[2841].cost, 5 * 5 + 5 * 10)
 local _, noMining = Ladder.Ingredients(bsCtx(), { mats = { [2841] = 10 } }, 1)
 assert(not noMining[2841].make and noMining[2841].cost == 1000, "without Mining, Bronze Bars are bought")
+-- two stretches of one recipe joined into one step: what the bars are smelted from adds up all the way to the ore
+do
+    local function bronzeStep(opts)
+        local cost, buy = Ladder.Ingredients(bsCtx({}, opts), { mats = { [2841] = 10 } }, 1)
+        return { from = 0, to = 1, crafts = 1, matCost = cost, cost = cost, buy = buy }
+    end
+    local joined = bronzeStep(smelt)
+    Ladder.MergeCraft(joined, bronzeStep(smelt))
+    check("joined: 10 Smelt Bronze", joined.buy[2841].make.crafts, 10)
+    check("... from 10 Copper Bars", joined.buy[2841].make.parts[2840].make.crafts, 10)
+    check("... smelted from 10 Copper Ore", joined.buy[2841].make.parts[2840].make.parts[2770].need, 10)
+    -- a stretch that smelts the bars joined with one that buys them, in either order: 10 smelted, the other 10 bought
+    for _, first in ipairs({ smelt, {} }) do
+        local mixed = bronzeStep(first)
+        Ladder.MergeCraft(mixed, bronzeStep(first == smelt and {} or smelt))
+        check("mixed: 20 Bronze Bars", mixed.buy[2841].buy, 20)
+        check("... 10 of them smelted", mixed.buy[2841].make.made, 10)
+        check("... from 5 Copper Ore and 5 Tin Ore, the other 10 at 1s", mixed.buy[2841].cost, 5 * 5 + 5 * 10 + 1000)
+    end
+end
 -- Coarse Grinding Stones made in one step are there for later ones; the first step that needs a hammer buys one
 local ctx = bsCtx({ known = { [3326] = true } })
 local stones = Ladder.CraftStep(ctx, bs, { recipe = 3326, color = "orange" }, 50, 55, {}, nil)

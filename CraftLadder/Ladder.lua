@@ -119,8 +119,9 @@ end
 -- what earlier steps already bought (each more item costs a little more at the auction house), or made when making
 -- it (its own ingredients bought or made the same way) costs less.
 -- Returns cost, buy list { [item] = { need, have, buy, cost, short, make } } and the first ingredient with no price.
--- short = more than the auction house had listed; make = { spell, crafts, parts = a buy list of what it's made of,
--- mining = smelted } when it's made, not bought.
+-- short = more than the auction house had listed; make = { spell, crafts, made, parts = a buy list of what it's made
+-- of, mining = smelted } when it's made, not bought: `made` of `buy` are made, the rest bought (a step that joins
+-- stretches may make it in one and buy it in another).
 local function ingredients(ctx, rec, crafts, depth)
     depth = depth or 0
     local cost, buy, missing = 0, {}, nil
@@ -133,11 +134,11 @@ local function ingredients(ctx, rec, crafts, depth)
             local c, e = ctx.quote(item, b.buy, already)
             local m = depth < MAKE_DEPTH and maker(ctx, item)
             if m then
-                local made = b.buy / (m.rec.yield or m.rec.count or 1)
-                local mc, parts, partMissing = ingredients(ctx, m.rec, made, depth + 1)
+                local runs = b.buy / (m.rec.yield or m.rec.count or 1)
+                local mc, parts, partMissing = ingredients(ctx, m.rec, runs, depth + 1)
                 if not partMissing and (not c or mc < c) then
                     c, e = mc, nil
-                    b.make = { spell = m.spell, crafts = made, parts = parts, mining = m.mining }
+                    b.make = { spell = m.spell, crafts = runs, made = b.buy, parts = parts, mining = m.mining }
                 end
             end
             if c then
@@ -412,19 +413,14 @@ local function newContext(data, state, quote, opts, sunk)
     return ctx
 end
 
--- The next stretch `s` of the same recipe joins step `last`: skill, crafts, costs and what to buy add up (a total
--- stays unpriced once any part of it is).
-local function mergeCraft(last, s)
-    last.to = s.to
-    last.crafts = last.crafts + s.crafts
-    last.matCost = last.matCost + s.matCost
-    last.cost = last.cost + s.cost
-    last.missing = last.missing or s.missing
-    if s.sale then addSale(last, s.sale) end
-    for item, b in pairs(s.buy) do
-        local lb = last.buy[item]
+-- Buy list `from` joins buy list `into`: counts and costs add up (a total stays unpriced once any part of it is), and
+-- so do what made ingredients are made of, all the way down (Bronze Bars from Copper Bars from Copper Ore). What one
+-- list makes and the other buys stays apart: make.made counts only the made ones.
+local function mergeBuy(into, from)
+    for item, b in pairs(from) do
+        local lb = into[item]
         if not lb then
-            last.buy[item] = b
+            into[item] = b
         else
             local pricedSoFar = lb.buy == 0 or lb.cost ~= nil
             lb.need, lb.have, lb.buy = lb.need + b.need, lb.have + b.have, lb.buy + b.buy
@@ -432,25 +428,25 @@ local function mergeCraft(last, s)
                 lb.cost = (pricedSoFar and b.cost) and (lb.cost or 0) + b.cost or nil
             end
             lb.short = lb.short or b.short
-            if b.make then
-                local lm = lb.make
-                if lm then
-                    lm.crafts = lm.crafts + b.make.crafts
-                    for part, pb in pairs(b.make.parts) do
-                        local lp = lm.parts[part]
-                        if lp then
-                            lp.need, lp.have, lp.buy = lp.need + pb.need, lp.have + pb.have, lp.buy + pb.buy
-                            lp.cost = (lp.cost or 0) + (pb.cost or 0)
-                        else
-                            lm.parts[part] = pb
-                        end
-                    end
-                else
-                    lb.make = b.make
-                end
+            if b.make and lb.make then
+                lb.make.crafts, lb.make.made = lb.make.crafts + b.make.crafts, lb.make.made + b.make.made
+                mergeBuy(lb.make.parts, b.make.parts)
+            elseif b.make then
+                lb.make = b.make
             end
         end
     end
+end
+
+-- The next stretch `s` of the same recipe joins step `last`: skill, crafts, costs and what to buy add up.
+local function mergeCraft(last, s)
+    last.to = s.to
+    last.crafts = last.crafts + s.crafts
+    last.matCost = last.matCost + s.matCost
+    last.cost = last.cost + s.cost
+    last.missing = last.missing or s.missing
+    if s.sale then addSale(last, s.sale) end
+    mergeBuy(last.buy, s.buy)
 end
 
 -- A craft step for the stretch from `skill` to `to` with the chosen option (what Mining.lua shares too). chosen.tool

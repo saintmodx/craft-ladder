@@ -3,6 +3,16 @@
 What's new in Craft Ladder, newest first. The format follows [Keep a Changelog](https://keepachangelog.com), the
 version numbers [Semantic Versioning](https://semver.org).
 
+## Unreleased
+
+### Fixed
+
+- A step that smelts its bars from ore (Bronze Bars from Copper and Tin) asked for far too little ore: its card, the
+  auction house tab and Auctionator's shopping list counted only the ore for the step's first few skill points.
+- A step that makes some of an ingredient and buys the rest (Light Leather, bars, bolts of cloth: whichever is cheaper
+  as prices climb) said it makes them all, and its shopping list left out the ones to buy. Its card now says both
+  ("Make 30 yourself from 90 Ruined Leather Scraps, buy the other 91"), and the auction house tab lists both.
+
 ## 1.1.0 - 2026-10-18
 
 ### Added

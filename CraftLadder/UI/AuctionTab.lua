@@ -53,14 +53,16 @@ local function gameName(item)
 end
 
 -- What a buy list takes from the auction house, for `times` crafts: made intermediates followed into what they're
--- made of, vendors' goods left out. Adds to acc = { [item] = { buy, need, have } }.
+-- made of (and the ones of them bought, when a step makes some and buys the rest), vendors' goods left out. Adds to
+-- acc = { [item] = { buy, need, have } }.
 local function shopping(acc, buy, faction, times)
     for item, b in pairs(buy or {}) do
-        if b.make and b.buy > 0 then
-            shopping(acc, b.make.parts, faction, times)
-        elseif b.buy > 0 and not ns.Prices.Vendor(item, faction, ns.Prices.Real()) then
+        local made = b.make and b.make.made or 0
+        if made > 0 then shopping(acc, b.make.parts, faction, times) end
+        local bought = b.buy - made
+        if bought > 1e-9 and not ns.Prices.Vendor(item, faction, ns.Prices.Real()) then
             local e = acc[item] or { buy = 0, need = 0, have = 0 }
-            e.buy, e.need, e.have = e.buy + b.buy * times, e.need + b.need * times, math.max(e.have, b.have)
+            e.buy, e.need, e.have = e.buy + bought * times, e.need + (b.need - made) * times, math.max(e.have, b.have)
             acc[item] = e
         end
     end

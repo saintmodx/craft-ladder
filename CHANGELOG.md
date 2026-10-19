@@ -12,6 +12,8 @@ version numbers [Semantic Versioning](https://semver.org).
 - A step that makes some of an ingredient and buys the rest (Light Leather, bars, bolts of cloth: whichever is cheaper
   as prices climb) said it makes them all, and its shopping list left out the ones to buy. Its card now says both
   ("Make 30 yourself from 90 Ruined Leather Scraps, buy the other 91"), and the auction house tab lists both.
+- The auction house tab showed a recipe twice in a row where the ladder learns a rank in the middle of it (Big Bear
+  Steak 120-125, Expert Cooking, Big Bear Steak 125-135). It's one row now, 120-135, with what all of it buys.
 
 ## 1.1.0 - 2026-10-18
 

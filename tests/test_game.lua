@@ -1183,6 +1183,37 @@ expect("... its card: 10 smelted from the ore, the other 10 bought", frame:IsSho
 ns.Calculate = calculate
 ns.Window.Invalidate()
 mock.click(tab(wasTab))
+-- one recipe on both sides of a rank learned there (which buys nothing here): one row, what it buys added up
+do
+    ns.Calculate = function(d)
+        local ladder, lookup, ms = calculate(d)
+        if d ~= ns.BLACKSMITHING then return ladder, lookup, ms end
+        local craft
+        for _, s in ipairs(ladder.steps) do craft = craft or s.kind == "craft" and s end
+        local function piece(from, to, bars)
+            local p = {}
+            for k, v in pairs(craft) do p[k] = v end
+            p.recipe, p.from, p.to, p.crafts, p.tool = 2668, from, to, to - from, nil
+            p.buy = { [2841] = { need = bars, have = 0, buy = bars, cost = bars * 100 } }
+            return p
+        end
+        table.insert(ladder.steps, 1, piece(1, 5, 6))
+        table.insert(ladder.steps, 2, { kind = "rank", from = 5, to = 5, cost = 0,
+                                        rank = { name = "Journeyman Blacksmithing", cap = 150, how = "trainer" } })
+        table.insert(ladder.steps, 3, piece(5, 10, 12))
+        return ladder, lookup, ms
+    end
+    ns.Window.Invalidate()
+    ns.AuctionTab.Refresh()
+    local joined, split
+    for _, r in ipairs(mock.shownChildren(ahPanel.scroll.child, "entry")) do
+        if r.entry.key == "2668:1" then joined = r elseif r.entry.key == "2668:5" then split = r end
+    end
+    expect("... one recipe on both sides of a rank learned there: one row, 1 - 10, its bars added up", joined
+        and not split and strip(joined.sub.text) == "1 - 10, ~9 crafts" and joined.entry.rows[1].buy == 18)
+    ns.Calculate = calculate
+    ns.Window.Invalidate()
+end
 mock.click(ahPanel.modes[3])
 local bsProf = ns.Player.Prof(ns.ProfessionByKey.blacksmithing)
 expect("... Gold: the window's mode switched too, the Crafts box shown", bsProf.mode == "gold"

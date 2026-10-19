@@ -348,8 +348,19 @@ function AuctionTab.Refresh(cached)
     panel.crafts:SetText(tostring(crafts))
     local entries = {}
     for _, s in ipairs(ladder.steps) do
-        if s.buy then
-            entries[#entries + 1] = { step = s, key = stepKey(s), rows = needs(ladder, { s }, gold and crafts or 1) }
+        local last = entries[#entries]
+        if s.buy and last and s.kind == "craft" and last.step.kind == "craft" and s.recipe == last.step.recipe
+            and s.from == last.step.to and not s.tool and not last.step.tool then
+            -- one recipe on, split in the ladder by a rank learned there (no row here) or by what you have: one row
+            local step = {}
+            for k, v in pairs(last.step) do step[k] = v end
+            step.to, step.crafts = s.to, step.crafts + s.crafts
+            last.step = step
+            last.steps[#last.steps + 1] = s
+            last.rows = needs(ladder, last.steps, gold and crafts or 1)
+        elseif s.buy then
+            entries[#entries + 1] = { step = s, steps = { s }, key = stepKey(s),
+                                      rows = needs(ladder, { s }, gold and crafts or 1) }
         end
     end
     -- at first the step the window shows is open, or the first with something to buy
@@ -358,7 +369,9 @@ function AuctionTab.Refresh(cached)
         local wKey = wProf == data and wStep and wStep.buy and stepKey(wStep)
         local first
         for _, e in ipairs(entries) do
-            if #e.rows > 0 and (not first or e.key == wKey) then first = e.key end
+            local selected = false
+            for _, s in ipairs(e.steps) do selected = selected or stepKey(s) == wKey end
+            if #e.rows > 0 and (not first or selected) then first = e.key end
         end
         opened = first and { [first] = true } or {}
     end

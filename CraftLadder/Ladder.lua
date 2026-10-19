@@ -188,7 +188,7 @@ local AH_CUT, AH_OVER_VENDOR = 0.95, 1.5
 
 -- What selling `made` of an item brings back: at the auction house (after its cut) when that pays at least 1.5 times
 -- what a vendor does and at least 5 are listed, for at most a quarter of what's listed (less what earlier steps put
--- there: `sold`); the rest at a vendor. ctx.vendorOnly (the Skill ladder): only vendors, whose money is sure.
+-- there: `sold`); the rest at a vendor. ctx.vendorOnly (the Sure cost ladder): only vendors, whose money is sure.
 -- Returns { ah, ahEach, vendor, vendorEach, total }.
 local function resale(ctx, item, made, sold)
     local vendorEach, ahEach, ah = ctx.sell[item] or 0, 0, 0
@@ -249,6 +249,31 @@ local function haveCrafts(ctx, rec)
         end
     end
     return hasMain and main or 0, all == huge and 0 or all
+end
+
+-- How much of a buy list's entry what the character owns covers, 0 to 1: what it has, and what's made of its own (bars
+-- smelted from its ore). nil: a good its vendors sell, taken as had.
+local function ownShare(ctx, item, b)
+    local v = ctx.vendor[item]
+    if v and v[ctx.faction] then return nil end
+    local made = 0
+    if b.make then
+        local share = 1
+        for part, pb in pairs(b.make.parts) do share = min(share, ownShare(ctx, part, pb) or 1) end
+        made = b.make.made * share
+    end
+    return b.need > 0 and min(1, (b.have + made) / b.need) or 1
+end
+
+-- How many of a step's crafts what the character owns covers as the plan uses it (what an earlier step takes is
+-- gone), the ingredients its vendors sell taken as had. nil: the recipe needs nothing else.
+local function readyCrafts(ctx, rec, step)
+    local share
+    for item in pairs(rec.mats) do
+        local s = step.buy[item] and ownShare(ctx, item, step.buy[item])
+        if s then share = min(share or 1, s) end
+    end
+    return share and share * step.crafts
 end
 
 -- The highest skill `crafts` crafts reach from `skill` on average, no further than `limit`.
@@ -361,7 +386,8 @@ end
 --             (bags: the "with what you have" option of that recipe) }
 -- Returns { from, to, steps = { ... }, cost, crafts, missing = { [item] = true }, stuck = reason or nil }.
 -- A craft step also carries canCook (crafts the character can do right now with what they own) and haveMain (the
--- same, counting only the ingredients vendors don't sell); fromBags marks a step that uses what they own; guess marks
+-- same, counting only the ingredients vendors don't sell); ready: how many of its crafts what they own covers as the
+-- plan uses it, made ingredients too (see readyCrafts); fromBags marks a step that uses what they own; guess marks
 -- a recipe whose learning skill is an estimate.
 --   opts.smelt = { skill = the character's Mining, recipes = Mining's smelting recipes }: bars it can smelt are made
 --   from ore when that's cheaper; opts.standing = function(faction) -> 0 (Hated) .. 7 (Exalted), for plans that
@@ -654,6 +680,7 @@ local function buildOnce(data, state, quote, opts, sunk)
         result.back = result.back + (s.back or 0)
         result.crafts = result.crafts + (s.crafts or 0)
         if s.kind == "craft" and s.learn.cost > 0 then result.paid[s.recipe] = true end
+        if s.kind == "craft" then s.ready = readyCrafts(ctx, data.recipes[s.recipe], s) end
     end
     return result
 end
@@ -830,4 +857,5 @@ Ladder.LearnWay = learnWay
 Ladder.Option = option
 Ladder.CraftStep = craftStep
 Ladder.MergeCraft = mergeCraft
+Ladder.Ready = readyCrafts
 Ladder.Resale = resale

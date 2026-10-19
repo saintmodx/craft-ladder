@@ -5,6 +5,21 @@ version numbers [Semantic Versioning](https://semver.org).
 
 ## Unreleased
 
+### Added
+
+- Each step in the ladder says how many of its crafts what you already have covers, under its cost: "12 ready" or
+  "all ready". Bags and bank count, bars you'd smelt from your own ore too, and as the plan uses them (what an earlier
+  step takes is gone); reagents vendors sell count as had. It replaces the first step's "N now".
+
+### Changed
+
+- The ladder's list is 30 px wider, and the window's smallest size with it, so long recipe names fit.
+- The crafting modes are called **Sure cost** and **AH sales** (they were Skill and Skill + Gold), and their tooltips
+  say what each counts: Sure cost is what you're sure to spend, what you make going to vendors; AH sales is cheaper only
+  if what you make sells at the auction house. Gathering keeps Skill and Skill + Gold.
+- The ladder's amounts: what a step costs is red with a minus, what it earns green with a plus (costs were white, with
+  no sign).
+
 ### Fixed
 
 - A step that smelts its bars from ore (Bronze Bars from Copper and Tin) asked for far too little ore: its card, the
@@ -14,6 +29,8 @@ version numbers [Semantic Versioning](https://semver.org).
   ("Make 30 yourself from 90 Ruined Leather Scraps, buy the other 91"), and the auction house tab lists both.
 - The auction house tab showed a recipe twice in a row where the ladder learns a rank in the middle of it (Big Bear
   Steak 120-125, Expert Cooking, Big Bear Steak 125-135). It's one row now, 120-135, with what all of it buys.
+- After an AuctionDB scan the window and the auction house tab kept the old prices until the auction house was closed
+  (or a /reload). They're calculated again with the new prices within a second of the scan.
 
 ## 1.1.0 - 2026-10-18
 

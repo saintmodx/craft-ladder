@@ -663,8 +663,9 @@ local function craftDetail(step)
     elseif step.canCook > 0 then
         line(learned(step) and ("You can %s %d now with what you have."):format(prof.verb, step.canCook)
             or ("You have the reagents for %d."):format(step.canCook), C.good)
-    elseif step.haveMain > 0 then
-        line(("You have the main ingredients for %d; the rest is sold by vendors."):format(step.haveMain), C.good)
+    elseif (step.ready or 0) >= 1 then -- as the row's "ready": bars from your ore count too
+        line(("You have the main ingredients for %d; the rest is sold by vendors."):format(
+            math.floor(step.ready + 1e-9)), C.good)
     end
     craftBar(step, rec)
     learnSection(step, rec)
@@ -717,7 +718,7 @@ local function craftDetail(step)
         local net = step.cost - sale.total
         line(("About %s back, so this step %s %s."):format(ns.Money(sale.total), net < 0 and "earns" or "costs",
             ns.Money(math.abs(net))), net < 0 and C.good or C.text)
-        line(ladder.mode == "skill" and "Skill counts only what vendors pay: that money is sure. Skill + Gold counts" ..
+        line(ladder.mode == "skill" and "Sure cost counts only what vendors pay: that money is sure. AH sales counts" ..
             " the auction house too." or "The auction house counts only when it pays 1.5 times a vendor and 5 or more" ..
             " are listed, and for at most a quarter of what's listed.", C.dim)
     end

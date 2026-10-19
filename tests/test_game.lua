@@ -196,7 +196,7 @@ frame:SetSize(1100, 760)
 frame.grip.scripts.OnMouseDown(frame.grip, "LeftButton")
 frame.grip.scripts.OnMouseUp(frame.grip, "LeftButton")
 expect("dragging the corner saves the size", CraftLadderDB.windowSize[1] == 1100 and CraftLadderDB.windowSize[2] == 760)
-expect("the details fill the wider window", frame.detail.head.width == 1100 - 550 and items()[1].width == 1100 - 550)
+expect("the details fill the wider window", frame.detail.head.width == 1100 - 580 and items()[1].width == 1100 - 580)
 mock.ctrl = true
 frame.detail.scroll.scripts.OnMouseWheel(frame.detail.scroll, 1)
 mock.ctrl = false
@@ -205,7 +205,7 @@ frame.detail.scroll.scripts.OnMouseWheel(frame.detail.scroll, -1)
 expect("the wheel alone scrolls and leaves the scale", math.abs(frame:GetScale() - 1.05) < 1e-9)
 frame.grip.scripts.OnEnter(frame.grip); frame.grip.scripts.OnLeave(frame.grip)
 mock.click(frame.grip, "RightButton")
-expect("right-click on the corner: normal size and scale", frame.width == 1008 and frame:GetScale() == 1
+expect("right-click on the corner: normal size and scale", frame.width == 1038 and frame:GetScale() == 1
     and CraftLadderDB.windowSize == nil and items()[1].width == 820 - 362)
 -- a size and scale from a bigger screen (a laptop after a 4K monitor): the window fits the screen, its corner on it
 frame:SetScale(1.3)
@@ -218,7 +218,7 @@ expect("a window bigger than the screen shrinks to fit it when opened", frame:Ge
 mock.ctrl = true
 for _ = 1, 10 do frame.detail.scroll.scripts.OnMouseWheel(frame.detail.scroll, 1) end
 mock.ctrl = false
-expect("... Ctrl + wheel stops where 1008 x 560 still fits", frame:GetScale() * 560 <= 768 + 1e-9
+expect("... Ctrl + wheel stops where 1038 x 560 still fits", frame:GetScale() * 560 <= 768 + 1e-9
     and frame.height * frame:GetScale() <= 768 + 1e-9)
 UIParent:SetSize(1920, 1080)
 mock.click(frame.grip, "RightButton")
@@ -506,7 +506,8 @@ end
 expect("Mining: a zone above your level is offered, marked", risky and strip(risky.name.text):find("creatures level %d+%+"))
 -- Gold: gold an hour, ore or bars
 expect("Mining: Skill, Skill + Gold and Gold", frame.list.modes[1]:IsShown() and frame.list.modes[2]:IsShown()
-    and frame.list.modes[3].tooltip[2]:find("Grey nodes are mined too"))
+    and frame.list.modes[3].tooltip[2]:find("Grey nodes are mined too")
+    and strip(frame.list.modes[1].label.text) == "Skill" and strip(frame.list.modes[3].label.text) == "Skill + Gold")
 mock.click(frame.list.modes[3])
 expect("Mining Skill + Gold: saved, rows show what you mine is worth", char().prof.mining.mode == "sell"
     and strip(rows()[1].cost.text):find("^%+"))
@@ -535,6 +536,10 @@ mock.click(tab("firstaid"))
 mock.click(tab("blacksmithing"))
 expect("Blacksmithing tab: header", strip(frame.subtitle.text) == "Blacksmithing 141 / 150, the ladder to 300")
 expect("Blacksmithing: Expert first", strip(rows()[1].name.text) == "Learn Expert")
+expect("... the crafting modes: Sure cost, AH sales and Gold, named in their tooltips",
+    strip(frame.list.modes[1].label.text) == "Sure cost" and strip(frame.list.modes[3].label.text) == "AH sales"
+    and strip(frame.list.modes[2].label.text) == "Gold" and frame.list.modes[3].tooltip[1] == "AH sales")
+expect("... what a step costs: red, with a minus", rows()[1].cost.text:sub(1, 11) == ns.UI.Hex(ns.UI.C.bad) .. "-")
 mock.click(rows()[1])
 expect("Expert Blacksmithing: only some trainers, the Horde's with pins", lines():find("Only these trainers teach it")
     and #places() == 2)
@@ -824,6 +829,8 @@ fx.skinning.skill, fx.skinning.maxSkill = 100, 150
 SlashCmdList.CRAFTLADDER("skinning")
 expect("Skinning tab: rows to skin in a zone", rows()[1] and strip(rows()[1].name.text):find("^Skin in ")
     and strip(rows()[1].sub.text):find("^%d+ %- %d+: .*Leather") and strip(rows()[1].cost.text):find("creatures$"))
+expect("... a gathering profession's modes keep their names after a crafting one's",
+    strip(frame.list.modes[1].label.text) == "Skill" and strip(frame.list.modes[3].label.text) == "Skill + Gold")
 mock.click(rows()[1])
 expect("... its card lists the creatures there, with their level", lines():find("Which creatures can be skinned")
     and #items() > 0 and strip(items()[1].name.text):find("level %d+"))
@@ -1001,6 +1008,8 @@ expect("the bank's fish: an option to cook them first", bankFish ~= nil)
 mock.click(bankFish)
 expect("... picked: the ladder cooks them first", strip(rows()[1].name.text) == "Longjaw Mud Snapper"
     and strip(rows()[1].sub.text):find("INV_Misc_Bag", 1, true) and rows()[1].step.to == 90)
+expect("... under its cost: all ready, what you have covers it", strip(rows()[1].ready.text) == "all ready"
+    and not strip(rows()[1].sub.text):find(" now"))
 mock.click(rows()[1])
 local bagLine
 for _, c in ipairs(frame.detail.scroll.child.children) do
@@ -1022,6 +1031,18 @@ local ticker = mock.tickers[#mock.tickers]
 mock.scanCooldown = 0
 ticker.fn()
 expect("the countdown ticks without a recalculation", strip(frame.nextScan.text):find("when you open"))
+-- AuctionDB scans again while the window is open: the ladder calculated again with its prices, once
+do
+    local scans, calc, n = AuctionDB.sv.houses[UnitFactionGroup()].scans, ns.Calculate, 0
+    ns.Calculate = function(...) n = n + 1; return calc(...) end
+    ticker.fn()
+    local before = n
+    scans[#scans + 1] = { fx.scanTs + 900, 0, 0 }
+    ticker.fn(); ticker.fn()
+    expect("a new AuctionDB scan: the ladder calculated again, once; none before it", before == 0 and n == 1)
+    scans[#scans] = nil
+    ns.Calculate = calc
+end
 SlashCmdList.CRAFTLADDER("")
 expect("closing stops the countdown", ticker.cancelled)
 BrotherBags.forever[fx.name .. " Test"] = {}
@@ -1164,6 +1185,7 @@ ns.Calculate = function(d)
             [2840] = { need = 5, have = 0, buy = 5, cost = 25, make = { spell = 2657, crafts = 5, made = 5, mining = true,
                                                                          parts = { [2770] = { need = 5, have = 0, buy = 5, cost = 25 } } } },
             [3576] = { need = 5, have = 0, buy = 5, cost = 50 } } } } }
+    mixed.crafts, mixed.ready = 10, 3.6 -- what you have covers 3.6 of its 10 crafts
     table.insert(ladder.steps, 1, mixed)
     return ladder, lookup, ms
 end
@@ -1180,6 +1202,7 @@ local mixedBars
 for _, f in ipairs(items()) do if f.item == 2841 then mixedBars = f end end
 expect("... its card: 10 smelted from the ore, the other 10 bought", frame:IsShown() and mixedBars
     and strip(mixedBars.sub.text) == "Smelt 10 yourself from 5 Copper Ore, 5 Tin Bar, buy the other 10")
+expect("... its row: 3 of its 10 crafts ready, under the cost", strip(rows()[1].ready.text) == "3 ready")
 ns.Calculate = calculate
 ns.Window.Invalidate()
 mock.click(tab(wasTab))
@@ -1240,6 +1263,18 @@ expect("... Favor: the window's Merchant's Favor recipes too, a row per recipe, 
 mock.click(ahPanel.modes[1])
 expect("... and Skill: the window's ladder again", not bsProf.favorView and bsProf.mode == "skill"
     and not ahPanel.modes[4].active and mock.shownChildren(ahPanel.scroll.child, "entry")[1].entry.step.kind ~= "favor")
+-- AuctionDB scans again while the tab is open: its ladder calculated again with its prices, once
+do
+    local scans, calc, n = AuctionDB.sv.houses[UnitFactionGroup()].scans, ns.Calculate, 0
+    ns.Calculate = function(...) n = n + 1; return calc(...) end
+    ahPanel.ticker.fn()
+    local before = n
+    scans[#scans + 1] = { fx.scanTs + 900, 0, 0 }
+    ahPanel.ticker.fn(); ahPanel.ticker.fn()
+    expect("... a new AuctionDB scan: calculated again, once; none before it", before == 0 and n == 1)
+    scans[#scans] = nil
+    ns.Calculate = calc
+end
 bsProf.mode = nil
 Auctionator = nil
 

@@ -455,6 +455,20 @@ do
         check("... from 5 Copper Ore and 5 Tin Ore, the other 10 at 1s", mixed.buy[2841].cost, 5 * 5 + 5 * 10 + 1000)
     end
 end
+-- how many crafts what you have covers: 6 crafts of 2 Bronze Bars and a Strong Flux (a vendor's, taken as had), with 4
+-- bars in the bags and ore for 4 more (2 Copper and 2 Tin, 2 bars a smelt): 8 of the 12 bars, 4 crafts
+do
+    local rec = { mats = { [2841] = 2, [3466] = 1 } }
+    local ctx = bsCtx({ owned = { [2841] = 4, [2770] = 2, [2771] = 2 } }, smelt)
+    local _, buy = Ladder.Ingredients(ctx, rec, 6)
+    check("ready: 4 of 6 crafts, bars smelted from your ore counted",
+        Ladder.Ready(ctx, rec, { crafts = 6, buy = buy }), 4)
+    _, buy = Ladder.Ingredients(bsCtx({ owned = { [2841] = 20 } }), rec, 6)
+    check("... all 6 with 20 bars", Ladder.Ready(ctx, rec, { crafts = 6, buy = buy }), 6)
+    _, buy = Ladder.Ingredients(ctx, { mats = { [3466] = 1 } }, 6)
+    assert(Ladder.Ready(ctx, { mats = { [3466] = 1 } }, { crafts = 6, buy = buy }) == nil,
+        "... nothing to say when vendors sell every ingredient")
+end
 -- Coarse Grinding Stones made in one step are there for later ones; the first step that needs a hammer buys one
 local ctx = bsCtx({ known = { [3326] = true } })
 local stones = Ladder.CraftStep(ctx, bs, { recipe = 3326, color = "orange" }, 50, 55, {}, nil)

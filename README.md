@@ -6,7 +6,7 @@ Whether you're leveling **Engineering, Alchemy, Blacksmithing, Tailoring, Cookin
 
 **[Download Craft Ladder on CurseForge](https://www.curseforge.com/wow/addons/craft-ladder)**
 
-![Blacksmithing's ladder in Skill mode, a step's card open](screenshots/ladder.png)
+![Blacksmithing's ladder in Sure cost mode, a step's card open](screenshots/ladder.png)
 
 ## Professions
 
@@ -15,8 +15,10 @@ Whether you're leveling **Engineering, Alchemy, Blacksmithing, Tailoring, Cookin
 
 ## Modes
 
-- **Skill**: level up for the least gold. What you make is counted as sold to vendors only, so that money is sure.
-- **Skill + Gold**: level up counting what the auction house pays for what you make: cheaper if it sells.
+- **Sure cost** (gathering: **Skill**): level up for the least gold you're sure to spend. What you make is counted as
+  sold to vendors only: no auctions to post or wait for (gathering: the fastest points).
+- **AH sales** (gathering: **Skill + Gold**): level up counting what the auction house pays for what you make too:
+  cheaper than Sure cost if it sells (gathering: where an hour earns the most on the way).
 - **Gold**: no ladder, just what you can make now that earns the most per craft (for gathering: the zones where an
   hour earns the most at your skill).
 - **Food** (Cooking): the dishes worth eating for your class, grouped by role, by what their Well Fed raises, each in
@@ -27,8 +29,10 @@ Whether you're leveling **Engineering, Alchemy, Blacksmithing, Tailoring, Cookin
 - The recipe, the skill range and about how many crafts it takes, coloured as the game colours it.
 - Where to learn it: trainer, vendor, quest, auction house or a recipe already in your bags, with the NPC and its
   place.
-- Every reagent: bought at a vendor, at the auction house, or made by you, and what the whole step costs.
-- What you already have counts: bags and, with Bagnon, the bank. A step you can make from your bags goes first.
+- Every reagent: bought at a vendor, at the auction house, or made by you, and what the whole step costs (red, with a
+  minus) or earns back (green, with a plus).
+- What you already have counts: bags and, with Bagnon, the bank. A step you can make from your bags goes first, and
+  each step says how many of its crafts what you have covers ("12 ready"; vendor reagents aside).
 - The recipes you know are read from your profession window; a recipe you just learned counts at once.
 
 For gathering: the zones to level in, the nodes, herbs, creatures or fishing pools that still give a point, and the

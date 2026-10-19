@@ -1,5 +1,5 @@
 -- Craft Ladder: a tab in the auction house window to buy what the ladder needs. Pick a crafting profession and its
--- mode (Skill, Skill + Gold, Gold or Favor: the Merchant's Favor recipes, one craft each; the window's own): a row per
+-- mode (Sure cost, AH sales, Gold or Favor: the Merchant's Favor recipes, one craft each; the window's own): a row per
 -- step with what it costs there; a click on a step
 -- unfolds a row per reagent you're short of, with how many to buy and a button: the first click asks the auction house
 -- the exact price, the second buys (the game buys only from a click). With Auctionator, a step's Search button (or a
@@ -13,12 +13,13 @@ ns.AuctionTab = AuctionTab
 
 local ROW_H = 34
 local INDENT = 22 -- a reagent's row, under its step
-local MODES = { { "skill", "Skill", 48 }, { "sell", "Skill + Gold", 78 }, { "gold", "Gold", 48 }, { "favor", "Favor", 52 } }
+local MODES = { { "skill", "Sure cost", 66 }, { "sell", "AH sales", 62 }, { "gold", "Gold", 48 },
+                { "favor", "Favor", 52 } }
 local FAVOR_TIP = "Merchant's Favor recipes, the supply camps' quartermasters sell them: what one craft of each buys" ..
     " here, what you have counted first (bars smelted from your ore when that's cheaper)."
 local panel, rowPool, stepPool, profButtons
 local pending -- the purchase waiting for its price or its confirmation: { item, qty, row, total }
-local shown -- the ladder drawn: { data, mode, ladder }; drawn again while nothing it depends on changed
+local shown -- the ladder drawn: { data, mode, ladder, scan }; drawn again while nothing it depends on changed
 local opened -- the keys of the steps whose reagents are shown; nil: the step you're on
 local crafts = 1 -- Gold: how many crafts to buy for
 
@@ -250,7 +251,8 @@ local function ladderFor(data, cached)
     if not same then opened = nil end -- another profession or mode: the step you're on
     if not (same and cached) then
         local ladder = ns.Window.Cached(data) or ns.Calculate(data)
-        shown = { data = data, mode = mode, ladder = favor and ns.Favor.Ladder(ladder, ns.db.favorPrices or {}) or ladder }
+        shown = { data = data, mode = mode, scan = select(2, ns.Prices.Source()),
+                  ladder = favor and ns.Favor.Ladder(ladder, ns.db.favorPrices or {}) or ladder }
     end
     return shown.ladder
 end
@@ -461,6 +463,14 @@ local function build_panel(parent)
     panel:SetScript("OnShow", function()
         status(auctionator() and "A click on a step or a reagent searches it in Auctionator's Shopping tab." or nil)
         AuctionTab.Refresh()
+        -- once AuctionDB has scanned again, the ladder with its prices (once a scan; not in the middle of a purchase)
+        panel.ticker = C_Timer.NewTicker(1, function()
+            if shown and not pending and select(2, ns.Prices.Source()) ~= shown.scan then AuctionTab.Refresh() end
+        end)
+    end)
+    panel.ticker = false
+    panel:SetScript("OnHide", function()
+        if panel.ticker then panel.ticker:Cancel(); panel.ticker = false end
     end)
     panel:Hide()
 end

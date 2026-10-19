@@ -15,15 +15,16 @@ local C = UI.C
 local Window = {}
 ns.Window = Window
 
-local W, H = 1008, 560 -- the smallest the window gets; drag its corner to make it bigger
+local W, H = 1038, 560 -- the smallest the window gets; drag its corner to make it bigger
 local MAX_W, MAX_H = 1600, 1200
 local MIN_SCALE, MAX_SCALE = 1, 1.5 -- Ctrl + mouse wheel
-local LIST_W = 330
+local LIST_W = 360
 local MENU_W = 150
 local LEFT = 12 + MENU_W + 8 -- where the skill bar, the ladder and the footer start, right of the menu
 local DETAIL_CW = W - LEFT - LIST_W - 8 - 12 - 22 - 8 -- width of the step details' content at the smallest size
 local RANK_NAMES = { { 0, 75, "Apprentice" }, { 75, 150, "Journeyman" }, { 150, 225, "Expert" }, { 225, 300, "Artisan" } }
-local MODE_TIPS = { -- the mode switch by profession: Skill | Skill + Gold | Gold
+-- the mode switch by profession: Skill | Skill + Gold | Gold (crafting's named Sure cost | AH sales)
+local MODE_TIPS = {
     lockpicking = {}, -- Skill only
     fishing = { skill = "Fish where nothing gets away, spending as little as possible on lures.",
                 sell = "Level up where nothing gets away and the catch earns the most an hour, fishing pools and" ..
@@ -47,9 +48,12 @@ local MODE_TIPS = { -- the mode switch by profession: Skill | Skill + Gold | Gol
                    " for more, stone and gems counted). Grey nodes are mined too, so it takes more nodes.",
                gold = "No ladder: the zones where an hour of mining earns the most at your skill now (ore or bars," ..
                    " whichever sells for more, stone and gems counted), grey nodes too." },
-    craft = { skill = "Level up for the least gold. What you make is sold only to vendors: that money is sure.",
-              sell = "Level up counting what the auction house pays for what you make (a quarter of what's listed at" ..
-                  " most): cheaper if it sells, dearer if it doesn't.",
+    craft = { names = { skill = "Sure cost", sell = "AH sales" },
+              skill = "Level up for the least gold you're sure to spend: what you make goes to vendors, no" ..
+                  " auctions to post or wait for.",
+              sell = "Level up counting what you make sold at the auction house too (a quarter of what's listed" ..
+                  " at most, the rest to vendors). Cheaper than Sure cost if it sells: you post the auctions and" ..
+                  " wait, and what doesn't sell costs you the difference.",
               gold = "What you can make now that earns the most per craft, ingredients at their price (the ones you" ..
                   " have too). How many sell the auction house doesn't say: you see how many are listed." },
 }
@@ -74,13 +78,33 @@ local ladder, lookup
 local prof -- the profession shown (its data)
 local selected = 1
 local shownProf -- the profession the list showed last (nil: the window was just opened)
--- The ladders calculated: [profession key .. ":" .. mode] = { ladder, lookup, version, bags }. version counts the
+-- The ladders calculated: [profession key .. ":" .. mode] = { ladder, lookup, version, bags, scan }. version counts the
 -- changes that matter to every ladder (skill, level, recipes, prices, a setting); bags counts the bag changes, which
--- matter to a ladder only when its profession's items changed (checked when it's drawn again).
+-- matter to a ladder only when its profession's items changed (checked when it's drawn again); scan is the AuctionDB
+-- scan its prices come from.
 local cache = {}
 local version, bagsVersion = 0, 0
+local drawnScan -- the scan the ladder drawn was priced with
+
+-- When AuctionDB last scanned, or nil.
+local function lastScan() return select(2, ns.Prices.Source()) end
 
 local function hex(c) return UI.Hex(c) end
+
+-- What a step earns (green, "+") or costs (red, "-"); nothing either way: plain.
+local function signed(copper)
+    local c = math.floor(copper + 0.5)
+    if c == 0 then return ns.Money(0) end
+    return c > 0 and (hex(C.good) .. "+" .. ns.Money(c) .. "|r") or (hex(C.bad) .. "-" .. ns.Money(-c) .. "|r")
+end
+
+-- How many of a craft step's crafts what you have covers, vendors' goods taken as had: "12", "all" or nil.
+local function readyCount(step)
+    if step.kind ~= "craft" or not step.ready then return nil end
+    if step.ready >= step.crafts - 1e-9 then return "all" end
+    local n = math.floor(step.ready + 1e-9)
+    return n > 0 and tostring(n) or nil
+end
 
 -- "crafts" (Lockpicking: "picks", of boxes from the bags)
 local function craftsWord() return prof.craftWord or "crafts" end
@@ -248,11 +272,17 @@ local function stepTooltip(owner, step)
         })
         return
     end
-    UI.ItemTooltip(owner, rec.makes, step.recipe, {
+    local lines = {
         { "Skill", ("%d - %d, ~%d %s"):format(step.from, step.to, math.ceil(step.crafts), craftsWord()) },
         { "Cost", step.missing and (hex(C.bad) .. "no price|r") or ns.Money(step.cost) },
         { "Learn", ns.Describe.Learn(step.learn, prof) },
-    })
+    }
+    local ready = readyCount(step)
+    if ready then
+        lines[#lines + 1] = { "Ready", ("%s of ~%d, from what you have (vendor reagents aside)"):format(ready,
+            math.ceil(step.crafts)) }
+    end
+    UI.ItemTooltip(owner, rec.makes, step.recipe, lines)
 end
 
 -- A row's identity, saved per profession so the row you looked at stays picked when the window closes, you look at
@@ -310,7 +340,9 @@ local function makeRow(parent)
     b.sub:SetPoint("BOTTOMLEFT", b.icon, "BOTTOMRIGHT", 8, -1)
     b.sub:SetWidth(LIST_W - 26 - 44 - 72)
     b.cost = UI.Label(b, 11, C.text, nil, "RIGHT")
-    b.cost:SetPoint("RIGHT", -10, 0)
+    b.cost:SetPoint("TOPRIGHT", -10, -9)
+    b.ready = UI.Label(b, 10, C.good, nil, "RIGHT") -- how many crafts what you have covers, under the cost
+    b.ready:SetPoint("BOTTOMRIGHT", -10, 8)
     b:SetScript("OnEnter", function(self)
         paintRow(self)
         stepTooltip(self, self.step)
@@ -388,6 +420,8 @@ local function fillRow(row, step, index)
     row.index, row.step = index, step
     row.icon:SetVertexColor(1, 1, 1) -- a pooled row may have been a red one
     row.accent:SetShown(index == 1)
+    local ready = readyCount(step)
+    row.ready:SetText(ready and (ready .. " ready") or "")
     if step.kind == "locks" then
         row.icon:SetTexture(prof.icon)
         row.name:SetText("All locks")
@@ -466,8 +500,6 @@ local function fillRow(row, step, index)
         local extra = way
         if step.fromBags then
             extra = extra .. " " .. BAG_ICON -- made from what you have: the card says so first thing
-        elseif index == 1 and step.canCook > 0 then
-            extra = extra .. " - " .. hex(C.good) .. step.canCook .. " now|r"
         end
         if step.keep then extra = extra .. " - " .. hex(C.good) .. "keep them|r" end
         if step.chosenByYou then extra = extra .. " - " .. hex(C.gold) .. "your pick|r" end
@@ -484,7 +516,7 @@ local function fillRow(row, step, index)
     end
     if (step.kind == "fish" or step.kind == "mine") and ladder.mode ~= "skill" then
         -- what the catches are worth, lures paid (less than nothing when the lures cost more); Gold: in an hour
-        row.cost:SetText((step.earn >= 0 and (hex(C.good) .. "+|r") or "") .. ns.Money(step.earn))
+        row.cost:SetText(signed(step.earn))
     elseif step.kind == "mine" then -- Skill: how many (a trainer's fee is in the step's card)
         row.cost:SetText(("~%d %s"):format(math.ceil(step.crafts), gather().many))
     elseif step.kind == "favor" then
@@ -494,9 +526,7 @@ local function fillRow(row, step, index)
     elseif step.kind == "fish" and step.cost == 0 and not step.missing then
         row.cost:SetText("") -- no lures to buy
     else
-        local net = step.cost - (step.back or 0)
-        row.cost:SetText(step.missing and (hex(C.bad) .. "no price|r")
-            or (step.back and net < 0) and (hex(C.good) .. "+" .. ns.Money(-net) .. "|r") or ns.Money(net))
+        row.cost:SetText(step.missing and (hex(C.bad) .. "no price|r") or signed((step.back or 0) - step.cost))
     end
     paintRow(row)
 end
@@ -626,11 +656,14 @@ local function renderHeader()
         local tip = b.mode == "food" and (prof.food and FOOD_TIP or nil) or tips[b.mode]
         b:SetShown(tip ~= nil)
         if tip then
+            local name = tips.names and tips.names[b.mode] or b.name
+            b.label:SetText(name)
+            b:SetWidth(math.max(48, b.label:GetStringWidth() + 18))
             b:ClearAllPoints()
             b:SetPoint("TOPLEFT", x, -8)
             x = x + b:GetWidth() + 4
             b:SetActive(b.mode == ladder.mode)
-            b.tooltip = { b.name, tip }
+            b.tooltip = { name, tip }
         end
     end
 end
@@ -886,9 +919,10 @@ local function buildGrip()
     frame.grip = grip
 end
 
--- Can a cached ladder be drawn again: nothing changed since, and the bags hold the same of its profession's items?
+-- Can a cached ladder be drawn again: nothing changed since, AuctionDB hasn't scanned again, and the bags hold the
+-- same of its profession's items?
 local function fresh(entry)
-    if not entry or entry.version ~= version then return false end
+    if not entry or entry.version ~= version or entry.scan ~= lastScan() then return false end
     if entry.bags ~= bagsVersion then
         local now, was = ns.Player.Owned(entry.ladder.data), entry.ladder.state.owned or {}
         for item, n in pairs(now) do if was[item] ~= n then return false end end
@@ -1125,8 +1159,16 @@ local function build()
         for _, e in ipairs(CRAFT_WATCH) do pcall(craftEvents.RegisterEvent, craftEvents, e) end
         shownProf = nil -- opening shows the row you looked at last, else the step you're on
         Window.Refresh(true)
-        -- the scan countdown: two lines of text a second, nothing recalculated
-        frame.ticker = C_Timer.NewTicker(1, function() if ladder then renderPrices() end end)
+        -- the scan countdown: two lines of text a second, nothing recalculated; once AuctionDB has scanned again, the
+        -- ladder with its prices (once a scan)
+        frame.ticker = C_Timer.NewTicker(1, function()
+            if not ladder then return end
+            renderPrices()
+            if lastScan() ~= drawnScan then
+                drawnScan = lastScan()
+                Window.Refresh(true)
+            end
+        end)
     end)
     frame:SetScript("OnHide", function()
         craftEvents:UnregisterAllEvents()
@@ -1162,8 +1204,9 @@ function Window.Refresh(cached)
         ladder, lookup = cache[key].ladder, cache[key].lookup
     else
         ladder, lookup, ms = ns.Calculate(data)
-        cache[key] = { ladder = ladder, lookup = lookup, version = version, bags = bagsVersion }
+        cache[key] = { ladder = ladder, lookup = lookup, version = version, bags = bagsVersion, scan = lastScan() }
     end
+    drawnScan = cache[key].scan
     if not ns.Player.Prof(ladder.data).favorView then frame.favorRounds = 0 end
     if ns.Player.Prof(ladder.data).favorView and ns.Favor.Count(ladder.data) > 0 then
         ladder = ns.Favor.Ladder(ladder, ns.db.favorPrices or {})

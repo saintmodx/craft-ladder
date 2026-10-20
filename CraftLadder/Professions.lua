@@ -41,7 +41,8 @@ add(ns.LOCKPICKING, { key = "lockpicking", name = "Lockpicking", skillLine = 633
                       gather = { verb = "Pick locks", one = "lock", many = "locks", here = "Locks here" } })
 ns.LOCKPICKING.tools = { [5060] = true } -- Thieves' Tools
 -- Blacksmithing, Engineering, Tailoring, Leatherworking, Alchemy and Enchanting: what they make is sold (resale; an enchantment makes nothing);
--- bars may be smelted from ore (smelt)
+-- bars may be smelted from ore (smelt); Enchanting has a Disenchant mode too (disenchant: what the character's crafting
+-- professions make that's worth more disenchanted)
 add(ns.BLACKSMITHING, { key = "blacksmithing", name = "Blacksmithing", skillLine = 164, apprentice = 2018, icon = 136241,
                         verb = "make", resale = true, smelt = true })
 add(ns.ENGINEERING, { key = "engineering", name = "Engineering", skillLine = 202, apprentice = 4036, icon = 136243,
@@ -53,7 +54,7 @@ add(ns.LEATHERWORKING, { key = "leatherworking", name = "Leatherworking", skillL
 add(ns.ALCHEMY, { key = "alchemy", name = "Alchemy", skillLine = 171, apprentice = 2259, icon = 136240, verb = "make",
                   resale = true, smelt = true })
 add(ns.ENCHANTING, { key = "enchanting", name = "Enchanting", skillLine = 333, apprentice = 7411, icon = 136244,
-                     verb = "make", resale = true, smelt = true })
+                     verb = "make", resale = true, smelt = true, disenchant = true })
 -- Poisons: rogues only, learned from a class quest at 20, the cap is the level x 5 (levelCaps), Skill only; what it
 -- makes is kept for the rogue's weapons, not sold
 add(ns.POISONS, { key = "poisons", name = "Poisons", skillLine = 40, icon = 136242, verb = "make", levelCaps = true,

@@ -244,7 +244,7 @@ function M.install(fx, ns)
     C_Item = {
         GetItemCount = function(item) -- no bank seen
             return fx.owned[item] or fa.owned[item] or fi.owned[item] or fx.mining.owned[item] or bs.owned[item]
-                or en.owned[item] or 0
+                or en.owned[item] or ta.owned[item] or ec.owned[item] or 0
         end,
         GetItemIconByID = function() return 134400 end,
     }

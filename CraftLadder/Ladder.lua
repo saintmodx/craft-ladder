@@ -859,3 +859,4 @@ Ladder.CraftStep = craftStep
 Ladder.MergeCraft = mergeCraft
 Ladder.Ready = readyCrafts
 Ladder.Resale = resale
+Ladder.HasTools = hasTools -- Disenchant.lua's too

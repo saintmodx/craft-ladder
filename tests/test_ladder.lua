@@ -5,7 +5,8 @@ local fixtureName, target = arg[1] or "yungzug", tonumber(arg[2])
 
 local ns = {}
 for _, file in ipairs({ "Data/Cooking.lua", "Data/FirstAid.lua", "Data/Fishing.lua", "Data/Mining.lua", "Data/Skinning.lua", "Data/Herbalism.lua", "Data/Lockpicking.lua", "Data/Blacksmithing.lua",
-                        "Data/Engineering.lua", "Data/Tailoring.lua", "Data/Enchanting.lua", "Data/Alchemy.lua", "Data/Leatherworking.lua", "Data/Poisons.lua", "Professions.lua", "Ladder.lua", "Fishing.lua", "Mining.lua", "Prices.lua", "Favor.lua", "Data/Camp.lua", "Camp.lua" }) do
+                        "Data/Engineering.lua", "Data/Tailoring.lua", "Data/Enchanting.lua", "Data/Alchemy.lua", "Data/Leatherworking.lua", "Data/Poisons.lua", "Professions.lua", "Ladder.lua", "Fishing.lua", "Mining.lua", "Prices.lua", "Favor.lua", "Data/Camp.lua", "Camp.lua",
+                        "Data/Disenchant.lua", "Disenchant.lua" }) do
     assert(loadfile(root .. "CraftLadder/" .. file))("CraftLadder", ns)
 end
 local Ladder, data = ns.Ladder, ns.COOKING
@@ -650,6 +651,106 @@ for _, s in ipairs(fv) do fvs[#fvs + 1] = s.recipe .. ":" .. s.status end
 assert(table.concat(fvs, " ") == "1:known 2:learn 4:level 3:skill" and fv[1].canMake == 3 and fv[2].cost == 30
     and fv[2].level == 18 and fv[3].cost == 45 and fv[3].level == 30 and fv[4].cost == nil,
     "favor recipes (the data's price and level, or what this account saw): " .. table.concat(fvs, " "))
+
+;(function() -- a function of its own: the main chunk has 200 locals, Lua's most
+    -- Disenchanting: one disenchant's average and spread (75%: 4-6 of a 10c dust, else a 1s shard), and what a batch of
+    -- 10 gives at least 9 times out of 10
+    local Disenchant, DE = ns.Disenchant, ns.DISENCHANT
+    local deMean, deSpread = Disenchant.Value({ gives = { { item = 1, chance = 0.75, min = 4, max = 6 },
+                                                          { item = 2, chance = 0.25, min = 1, max = 1 } } },
+        function(item) return item == 1 and 10 or 100 end)
+    check("Disenchant: one disenchant's average", deMean, 0.75 * 5 * 10 + 0.25 * 100)
+    check("... its spread", deSpread, math.sqrt(0.75 * 100 * (16 + 25 + 36) / 3 + 0.25 * 10000 - deMean ^ 2))
+    check("... 10 of them, 9 times out of 10", Disenchant.Sure(deMean, deSpread, 10),
+        10 * deMean - 1.2816 * math.sqrt(10) * deSpread)
+    -- 3 Lesser Magic Essences (1s listed) make a Greater one (6s): a lesser is worth a third of a greater, a greater no
+    -- less than what it's listed for
+    local deWorth = Disenchant.Worth(ns.Prices.Make({ faction = "H", auctionDB = function(item)
+        return ({ [10938] = { 0, 100, 100, 50 }, [10939] = { 0, 600, 600, 50 } })[item] end }))
+    check("... a lesser essence: a third of a greater, after the cut", deWorth(10938), 600 * 0.95 / 3)
+    check("... a greater essence: its own price, after the cut", deWorth(10939), 600 * 0.95)
+    -- Ho: Enchanting 150 and Tailoring 103, today's prices from both snapshots. Only what's worth more disenchanted
+    -- than sold: what Ho has first (what making it cost doesn't count), then what to make (at a loss last), then what
+    -- Enchanting can't disenchant yet
+    local hoT = dofile(root .. "tests/fixtures/ho_tailoring.lua")
+    local hoE = dofile(root .. "tests/fixtures/ho_enchanting.lua")
+    local qho = ns.Prices.Make({ faction = "H", auctionDB = function(item)
+        return hoT.ah[item] or hoE.ah[item], hoT.scanTs end })
+    local function hoRows(enchanting, bags)
+        return Disenchant.Build(en, { skill = enchanting, faction = "H", known = hoE.known, owned = {} }, qho,
+            { crafts = { { data = ns.TAILORING, state = { skill = 103, faction = "H", level = 20, known = hoT.known,
+                                                         owned = hoT.owned } } }, bags = bags })
+    end
+    local function named(list, name)
+        for _, r in ipairs(list.steps) do
+            if ns.TAILORING.recipes[r.recipe].name == name then return r end
+        end
+    end
+    local ho = hoRows(150)
+    assert(ho.known == 13 and ho.bags == 0 and ho.now == #ho.steps and #ho.steps > 0,
+        ("Disenchant: Ho's rows (%d of %d known)"):format(#ho.steps, ho.known))
+    for i, r in ipairs(ho.steps) do
+        local rec = ns.TAILORING.recipes[r.recipe]
+        assert(r.data == ns.TAILORING and DE.items[rec.makes] == r.bucket and hoT.known[r.recipe],
+            "... a Tailoring recipe Ho knows, its item's bucket")
+        assert(r.each > r.sale.each and r.profit == r.back - r.cost and r.cost == r.matCost and not r.needSkill,
+            "... worth more disenchanted than sold: " .. rec.name)
+        assert(i == 1 or r.profit <= ho.steps[i - 1].profit, "... the best first")
+    end
+    -- Novice Arcanist's Sash, a blue of level 15: a bucket Forever added, a green's of its level and one more of each
+    -- (2-3 Strange Dust): a vendor pays more than its average disenchant at Ho's prices, so it isn't here
+    local sashSpell, sashRec = spellNamed(ns.TAILORING, "Novice Arcanist's Sash")
+    local sashBucket = DE.items[sashRec.makes]
+    local sashTable = DE.buckets[sashBucket]
+    assert(sashTable.guess and sashTable.gives[2].item == 10940 and sashTable.gives[2].min == 2
+        and sashTable.gives[2].max == 3 and hoT.known[sashSpell] and not named(ho, "Novice Arcanist's Sash"),
+        "Disenchant: a blue of level 15 gives 2-3 Strange Dust, worth less than a vendor pays for it")
+    assert(not named(ho, "White Woolen Dress"), "... White Woolen Dress sells for more: not here")
+    -- the bags: two Double-stitched Woolen Shoulders (worth more disenchanted than sold) and a soulbound Novice
+    -- Arcanist's Sash (a vendor pays more): the shoulders first, gaining over selling; the sash to a vendor; the
+    -- shoulders no longer among what to make
+    local shoulders = ns.TAILORING.recipes[3848].makes
+    local function bag(item, count, bound)
+        return { item = item, count = count, bound = bound, bucket = DE.items[item],
+                 sell = ns.TAILORING.sell[item] or 0 }
+    end
+    local withBags = hoRows(150, { bag(sashRec.makes, 1, true), bag(shoulders, 2, false) })
+    local first, second = withBags.steps[1], withBags.steps[2]
+    assert(withBags.bags == 2 and first.kind == "bag" and first.item == shoulders and first.disenchant
+        and Disenchant.Verdict(first) == "disenchant", "Disenchant: the bags first, what to disenchant first")
+    check("... what disenchanting both gains over selling them", first.gain, 2 * (first.each - first.sale.each))
+    assert(second.item == sashRec.makes and second.bound and not second.disenchant and second.sale.how == "vendor"
+        and second.sale.each == ns.TAILORING.sell[sashRec.makes] and Disenchant.Verdict(second) == "sell to a vendor",
+        "... a soulbound sash: a vendor's price, sold")
+    check("... the shoulders aren't among what to make", #withBags.steps, #ho.steps + 1)
+    -- what the game gave replaces a bucket's table from 5 disenchants: 4 sashes that gave a Small Glimmering Shard
+    -- leave it, the 5th (3 Strange Dust) makes it theirs: the shard 4 in 5, the dust 1 in 5; worth more than a vendor
+    -- pays now
+    local log = {}
+    for i, got in ipairs({ "10978:1", "10978:1", "10978:1", "10978:1", "10940:3" }) do
+        log[i] = ("%d %d %s"):format(sashRec.makes, 1792000000 + i, got)
+    end
+    local function bucketOf(item) return DE.items[item] end
+    local four = Disenchant.Seen({ log[1], log[2], log[3], log[4] }, bucketOf)
+    assert(four[sashBucket].n == 4 and Disenchant.Table(sashBucket, four) == sashTable
+        and four[sashBucket].mats[10978].total == 4, "Disenchant: 4 recorded, the data's table still")
+    local five = Disenchant.Seen(log, bucketOf)
+    local own = Disenchant.Table(sashBucket, five)
+    assert(own.seen == 5 and own.gives[1].item == 10978 and own.gives[1].min == 1 and own.gives[2].item == 10940
+        and own.gives[2].min == 3 and own.gives[2].max == 3 and own.skill == sashTable.skill, "... 5: what they gave")
+    check("... the shard in 4 of 5", own.gives[1].chance, 0.8)
+    local withSeen = Disenchant.Build(en, { skill = 150, faction = "H", known = hoE.known, owned = {} }, qho,
+        { crafts = { { data = ns.TAILORING, state = { skill = 103, faction = "H", level = 20, known = hoT.known,
+                                                     owned = hoT.owned } } }, seen = five })
+    local sashSeen = named(withSeen, "Novice Arcanist's Sash")
+    assert(sashSeen and sashSeen.de.seen == 5 and sashSeen.seen.n == 5, "... and the ladder prices it so")
+    local hoLow = hoRows(1)
+    for i, r in ipairs(hoLow.steps) do
+        assert((i > hoLow.now) == (DE.buckets[r.bucket].skill > 1) and (r.needSkill or 1) == DE.buckets[r.bucket].skill,
+            "Disenchant: at Enchanting 1 what asks more comes last, with the skill it asks")
+    end
+    check("... the same rows", #hoLow.steps, #ho.steps)
+end)()
 
 -- a real ladder
 local fx = dofile(root .. "tests/fixtures/" .. fixtureName .. ".lua")

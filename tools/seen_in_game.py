@@ -10,6 +10,8 @@ Reads from the saved variables (by default the newest of the Forever client's ac
   - CraftLadderDB.favorPrices: by item, what a quartermaster asks in Merchant's Favor, the level it asks, its name and
     who sells it. build_crafting.py puts the price and level on the recipe's plan.
   - CraftLadderDB.rankFees: by rank spell (Journeyman, Expert, Artisan), what a trainer asks for it.
+  - CraftLadderDB.disenchantLog: every disenchant, "item time material:count ...". build_disenchant.py compares them
+    with Classic's table in its report.
 """
 import json
 import re
@@ -35,6 +37,11 @@ def gather():
     return _load().get("gather", [])
 
 
+def disenchants():
+    """The disenchants recorded in game: ["item time material:count ...", ...]."""
+    return _load().get("disenchant", [])
+
+
 def favor():
     """{item: {"cost", "level", "npc", "name"} (the last three when seen)}: what quartermasters sell for favor."""
     return {int(k): v for k, v in _load().get("favor", {}).items()}
@@ -45,9 +52,9 @@ def rank_fees():
     return {int(k): v for k, v in _load().get("rankFees", {}).items()}
 
 
-def read_gather(path):
-    """CraftLadderDB.gatherLog from a SavedVariables file: its lines."""
-    m = re.search(r'\["gatherLog"\] = \{(.*?)\n\}', path.read_text(encoding="utf-8"), re.S)
+def read_gather(path, key="gatherLog"):
+    """CraftLadderDB.gatherLog (or another log of lines: disenchantLog) from a SavedVariables file: its lines."""
+    m = re.search(r'\["%s"\] = \{(.*?)\n\}' % key, path.read_text(encoding="utf-8"), re.S)
     return re.findall(r'"([^"]+)"', m.group(1)) if m else []
 
 
@@ -99,21 +106,23 @@ def main():
     else:
         path = max(ACCOUNTS.glob("*/SavedVariables/CraftLadder.lua"), key=lambda p: p.stat().st_mtime)
     seen, favors, fees = read_saved(path), read_favor(path), read_rank_fees(path)
-    assert seen or favors or fees or read_gather(path), "nothing recorded in %s" % path
+    des = read_gather(path, "disenchantLog")
+    assert seen or favors or fees or read_gather(path) or des, "nothing recorded in %s" % path
     old = trainer()
     old.update(seen)  # a later visit wins; what only an older file had stays
     gathers = sorted(set(gather()) | set(read_gather(path)))  # each line has its time: the same gather once
+    des = sorted(set(disenchants()) | set(des))
     all_favor = favor()
     all_favor.update(favors)
     all_fees = rank_fees()
     all_fees.update(fees)
     OUT.write_text(json.dumps({"trainer": {str(k): v for k, v in sorted(old.items())}, "gather": gathers,
                                "favor": {str(k): v for k, v in sorted(all_favor.items())},
-                               "rankFees": {str(k): v for k, v in sorted(all_fees.items())}},
+                               "rankFees": {str(k): v for k, v in sorted(all_fees.items())}, "disenchant": des},
                               indent=1) + "\n", encoding="utf-8")
-    print("%s: %d trainer notes (%d not at the trainer), %d gathers, %d sold for favor, %d rank fees" % (
-        OUT.name, len(old), sum(1 for v in old.values() if v.get("notAtTrainer")), len(gathers), len(all_favor),
-        len(all_fees)))
+    print("%s: %d trainer notes (%d not at the trainer), %d gathers, %d sold for favor, %d rank fees, %d disenchants"
+          % (OUT.name, len(old), sum(1 for v in old.values() if v.get("notAtTrainer")), len(gathers), len(all_favor),
+             len(all_fees), len(des)))
 
 
 if __name__ == "__main__":

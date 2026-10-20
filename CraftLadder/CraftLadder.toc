@@ -30,11 +30,13 @@ Data\Alchemy.lua
 Data\Leatherworking.lua
 Data\Poisons.lua
 Data\Camp.lua
+Data\Disenchant.lua
 Professions.lua
 Ladder.lua
 Fishing.lua
 Mining.lua
 Prices.lua
+Disenchant.lua
 Favor.lua
 Camp.lua
 Spec.lua

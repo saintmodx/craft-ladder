@@ -908,6 +908,95 @@ expect("Alchemy: the Philosopher's Stone last, needed for transmutes", lastRow a
 mock.click(lastRow)
 expect("... its card says none of its recipes is for leveling", lines():find("None of them is for leveling"))
 fx.alchemy.skill, fx.alchemy.maxSkill = 0, 0
+-- Enchanting's Disenchant mode (Ho: Enchanting 150, Tailoring 103, prices from both snapshots): what's worth more
+-- disenchanted than sold, what you have first; every disenchant recorded
+local function hoDisenchant(on)
+    local hoT = dofile(root .. "tests/fixtures/ho_tailoring.lua")
+    local hoE = dofile(root .. "tests/fixtures/ho_enchanting.lua")
+    local house = AuctionDB.sv.houses[UnitFactionGroup()]
+    for _, ah in ipairs({ hoT.ah, hoE.ah }) do
+        for item, e in pairs(ah) do
+            if on and not house.items[item] then house.items[item] = { e, ho = true }
+            elseif not on and house.items[item] and house.items[item].ho then house.items[item] = nil end
+        end
+    end
+    house.scans[1][1] = fx.scanTs + (on and 1 or 0) -- the addon reads prices again
+    fx.enchanting.skill, fx.enchanting.maxSkill = on and 150 or 0, on and 150 or 0
+    fx.tailoring.skill, fx.tailoring.maxSkill = on and 103 or 0, on and 150 or 0
+    ns.Player.Prof(ns.TAILORING).known = on and hoT.known or {}
+    ns.Player.Prof(ns.ENCHANTING).mode = on and "disenchant" or nil
+    ns.Window.Invalidate()
+end
+do
+    hoDisenchant(true)
+    ns.Player.Prof(ns.ENCHANTING).mode = nil
+    SlashCmdList.CRAFTLADDER("enchanting")
+    local deButton = frame.list.modes[5]
+    expect("Enchanting: a Disenchant mode", deButton:IsShown() and strip(deButton.label.text) == "Disenchant (beta)")
+    mock.click(deButton)
+    local deRows = rows()
+    local made = #deRows
+    local loss = deRows[made]
+    expect("... Disenchant: Ho's Tailoring, under \"Make and disenchant\", the best first, red at a loss",
+        deButton.active and made >= 2 and deRows[1].step.kind == "disenchant"
+        and strip(headings()[1].title.text) == "Make and disenchant" and loss.step.profit < 0
+        and strip(loss.cost.text):find("^%-") and deRows[1].step.profit >= loss.step.profit
+        and strip(deRows[1].sub.text):find("^Tailoring, disenchanted ~"))
+    loss.scripts.OnEnter(loss)
+    mock.click(loss)
+    expect("... its card: what one disenchant gives, a batch, the Craft bar, one craft", frame.detail.craft:IsShown()
+        and lines():find("10 disenchanted: about .+, at least .+ 9 times out of 10") and #items() > 2
+        and lines():find("Making it costs more than disenchanting brings"))
+    expect("... the footer", strip(frame.total.text):find("^In your bags 0 to disenchant, 0 to sell; %d+ worth making"))
+    -- the bags: Linen Cloth (nothing to disenchant), two Double-stitched Woolen Shoulders, a green sword no recipe
+    -- makes (what the game says of it): "In your bags" first, the shoulders no longer among what to make
+    local shoulders, sword, locked = ns.TAILORING.recipes[3848].makes, 15210, false
+    local bagItems = { 2589, shoulders, shoulders, sword }
+    C_Container = { GetContainerNumSlots = function(bag) return bag == 0 and #bagItems or 0 end,
+                    GetContainerItemInfo = function(_, slot)
+                        return { itemID = bagItems[slot], stackCount = 1, isBound = false,
+                                 isLocked = locked and slot == 2 } end }
+    C_Item.GetItemInfo = function(item)
+        if item == sword then return "Raider Shortsword", "", 2, 20, 15, "", "", 1, "INVTYPE_WEAPON", 0, 500, 2, 7 end
+        return "x", "", 1, 5, 1, "", "", 20, "", 0, item == shoulders and 381 or 1, 7, 0
+    end
+    fx.tailoring.owned[shoulders], fx.tailoring.owned[sword] = 2, 1 -- the game's count of them
+    mock.fire("BAG_UPDATE_DELAYED"); mock.runTimers()
+    deRows = rows()
+    local bagRows = {}
+    for _, r in ipairs(deRows) do if r.step.kind == "bag" then bagRows[r.step.item] = r end end
+    expect("... the bags first, under their own heading, the shoulders a row of 2, the sword too",
+        strip(headings()[1].title.text) == "In your bags" and deRows[1].step.kind == "bag" and #deRows == made + 1
+        and bagRows[shoulders] and bagRows[shoulders].step.count == 2 and bagRows[sword] and not bagRows[2589]
+        and strip(bagRows[shoulders].sub.text):find("^disenchant: ~"))
+    bagRows[shoulders].scripts.OnEnter(bagRows[shoulders])
+    mock.click(bagRows[shoulders])
+    expect("... its card: yours disenchanted, or sold, no Craft bar", not frame.detail.craft:IsShown()
+        and lines():find("Your 2 disenchanted: about") and lines():find("each at a vendor"))
+    mock.output = {}
+    SlashCmdList.CRAFTLADDER("chat enchanting")
+    expect("... and in chat", said("In your bags:") and said("Make and disenchant:")
+        and said("in your bags %d+ to disenchant, %d+ to sell; worth more disenchanted than sold: " .. (made - 1)
+            .. " to make"))
+    -- a disenchant: the item the game locked while casting, what the loot window gave
+    GetTime = function() return 1000 end
+    locked = true
+    local loot = { { 10940, 3 }, { 10998, 1 } }
+    GetNumLootItems = function() return #loot end
+    GetLootSlotLink = function(i) return ("|cffffffff|Hitem:%d::::::::|h[x]|h|r"):format(loot[i][1]) end
+    GetLootSlotInfo = function(i) return 134400, "x", loot[i][2] end
+    mock.fire("UNIT_SPELLCAST_START", "player", "Cast-9", 13262)
+    mock.fire("UNIT_SPELLCAST_SUCCEEDED", "player", "Cast-9", 13262)
+    mock.fire("LOOT_OPENED")
+    mock.fire("LOOT_OPENED") -- another loot window: not a disenchant's
+    expect("Disenchanting: what it gave is recorded, once", CraftLadderDB.disenchantLog
+        and #CraftLadderDB.disenchantLog == 1
+        and CraftLadderDB.disenchantLog[1]:find(("^%d %%d+ 10940:3 10998:1$"):format(shoulders)))
+    C_Container, GetNumLootItems, GetLootSlotLink, GetLootSlotInfo, C_Item.GetItemInfo = nil, nil, nil, nil, nil
+    fx.tailoring.owned[shoulders], fx.tailoring.owned[sword] = nil, nil
+    hoDisenchant(false)
+    mock.click(tab("firstaid"))
+end
 mock.click(tab("firstaid"))
 
 -- Skinning at 100 of 150, a level 28: where to skin, the creatures there; skinning a creature new in Forever records it
@@ -1362,6 +1451,17 @@ do
     ns.Calculate = calc
 end
 bsProf.mode = nil
+-- Disenchant (Enchanting's): what to make, its ingredients; what you have isn't here (nothing to buy)
+hoDisenchant(true)
+char().ahProf = "enchanting"
+ns.AuctionTab.Refresh()
+local deSteps = mock.shownChildren(ahPanel.scroll.child, "entry")
+expect("... Disenchant: Enchanting's mode button, the Crafts box, a row per thing to make with what it buys",
+    ahPanel.modes[5]:IsShown() and ahPanel.modes[5].active and ahPanel.crafts:IsShown() and #deSteps >= 2
+    and strip(ahPanel.heading.text):find("^Enchanting: what's worth more disenchanted") and deSteps[1].entry.step.data
+    and strip(deSteps[1].sub.text):find("a craft, Tailoring, disenchanted$") and #deSteps[1].entry.rows > 0)
+hoDisenchant(false)
+char().ahProf = "blacksmithing"
 Auctionator = nil
 
 -- Camp: the menu's entry shows its panel instead of the ladder, the class's role (a warrior: Melee and Tank), a row

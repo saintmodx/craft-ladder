@@ -82,7 +82,8 @@ def classicdb(refresh):
                                     "gameobject_template", "gameobject_loot_template", "item_loot_template",
                                     "item_template", "pool_gameobject", "npc_trainer", "npc_trainer_template",
                                     "creature_template", "npc_vendor", "npc_vendor_template", "skinning_loot_template",
-                                    "pickpocketing_loot_template", "quest_template")}
+                                    "pickpocketing_loot_template", "quest_template",
+                                    "disenchant_loot_template")}
     columns, table = {}, None
     with gzip.open(CLASSICDB, "rt", encoding="utf-8", errors="replace") as f:
         for line in f:
@@ -109,7 +110,7 @@ def classicdb(refresh):
                 out[int(e)].append((int(item), float(chance), int(group), int(ref), int(maxcount)))
         return out
     for name in ("fishing_loot_template", "reference_loot_template", "gameobject_loot_template", "item_loot_template",
-                 "skinning_loot_template", "pickpocketing_loot_template"):
+                 "skinning_loot_template", "pickpocketing_loot_template", "disenchant_loot_template"):
         db[name] = rows(name)
 
     def records(name):

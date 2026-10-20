@@ -483,7 +483,8 @@ local function paintCraft(bar)
         .. "closed (the game crafts only with it open)." .. (prof.key == "cooking" and " Cooking needs a fire nearby."
         or "") }
     bar.note:SetText(why and (hex(C.warn) .. why .. "|r")
-        or ("Your bags allow %d"):format(can) .. (step.kind == "favor" and "." or ("; the step needs %d."):format(bar.need)))
+        or ("Your bags allow %d"):format(can) .. ((step.kind == "favor" or step.kind == "disenchant") and "."
+            or ("; the step needs %d."):format(bar.need)))
 end
 
 local function craftClick(bar)
@@ -763,6 +764,84 @@ local function profitDetail(step)
         " the auction house's ingredients decide." or "Profit: at the lowest listing after the auction house's cut," ..
         " with 5 or more listed; it counts only when it pays 1.5 times what a vendor does. How many sell, the auction" ..
         " house doesn't say. Prices change: look again before buying.", C.dim)
+end
+
+-- What disenchanting gives (Disenchant mode, a bag's item or a recipe's): one disenchant's outcomes, what n bring, and
+-- where the numbers come from.
+local function disenchanting(step, n, yours)
+    local bucket, s, SEEN = step.de, step.seen, ns.Disenchant.SEEN
+    section(("Disenchant one: about %s"):format(ns.Money(step.each)))
+    for _, g in ipairs(bucket.gives) do
+        local f, worth = get("item"), ladder.worth(g.item)
+        f.item = g.item
+        f.icon:SetTexture(UI.ItemIcon(g.item))
+        f.name:SetText(("%s %s"):format(g.min == g.max and g.min or (g.min .. "-" .. g.max),
+            ns.Describe.ItemName(g.item)))
+        f.sub:SetText(("%d%% of disenchants, %s each"):format(math.floor(g.chance * 100 + 0.5), ns.Money(worth)))
+        UI.SetColor(f.sub, C.muted)
+        f.cost:SetText(ns.Money(g.chance * (g.min + g.max) / 2 * worth)) -- its part of the average
+        f.source = ns.Describe.PriceSource(lookup(g.item, true))
+        place(f, 2)
+    end
+    line(("%s%d disenchanted: about %s, at least %s 9 times out of 10."):format(yours and "Your " or "", n,
+        ns.Money(n * step.each), ns.Money(ns.Disenchant.Sure(step.each, step.spread, n))), C.text)
+    if bucket.seen then
+        line(("What it gives: from %d disenchants of items like it, recorded in game."):format(bucket.seen), C.good)
+    elseif s then -- yours so far, before they replace the table
+        local got = {}
+        for mat, m in pairs(s.mats) do got[#got + 1] = ("%d %s"):format(m.total, ns.Describe.ItemName(mat)) end
+        table.sort(got)
+        line(("You've disenchanted %d like it: %s in all. From %d, what you got replaces the table."):format(s.n,
+            table.concat(got, ", "), SEEN), C.muted)
+    end
+    if bucket.guess then
+        line("Forever added this kind of item: what it gives is a guess, checked for one item: a green's of its" ..
+            " level, one more of each.", C.warn)
+    end
+    line(("What a disenchant gives is luck%s. Materials at the auction house after its cut; 3 lesser essences make a" ..
+        " greater one."):format(bucket.seen and "" or (", from Classic's table (not checked in Forever yet): from %d" ..
+        " of your disenchants of items like it, what you got replaces it"):format(SEEN)), C.dim)
+end
+
+-- Disenchant: what another profession makes, made and disenchanted: what one disenchant gives, what a batch brings,
+-- what one craft takes and what selling it instead brings. prof is the recipe's profession here (so the Craft bar
+-- makes it); Cards.Render sets it back.
+local function disenchantDetail(step)
+    local rec, skill = prof.recipes[step.recipe], ladder.state.skill
+    local result = (step.profit >= 0 and hex(C.good) .. "+" or hex(C.bad) .. "-") .. ns.Money(math.abs(step.profit))
+        .. "|r"
+    headline(UI.ItemIcon(rec.makes), rec.name,
+        step.needSkill and C.dim or step.color ~= "grey" and STEP_COLOR[step.color] or C.text,
+        ("One craft%s costs about %s; disenchanted, about %s on average: %s"):format(
+            step.made > 1 and (" (makes " .. step.made .. ")") or "", ns.Money(step.cost), ns.Money(step.back), result),
+        step.needSkill and (hex(C.bad) .. ("Disenchanting it needs Enchanting %d; you have %d."):format(step.needSkill,
+            skill) .. "|r") or ("A %s recipe you know."):format(prof.name))
+    craftBar(step, rec)
+    disenchanting(step, ns.Disenchant.BATCH)
+    if step.profit < 0 then
+        line("Making it costs more than disenchanting brings: disenchant it when you make it anyway, for skill.",
+            C.warn)
+    end
+    oneCraft(step, rec)
+end
+
+-- Disenchant: an item in the bags: disenchant it or sell it, whichever brings more on average.
+local function bagDetail(step)
+    local e = lookup(step.item, true)
+    local ah = e and (e.min or e.unit)
+    local vendor = ns.Prices.VendorSell(prof, step.item)
+    headline(UI.ItemIcon(step.item), ns.Describe.ItemName(step.item), step.disenchant and C.good or C.text,
+        ("Best: %s. %d in your bags: disenchanted, about %s on average; sold, %s."):format(ns.Disenchant.Verdict(step),
+            step.count, ns.Money(step.each * step.count), ns.Money(step.sale.each * step.count)),
+        step.needSkill and (hex(C.bad) .. ("Disenchanting it needs Enchanting %d; you have %d."):format(step.needSkill,
+            ladder.state.skill) .. "|r") or (step.bound and "Soulbound: no auction house." or ""))
+    disenchanting(step, step.count, true)
+    section("Or sell it")
+    line(step.bound and "Soulbound: the auction house won't take it." or ah and ("%s each at the auction house" ..
+        " (after its cut%s)."):format(ns.Money(ah * ns.Prices.AH_CUT), e.qty and (", " .. e.qty .. " listed") or "")
+        or "Not on the auction house.", C.muted)
+    line(vendor and vendor > 0 and (ns.Money(vendor) .. " each at a vendor.") or "Vendors don't buy it.", C.muted)
+    line("The auction house counts with 5 or more listed. What made it doesn't count: it's made.", C.dim)
 end
 
 -- Food: one dish for your class: what eating it raises, the level it asks, its skill-up colours, its recipe, what one
@@ -1396,6 +1475,11 @@ local function renderDetail()
     elseif state.maxSkill == 0 and not prof.levelCaps then -- Lockpicking's ladder starts with learning Pick Lock
         headline(prof.icon, "No " .. prof.name .. " yet", C.gold,
             ("Any %s trainer teaches Apprentice %s."):format(prof.name, prof.name), "")
+    elseif not step and ladder.mode == "disenchant" then
+        headline(prof.icon, "Nothing to disenchant", C.gold, "Your bags hold nothing to disenchant, and " ..
+            (ladder.known == 0 and "none of the recipes you know makes something to disenchant: open your crafting" ..
+                " profession's window once so Craft Ladder knows its recipes." or "nothing you can make is worth" ..
+                " more disenchanted than sold at today's prices."), "")
     elseif not step and ladder.mode == "gold" and prof.resale then
         headline(prof.icon, "Nothing earns now", C.gold,
             "Nothing you can make sells for more than it costs at today's prices.", "")
@@ -1421,6 +1505,11 @@ local function renderDetail()
         foodDetail(step)
     elseif step.kind == "profit" then
         profitDetail(step)
+    elseif step.kind == "disenchant" then
+        prof = step.data
+        disenchantDetail(step)
+    elseif step.kind == "bag" then
+        bagDetail(step)
     else
         craftDetail(step)
     end

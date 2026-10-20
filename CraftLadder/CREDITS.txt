@@ -7,7 +7,7 @@ The data it ships (Data/*.lua) is built from:
 - World of Warcraft: Forever's client tables (Blizzard Entertainment), read through wago.tools: recipes, colours,
   reagents, tools, items and vendor prices.
 - CMaNGOS classic-db (GPL-3.0, https://github.com/cmangos/classic-db): trainers and their fees, ranks, fishing,
-  what gathering and chests give.
+  what gathering and chests give, what disenchanting gives.
 - Questie and QuestieDB (GPL-3.0, https://github.com/Questie): who sells a recipe, quests, NPCs and where they stand.
 - AllTheThings (MIT, https://github.com/ATTWoWAddon/AllTheThings): Merchant's Favor prices, where recipes are sold,
   rewarded and dropped, and which aren't out yet. Its notice is below.

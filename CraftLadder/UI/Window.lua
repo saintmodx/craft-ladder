@@ -59,6 +59,11 @@ local MODE_TIPS = {
 }
 local FOOD_TIP = "No ladder: the dishes worth eating for your class, a group per role, by what eating one raises" ..
     " (Well Fed). The ones you can eat now first, the best first; grey ones need a higher level."
+local DISENCHANT_TIP = "Beta. No ladder: what's in your bags that can be disenchanted, and whether disenchanting or" ..
+    " selling it brings more; then what your crafting professions make with the recipes you know that's worth more" ..
+    " disenchanted than sold, the best first (red: making it costs more than disenchanting brings). What a" ..
+    " disenchant gives is luck: the average, from Classic's table until your own disenchants replace it. Grey ones" ..
+    " need a higher Enchanting."
 local STEP_COLOR = { orange = C.orange, yellow = C.yellow, green = C.green, grey = C.grey }
 local BAG_ICON = "|TInterface\\Icons\\INV_Misc_Bag_08:14:14|t" -- a step made from what you have
 -- Where a step's recipe is learned, as the game shows that NPC in its dialogs (a recipe in your bags: its scroll);
@@ -171,7 +176,8 @@ local function stepItem(step)
     if step.kind == "fish" then return prof.zones[step.zone].top end
     if step.kind == "locks" or step.kind == "mine" and prof.nodes[step.node].lock then return end -- a chest: no item
     if step.kind == "mine" then return prof.nodes[step.node].item end
-    local rec = prof.recipes[step.recipe]
+    if step.kind == "bag" then return step.item end
+    local rec = (step.data or prof).recipes[step.recipe] -- Disenchant: another profession's recipe
     return rec.makes or prof.doors and next(rec.mats) -- a box you pick: the box
 end
 
@@ -254,6 +260,20 @@ local function stepTooltip(owner, step)
         })
         return
     end
+    if step.kind == "disenchant" or step.kind == "bag" then
+        local bag = step.kind == "bag"
+        local n = bag and step.count or step.made
+        UI.ItemTooltip(owner, bag and step.item or step.data.recipes[step.recipe].makes, step.recipe, {
+            bag and { "In your bags", step.count .. (step.bound and ", soulbound" or "") }
+                or { "One craft", ns.Money(step.cost) },
+            { "Disenchanted", ns.Money(step.each * n) .. " on average" },
+            { "Sold", step.sale.how and (ns.Money(step.sale.each * n) .. (step.sale.how == "auction"
+                and " at the auction house" or " at a vendor")) or "nobody buys it" },
+            bag and { "Best", ns.Disenchant.Verdict(step) } or { "Disenchanting one craft", signed(step.profit) },
+            step.needSkill and (hex(C.bad) .. "Disenchanting it needs Enchanting " .. step.needSkill .. "|r") or nil,
+        })
+        return
+    end
     local rec = prof.recipes[step.recipe]
     if step.kind == "food" then
         UI.ItemTooltip(owner, rec.makes, step.recipe, {
@@ -291,7 +311,7 @@ end
 local function stepKey(index)
     local function base(step)
         if step.kind == "rank" then return "rank:" .. step.rank.name end
-        return step.kind .. ":" .. tostring(step.recipe or step.zone) .. (step.fromBags and ":bags" or "")
+        return step.kind .. ":" .. tostring(step.recipe or step.zone or step.item) .. (step.fromBags and ":bags" or "")
     end
     if index == 0 then return "locks" end
     local key, n = base(ladder.steps[index]), 0
@@ -480,6 +500,22 @@ local function fillRow(row, step, index)
             learnIcon(step.learn), -- a recipe to learn first: its card says how
             step.cooldown and (" - " .. hex(C.warn) .. "once in " .. wait(step.cooldown) .. "|r") or "",
             ns.Describe.Unconfirmed(rec, step.learn) and (" - " .. hex(C.warn) .. "unconfirmed|r") or ""))
+    elseif step.kind == "disenchant" then
+        local rec = step.data.recipes[step.recipe]
+        row.icon:SetTexture(UI.ItemIcon(rec.makes))
+        row.name:SetText(rec.name)
+        -- what needs a higher Enchanting is grey (the user's rule); else the recipe's skill-up colour, as Gold's rows
+        UI.SetColor(row.name, step.needSkill and C.dim or step.color ~= "grey" and STEP_COLOR[step.color] or C.text)
+        row.sub:SetText(("%s, disenchanted ~%s, sold %s%s"):format(step.data.name, ns.Money(step.each),
+            step.sale.how and ns.Money(step.sale.each) or "-",
+            step.needSkill and (" - " .. hex(C.bad) .. "Enchanting " .. step.needSkill .. "|r") or ""))
+    elseif step.kind == "bag" then -- what to do with it: disenchant (green) or sell
+        row.icon:SetTexture(UI.ItemIcon(step.item))
+        row.name:SetText(ns.Describe.ItemName(step.item) .. (step.count > 1 and (" x" .. step.count) or ""))
+        UI.SetColor(row.name, step.disenchant and C.good or C.text)
+        row.sub:SetText(("%s: ~%s disenchanted, %s sold%s%s"):format(ns.Disenchant.Verdict(step), ns.Money(step.each),
+            step.sale.how and ns.Money(step.sale.each) or "-", step.bound and ", soulbound" or "",
+            step.needSkill and (" - " .. hex(C.bad) .. "Enchanting " .. step.needSkill .. "|r") or ""))
     elseif step.kind == "mine" then
         -- the item that gives the most points (Gold: earns the most), then what else counts
         row.icon:SetTexture(UI.ItemIcon(step.mix and step.mix[1] and step.mix[1].item or prof.nodes[step.node].item))
@@ -525,6 +561,8 @@ local function fillRow(row, step, index)
         row.cost:SetText(step.cost and ns.Money(step.cost) or (hex(C.bad) .. "no price|r"))
     elseif step.kind == "fish" and step.cost == 0 and not step.missing then
         row.cost:SetText("") -- no lures to buy
+    elseif step.kind == "bag" then -- disenchanting: what it gains over selling; selling: what it brings
+        row.cost:SetText(step.disenchant and signed(step.gain) or ns.Money(step.sale.each * step.count))
     else
         row.cost:SetText(step.missing and (hex(C.bad) .. "no price|r") or signed((step.back or 0) - step.cost))
     end
@@ -625,6 +663,26 @@ local function renderList()
             " the auction house doesn't say." })
         if #ladder.steps == vendorRows then heading("nothing at today's prices", nil, nothing) end
         rows(vendorRows + 1, #ladder.steps)
+    elseif ladder.now then -- Disenchant: what the bags hold, what to make, then what needs more skill
+        if ladder.bags > 0 then
+            heading("In your bags", ladder.bags, { "In your bags", "What your bags hold that can be disenchanted:" ..
+                " disenchant it or sell it, whichever brings more on average (a soulbound one only to a vendor)." ..
+                " What made it doesn't count any more." })
+            rows(1, ladder.bags)
+        end
+        heading("Make and disenchant", ladder.now - ladder.bags, { "Make and disenchant", "Worth more disenchanted" ..
+            " than sold, on average: what disenchanting one brings less what making it costs. Red: making it costs" ..
+            " more than disenchanting brings." })
+        if ladder.now == ladder.bags then
+            heading("nothing at today's prices", nil, { "Nothing here", "Nothing you can make is worth more" ..
+                " disenchanted than sold at today's prices." })
+        end
+        rows(ladder.bags + 1, ladder.now)
+        if #ladder.steps > ladder.now then
+            heading("Needs more Enchanting", #ladder.steps - ladder.now, { "Needs more Enchanting", "Worth it too," ..
+                " but your Enchanting can't disenchant them yet (Classic's skill rule, not checked in Forever)." })
+            rows(ladder.now + 1, #ladder.steps)
+        end
     else
         rows(1, #ladder.steps)
     end
@@ -638,7 +696,8 @@ end
 Window.Shared = { W = W, DETAIL_CW = DETAIL_CW, MENU_W = MENU_W, STEP_COLOR = STEP_COLOR, BAG_ICON = BAG_ICON,
                   RANK_ICON = RANK_ICON, craftsWord = craftsWord, wait = wait, recipeIcon = recipeIcon,
                   toolUsers = toolUsers, gather = gather, duration = duration, barsText = barsText,
-                  useLevel = useLevel, favorSub = favorSub, foodColor = foodColor, MODE_TIPS = MODE_TIPS }
+                  useLevel = useLevel, favorSub = favorSub, foodColor = foodColor, MODE_TIPS = MODE_TIPS,
+                  DISENCHANT_TIP = DISENCHANT_TIP }
 
 renderDetail = function() ns.Cards.Render(frame, ladder, lookup, prof, selected) end
 
@@ -652,9 +711,11 @@ local function renderHeader()
         state.maxSkill) or ("No %s yet"):format(prof.name))
     local tips, x = MODE_TIPS[prof.key] or MODE_TIPS[prof.kind or (prof.resale and "craft")] or {}, 12
     local specView = ns.Player.Prof(prof).specView and prof.specGuides ~= nil
-    for _, i in ipairs({ 1, 3, 2, 4 }) do -- left to right: Skill, Skill + Gold, Gold, Food (Cooking)
+    -- left to right: Skill, Skill + Gold, Gold, Food (Cooking), Disenchant (Enchanting)
+    for _, i in ipairs({ 1, 3, 2, 4, 5 }) do
         local b = frame.list.modes[i]
-        local tip = b.mode == "food" and (prof.food and FOOD_TIP or nil) or tips[b.mode]
+        local tip = b.mode == "food" and (prof.food and FOOD_TIP or nil)
+            or b.mode == "disenchant" and (prof.disenchant and DISENCHANT_TIP or nil) or tips[b.mode]
         b:SetShown(tip ~= nil)
         if tip then
             local name = tips.names and tips.names[b.mode] or b.name
@@ -710,7 +771,8 @@ local function renderBar()
     bar.fill:SetShown(state.skill > 0)
     bar.segPool:ReleaseAll()
     for _, step in ipairs(ladder.steps) do
-        if step.kind ~= "rank" and step.kind ~= "profit" and step.kind ~= "food" and not step.hour then
+        if step.kind ~= "rank" and step.kind ~= "profit" and step.kind ~= "food" and step.kind ~= "disenchant"
+            and step.kind ~= "bag" and not step.hour then
             local seg = bar.segPool:Get(bar)
             local c = step.kind == "craft" and (STEP_COLOR[step.color] or C.text) or C.alliance
             seg.tex:SetColorTexture(c[1], c[2], c[3], 0.9)
@@ -761,6 +823,12 @@ local function renderFooter()
             have and ("; you have %d favor"):format(have) or "")
     elseif ladder.mode == "food" then
         text = ("%d dishes for your class; the cost is one dish from bought ingredients"):format(#ladder.steps)
+    elseif ladder.mode == "disenchant" then
+        local de, earn = 0, 0
+        for i = 1, ladder.bags do de = de + (ladder.steps[i].disenchant and 1 or 0) end
+        for i = ladder.bags + 1, ladder.now do earn = earn + (ladder.steps[i].profit > 0 and 1 or 0) end
+        text = ("In your bags %d to disenchant, %d to sell; %d worth making to disenchant (on average)"):format(de,
+            ladder.bags - de, earn)
     elseif #ladder.steps > 0 and ladder.steps[1].hour then
         text = ("%d zones at skill %d; the best about %s an hour"):format(#ladder.steps,
             ladder.from, ns.Money(ladder.steps[1].perHour))
@@ -1040,7 +1108,7 @@ local function build()
     -- plan for the skill, or for gold (placed by renderHeader: the professions have different ones)
     list.modes = {}
     for i, m in ipairs({ { "skill", "Skill", 48 }, { "gold", "Gold", 48 }, { "sell", "Skill + Gold", 78 },
-                         { "food", "Food", 48 } }) do
+                         { "food", "Food", 48 }, { "disenchant", "Disenchant (beta)", 110 } }) do
         local b = UI.Button(list, m[2], m[3], 18, function()
             ns.Player.Prof(prof).mode = m[1]
             ns.Player.Prof(prof).favorView, ns.Player.Prof(prof).specView = nil, nil

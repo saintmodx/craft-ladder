@@ -69,11 +69,29 @@ end
 -- The mode a profession's ladder is planned in: a crafting profession that sells: Sure cost ("skill": only vendors buy
 -- what it makes), AH sales ("sell": the auction house too) or Gold (what earns most now, the default at 300 until you
 -- pick another); a gathering one: Skill, Skill + Gold (level where it earns most) or Gold (the zones by gold an hour,
--- the default at 300). skill: the character's (looked up when not given).
+-- the default at 300); Enchanting has Disenchant too (what's worth more disenchanted). skill: the character's (looked
+-- up when not given).
 function ns.LadderMode(data, skill)
     skill = skill or (ns.Player.Skill(data))
     return data.skillOnly and "skill" or ns.Player.Prof(data).mode
         or ((data.resale or data.kind) and skill >= 300 and "gold") or "skill"
+end
+
+local function smeltFor(data)
+    return data.smelt and { skill = (ns.Player.Skill(ns.MINING)), recipes = ns.MINING.recipes } or nil
+end
+
+-- Enchanting's Disenchant mode looks at what the character's crafting professions make: each one's data, its state
+-- (the shown one's is `state`) and the bars it may smelt.
+local function craftingProfessions(shown, state)
+    local list = {}
+    for _, data in ipairs(ns.Professions) do
+        if data.resale and not data.secondary and select(2, ns.Player.Skill(data)) > 0 then
+            list[#list + 1] = { data = data, state = data == shown and state or ns.Player.State(data),
+                                smelt = smeltFor(data) }
+        end
+    end
+    return list
 end
 
 -- Builds the ladder of one profession (the shown one by default) for this character. Returns the ladder, the price
@@ -94,15 +112,20 @@ function ns.Calculate(data)
     local fishing = data.kind == "fishing"
     local mode = ns.LadderMode(data, state.skill)
     if data.levelCaps then data.ranks = ns.Mining.LevelRanks(data, state) end -- Lockpicking: the cap is the level x 5
+    local disenchant = data.disenchant and mode == "disenchant"
     local build = fishing and ns.Fishing.Build or data.kind == "mining" and ns.Mining.Build
+        or disenchant and ns.Disenchant.Build
         or data.resale and mode == "gold" and ns.Ladder.Profits or data.food and mode == "food" and ns.Ladder.Food
         or ns.Ladder.Build
     local opts = { favor = ns.db.favor, choices = choices, realPrices = ns.Prices.Real(),
                    rate = fishing and (ns.Fishing.Rate()) or nil, mode = mode,
                    seenPools = fishing and ns.Fishing.SeenPools(data) or nil,
-                   smelt = data.smelt and { skill = (ns.Player.Skill(ns.MINING)), recipes = ns.MINING.recipes } or nil,
+                   smelt = smeltFor(data),
                    standing = ns.Player.Standing,
-                   vendorOnly = data.resale and mode == "skill" or nil }
+                   vendorOnly = data.resale and mode == "skill" or nil,
+                   crafts = disenchant and craftingProfessions(data, state) or nil,
+                   seen = disenchant and ns.Disenchant.Seen(ns.db.disenchantLog, ns.Disenchant.BucketOf) or nil,
+                   bags = disenchant and ns.Disenchant.Bags() or nil }
     local ladder = build(data, state, quote, opts)
     ladder.mode = mode
     ladder.state, ladder.data = state, data
@@ -212,6 +235,20 @@ local function printLadder(data)
             print(("  %s%s|r: %s, level %d - %s%s"):format(s.later and "|cff999999" or "", data.recipes[s.recipe].name,
                 ns.Describe.Buff(s.buff), s.eat, s.cost and ("cook one for " .. ns.Money(s.cost)) or "no price",
                 s.ah and (", buy one for " .. ns.Money(s.ah)) or ""))
+        elseif s.kind == "bag" then
+            if i == 1 then print("  |cffffd200In your bags:|r") end
+            print(("  %s%s|r x%d: %s - disenchanted about %s each, sold %s%s%s"):format(
+                s.disenchant and COLORS.green or "", ns.Describe.ItemName(s.item), s.count, ns.Disenchant.Verdict(s), ns.Money(s.each),
+                ns.Money(s.sale.each), s.bound and " (soulbound)" or "",
+                s.needSkill and (" |cffff4040needs Enchanting " .. s.needSkill .. "|r") or ""))
+        elseif s.kind == "disenchant" then
+            if i == ladder.bags + 1 and i <= ladder.now then print("  |cffffd200Make and disenchant:|r") end
+            if i == ladder.now + 1 then print("  |cffffd200Needs more Enchanting:|r") end
+            print(("  %s%s|r (%s): one craft costs %s, disenchanted about %s on average - %s%s|r%s"):format(
+                s.needSkill and COLORS.grey or s.color ~= "grey" and COLORS[s.color] or "",
+                s.data.recipes[s.recipe].name, s.data.name, ns.Money(s.cost), ns.Money(s.back),
+                s.profit >= 0 and "|cff40c040+" or "|cffff4040-", ns.Money(math.abs(s.profit)),
+                s.needSkill and (" |cffff4040needs Enchanting " .. s.needSkill .. "|r") or ""))
         elseif s.kind == "profit" then
             if s.vendor and i == 1 then print("  |cffffd200Sell to a vendor:|r") end
             if i == ladder.vendorRows + 1 then print("  |cffffd200Sell at the auction house:|r") end
@@ -248,6 +285,13 @@ local function printLadder(data)
     end
     if ladder.mode == "food" then
         chat(("food for your class, %d dishes (grey: above your level)."):format(#ladder.steps))
+        return
+    elseif ladder.mode == "disenchant" then
+        local de = 0
+        for i = 1, ladder.bags do de = de + (ladder.steps[i].disenchant and 1 or 0) end
+        chat(("in your bags %d to disenchant, %d to sell; worth more disenchanted than sold: %d to make, %d more" ..
+            " need a higher Enchanting (on average, at today's prices)."):format(de, ladder.bags - de,
+            ladder.now - ladder.bags, #ladder.steps - ladder.now))
         return
     elseif ladder.steps[1] and ladder.steps[1].kind == "profit" then
         chat(("%d sell to a vendor for more than they cost, %d earn at the auction house (per craft, at today's" ..

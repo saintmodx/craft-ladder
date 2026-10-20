@@ -13,6 +13,15 @@ version numbers [Semantic Versioning](https://semver.org).
   givers on the map, says when a quest is in your log or done, and counts what it asks for against your bags and bank
   ("2 / 4 Moonsteel Broadsword"). The recipes it takes say whether you know them and where to learn the rest; what's
   still missing is made or bought, whichever costs less, with its ingredients and the total still to spend.
+- **Disenchant (beta)** (Enchanting): a mode for what's worth disenchanting. First what's in your bags that can be
+  disenchanted, whatever made it, each with what brings more: disenchant it, sell it at the auction house (not when
+  it's soulbound) or to a vendor. Then what your crafting professions make with the recipes you know that's worth
+  more disenchanted than sold, the best first, in red when making it costs more than disenchanting brings; grey when
+  your Enchanting can't disenchant it yet. A card shows what one disenchant gives (chance, count and price of each
+  material), what 10 (or yours) bring on average and at least 9 times out of 10, and the Craft bar to make it. What a
+  disenchant gives is Classic's table, except WoW Forever's low-level blue items, which give dust and essences like a
+  green of their level, one more of each. Craft Ladder records your disenchants: from 5 of one kind of item, what you
+  got replaces the table.
 
 ## 1.2.0 - 2026-10-20
 

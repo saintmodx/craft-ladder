@@ -124,6 +124,7 @@ bankFrame:SetScript("OnEvent", function(_, event) bankOpen = event == "BANKFRAME
 
 -- How many of each of a profession's items the character has: bags, plus the bank as the game or Bagnon knows it
 -- (whichever saw more; only the game's while the bank is open). Returns owned, and inBank = the bank's part of it.
+-- Enchanting's count what the bags hold that its Disenchant mode may disenchant too.
 function Player.Owned(data)
     local count = (C_Item and C_Item.GetItemCount) or GetItemCount
     local owned, inBank = {}, {}
@@ -145,6 +146,8 @@ function Player.Owned(data)
         for item in pairs(rank.mats or {}) do add(item) end
     end
     for item in pairs(data.tools or {}) do add(item) end
+    -- Enchanting's Disenchant mode: what the bags hold that can be disenchanted (so the window sees it come and go)
+    for _, b in ipairs(data.disenchant and ns.Disenchant.Bags() or {}) do add(b.item) end
     for _, g in ipairs(data.specGuides or {}) do -- what a specialization's quests ask for (Moonsteel Broadswords)
         for _, step in ipairs(g.steps) do
             for _, x in ipairs(step.items or {}) do add(x.item) end

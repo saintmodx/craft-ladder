@@ -2,7 +2,7 @@
 --   luajit tests/check_data.lua
 local root = (arg[0]:match("^(.*)[/\\]tests[/\\]") or ".") .. "/"
 local ns = {}
-for _, file in ipairs({ "Data/Cooking.lua", "Data/FirstAid.lua", "Data/Fishing.lua", "Data/Mining.lua", "Data/Skinning.lua", "Data/Herbalism.lua", "Data/Lockpicking.lua", "Data/Blacksmithing.lua", "Data/Engineering.lua", "Data/Tailoring.lua", "Data/Enchanting.lua", "Data/Alchemy.lua", "Data/Leatherworking.lua", "Data/Poisons.lua", "Data/Camp.lua", "Professions.lua" }) do
+for _, file in ipairs({ "Data/Cooking.lua", "Data/FirstAid.lua", "Data/Fishing.lua", "Data/Mining.lua", "Data/Skinning.lua", "Data/Herbalism.lua", "Data/Lockpicking.lua", "Data/Blacksmithing.lua", "Data/Engineering.lua", "Data/Tailoring.lua", "Data/Enchanting.lua", "Data/Alchemy.lua", "Data/Leatherworking.lua", "Data/Poisons.lua", "Data/Camp.lua", "Data/Disenchant.lua", "Professions.lua" }) do
     assert(loadfile(root .. "CraftLadder/" .. file))("CraftLadder", ns)
 end
 
@@ -103,6 +103,36 @@ for _, f in ipairs(ns.CAMP.features) do
     for _, u in ipairs(f.upgrades or {}) do campItem(u, "upgrade") end
 end
 for _, f in ipairs(ns.CAMP.others) do campItem(f, "feature") end
+
+-- disenchanting: each bucket's outcomes make 100%, every material has a name, every crafted item's bucket exists and
+-- some profession makes it
+local DE, made = ns.DISENCHANT, {}
+for _, data in ipairs(ns.Professions) do
+    for _, r in pairs(data.recipes) do if r.makes then made[r.makes] = true end end
+end
+for id, b in pairs(DE.buckets) do
+    local sum = 0
+    for _, g in ipairs(b.gives) do
+        sum = sum + g.chance
+        if not DE.names[g.item] or g.min < 1 or g.max < g.min then
+            problem("Disenchant bucket %d: item %d", id, g.item)
+        end
+    end
+    -- (what the game gave may hold two materials in one disenchant: 100% or more)
+    local off = b.seen and sum < 1 - 1e-6 or not b.seen and math.abs(sum - 1) > 1e-6
+    if off or not (b.skill >= 1 and b.skill <= 300) then
+        problem("Disenchant bucket %d: %g%%, skill %d", id, sum * 100, b.skill)
+    end
+end
+local deItems = 0
+for item, id in pairs(DE.items) do
+    deItems = deItems + 1
+    if not DE.buckets[id] or not made[item] then problem("Disenchant item %d: bucket %d, not made", item, id) end
+end
+for lesser, greater in pairs(DE.greater) do
+    if not (DE.names[lesser] and DE.names[greater]) then problem("Disenchant: essence %d or %d", lesser, greater) end
+end
+print(("Disenchant built %s: %d crafted items"):format(DE.built, deItems))
 
 for _, p in ipairs(problems) do print("PROBLEM: " .. p) end
 print(#problems == 0 and "OK" or (#problems .. " problems"))

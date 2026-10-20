@@ -651,6 +651,7 @@ local function renderHeader()
     frame.subtitle:SetText(state.maxSkill > 0 and ("%s %d / %d, the ladder to 300"):format(prof.name, state.skill,
         state.maxSkill) or ("No %s yet"):format(prof.name))
     local tips, x = MODE_TIPS[prof.key] or MODE_TIPS[prof.kind or (prof.resale and "craft")] or {}, 12
+    local specView = ns.Player.Prof(prof).specView and prof.specGuides ~= nil
     for _, i in ipairs({ 1, 3, 2, 4 }) do -- left to right: Skill, Skill + Gold, Gold, Food (Cooking)
         local b = frame.list.modes[i]
         local tip = b.mode == "food" and (prof.food and FOOD_TIP or nil) or tips[b.mode]
@@ -662,10 +663,31 @@ local function renderHeader()
             b:ClearAllPoints()
             b:SetPoint("TOPLEFT", x, -8)
             x = x + b:GetWidth() + 4
-            b:SetActive(b.mode == ladder.mode)
+            b:SetActive(b.mode == ladder.mode and not specView)
             b.tooltip = { name, tip }
         end
     end
+    local spec = frame.list.spec
+    spec:SetShown(prof.specGuides ~= nil)
+    spec:ClearAllPoints()
+    spec:SetPoint("TOPLEFT", x, -8)
+    spec:SetActive(specView)
+end
+
+-- The list as wide as the window for a specialization's steps (UI/SpecPanel.lua; no card then), or the ladder's.
+local function widenList(wide)
+    local list = frame.list
+    list:ClearAllPoints()
+    list:SetPoint("TOPLEFT", LEFT, -130)
+    list:SetPoint("BOTTOMLEFT", LEFT, 42)
+    if wide then list:SetPoint("BOTTOMRIGHT", -12, 42) else list:SetWidth(LIST_W) end
+    list.scroll:SetShown(not wide)
+    if wide then
+        list.note:Hide()
+        list.favor:Hide()
+    end
+    frame.spec:SetShown(wide)
+    frame.detail:SetShown(not wide)
 end
 
 local function renderBar()
@@ -833,6 +855,9 @@ local function relayout()
     if not frame:IsShown() then return end
     if frame.camp:IsShown() then
         ns.CampPanel.Render(frame) -- its rows' text wraps to the new width
+    elseif ladder and frame.spec:IsShown() then
+        renderBar()
+        frame.total:SetText(ns.SpecPanel.Render(ladder, prof))
     elseif ladder then
         renderBar()
         renderDetail()
@@ -1018,12 +1043,20 @@ local function build()
                          { "food", "Food", 48 } }) do
         local b = UI.Button(list, m[2], m[3], 18, function()
             ns.Player.Prof(prof).mode = m[1]
-            ns.Player.Prof(prof).favorView = nil
+            ns.Player.Prof(prof).favorView, ns.Player.Prof(prof).specView = nil, nil
             Window.Refresh(true) -- back to a mode already calculated: drawn again
         end)
         b.mode, b.name = m[1], m[2]
         list.modes[i] = b
     end
+    -- the steps to a specialization (Blacksmithing, Engineering, Leatherworking): UI/SpecPanel.lua, instead of the
+    -- ladder and its card
+    list.spec = UI.Button(list, "Specialization", 96, 18, function()
+        ns.Player.Prof(prof).specView, ns.Player.Prof(prof).favorView = true, nil
+        Window.Refresh(true)
+    end)
+    list.spec.tooltip = { "Specialization", "The steps to each of its specializations: the quests, what they ask" ..
+        " for and what you have of it, the recipes, and what's still to make or buy." }
     list.favor = UI.Button(list, "", LIST_W - 24, 20, function()
         local p = ns.Player.Prof(prof)
         p.favorView = not p.favorView or nil
@@ -1043,6 +1076,7 @@ local function build()
     frame.list = list
     rowPool = UI.Pool(makeRow)
     headPool = UI.Pool(makeListHead)
+    ns.SpecPanel.Build(frame, LEFT, zoom)
 
     -- the step details (right)
     local detail = CreateFrame("Frame", nil, frame)
@@ -1141,12 +1175,22 @@ local function build()
     -- what the ladders depend on: counted (every cached ladder is then out of date, or for the bags maybe); while the
     -- window is open the shown one is drawn again, at most every 2 s (calculated again only if it's out of date)
     local events = CreateFrame("Frame", nil, frame)
+    -- (a spell learned: a specialization, which a ladder's recipes may need; the quests: only a specialization's steps
+    -- follow them, no ladder does)
     local WATCH = { "SKILL_LINES_CHANGED", "CHAT_MSG_SKILL", "BAG_UPDATE_DELAYED", "AUCTION_HOUSE_CLOSED",
-                    "MERCHANT_CLOSED", "PLAYER_LEVEL_UP", "NEW_RECIPE_LEARNED", "UPDATE_FACTION" }
+                    "MERCHANT_CLOSED", "PLAYER_LEVEL_UP", "NEW_RECIPE_LEARNED", "UPDATE_FACTION",
+                    "LEARNED_SPELL_IN_TAB", "LEARNED_SPELL_IN_SKILL_LINE", "QUEST_ACCEPTED", "QUEST_TURNED_IN",
+                    "QUEST_REMOVED" }
     for _, e in ipairs(WATCH) do pcall(events.RegisterEvent, events, e) end -- pcall: an event this client lacks
     local pending = false
     events:SetScript("OnEvent", function(_, event)
-        if event == "BAG_UPDATE_DELAYED" then bagsVersion = bagsVersion + 1 else version = version + 1 end
+        if event == "BAG_UPDATE_DELAYED" then
+            bagsVersion = bagsVersion + 1
+        elseif not event:find("^QUEST_") then
+            version = version + 1
+        elseif not frame.spec:IsShown() then
+            return
+        end
         if pending or not frame:IsShown() then return end
         pending = true
         C_Timer.After(2, function()
@@ -1245,6 +1289,14 @@ function Window.Refresh(cached)
     end
     renderHeader()
     renderBar()
+    local spec = ns.Player.Prof(prof).specView and prof.specGuides ~= nil
+    widenList(spec)
+    if spec then
+        renderFooter()
+        frame.total:SetText(ns.SpecPanel.Render(ladder, prof))
+        frame.favor:Hide()
+        return
+    end
     renderList()
     renderDetail()
     renderFooter()

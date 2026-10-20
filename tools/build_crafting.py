@@ -60,14 +60,42 @@ RANK_NAMES = [("Apprentice", 75, None), ("Journeyman", 150, 10), ("Expert", 225,
 GNOMISH, GOBLIN = 20219, 20222
 PROFESSIONS = {
     "blacksmithing": {"name": "Blacksmithing", "table": "BLACKSMITHING", "skillLine": 164, "plan": "plan",
-                      "ranks": [2018, 3100, 3538, 9785]},
+                      "ranks": [2018, 3100, 3538, 9785],
+                      # Myolor Sunderfury and Krathok Moltenfist first, then the trainer's quest; a Weaponsmith masters
+                      # one weapon with a dungeon quest from the trainers in Everlook (Kilram, Lilith, Seril)
+                      "guides": [
+                          {"spec": 9787, "steps": [
+                              {"talk": [11145, 11176], "note": "Pick \"I wish to become a weaponsmith.\""},
+                              {"quests": [5284, 5302]},
+                              {"pick": [(17041, 5306), (17040, 5305), (17039, 5307)],
+                               "note": "Then learn the mastery from the trainer who gave you the quest."}]},
+                          {"spec": 9788,
+                           "note": "Hank the Hammer's (Alliance) or Aturk the Anvil's (Horde) quests lead to Galvan the"
+                                   " Ancient and Trenton Lighthammer, whose quests teach the Ornate Mithril recipes the"
+                                   " last quest asks for. Buy those 7 items at the auction house and you can skip them.",
+                           "steps": [
+                               {"talk": [11145, 11176], "note": "Pick \"I wish to become an armorsmith.\""},
+                               {"quests": [2758]}, {"quests": [2759]}, {"quests": [2756]}, {"quests": [2757]},
+                               {"quests": [2760]}, {"quests": [2761]}, {"quests": [2762]}, {"quests": [2763]},
+                               {"quests": [2764]}, {"quests": [2771]}, {"quests": [2772]}, {"quests": [2773]},
+                               {"quests": [5283, 5301]}]}]},
     "tailoring": {"name": "Tailoring", "table": "TAILORING", "skillLine": 197, "plan": "pattern",
                   "ranks": [3908, 3909, 3910, 12180]},
     "leatherworking": {"name": "Leatherworking", "table": "LEATHERWORKING", "skillLine": 165, "plan": "pattern",
                        "ranks": [2108, 3104, 3811, 10662],
                        # Dragonscale (10656), Elemental (10658) and Tribal (10660) trainers: Peter Galen, Thorkaf
                        # Dragoneye; Sarah Tanner, Brumn Winterhoof; Caryssia Moonhunter, Se'Jib
-                       "specTrainers": {7866: 10656, 7867: 10656, 7868: 10658, 7869: 10658, 7870: 10660, 7871: 10660}},
+                       "specTrainers": {7866: 10656, 7867: 10656, 7868: 10658, 7869: 10658, 7870: 10660, 7871: 10660},
+                       # Tribal asks for the Wild Leather quests in Feralas first (Pratt McGrubben, Jangdor
+                       # Swiftstrider), the last of them handed in at Telonis or Una
+                       "guides": [
+                           {"spec": 10656, "steps": [{"quests": [5141, 5145]}]},
+                           {"spec": 10658, "steps": [{"quests": [5144, 5146]}]},
+                           {"spec": 10660, "steps": [
+                               {"quests": [2847, 2854]}, {"quests": [2848, 2855]}, {"quests": [2849, 2856]},
+                               {"quests": [2850, 2857]}, {"quests": [2851, 2858]}, {"quests": [2852, 2859]},
+                               {"quests": [2853, 2860], "note": "It gives you a letter to hand in."},
+                               {"quests": [5143, 5148]}]}]},
     "alchemy": {"name": "Alchemy", "table": "ALCHEMY", "skillLine": 171, "plan": "recipe",
                 "ranks": [2259, 3101, 3464, 11611]},
     "enchanting": {"name": "Enchanting", "table": "ENCHANTING", "skillLine": 333, "plan": "formula",
@@ -76,6 +104,18 @@ PROFESSIONS = {
                     "ranks": [4036, 4037, 4038, 12656],
                     # CMaNGOS doesn't say which recipes need a specialization: these trainers teach only to theirs
                     "specTrainers": {7406: GNOMISH, 7944: GNOMISH, 8126: GOBLIN, 8738: GOBLIN},
+                    # the first quest from any of its givers on your side, then the pledge (used from the bags)
+                    "guides": [
+                        {"spec": GNOMISH, "steps": [
+                            {"quests": [3632, 3630, 3634, 3637, 3635]},
+                            {"quests": [3640, 3642], "noItems": True,
+                             "note": "Right-click the pledge it gives you: that completes it."},
+                            {"quests": [3641, 3643]}]},
+                        {"spec": GOBLIN, "steps": [
+                            {"quests": [3629, 4181, 3633, 3526]},
+                            {"quests": [3638], "noItems": True,
+                             "note": "Right-click the pledge it gives you: that completes it."},
+                            {"quests": [3639]}]}],
                     # a guessed recipe with one of these in its name is taken as needing that specialization
                     "specNames": {"Goblin": GOBLIN, "Gnomish": GNOMISH, "Dimensional Ripper": GOBLIN,
                                   "Ultrasafe Transporter": GNOMISH},
@@ -509,6 +549,77 @@ def main():
         for q in qs:
             places.quest(q)
 
+    # specializations: the steps to each (P["guides"]), with how many of each item their quests ask (CMaNGOS: QuestieDB
+    # names the items, not how many) and who drops the ones no recipe makes
+    made = {r["makes"] for r in recipes.values() if r.get("makes")}
+    guide_npcs, areas = set(), {}
+
+    def area_names():
+        if not areas:
+            areas.update({int(r["ID"]): r["AreaName_lang"] for r in t("AreaTable")})
+        return areas
+
+    def first_npc(v):
+        """The first NPC of QuestieDB's [[npcs], [objects], ...] (a map when the lists ahead are empty)."""
+        if isinstance(v, dict):
+            v = [v.get(k) for k in (1, 2, 3)]
+        return ((v or [None])[0] or [None])[0]
+
+    def guide_step(qs, items=True):
+        """A step of quests, any one of them (each side's own, or several givers); an ender = who it's handed in to."""
+        step, asks = {"quests": qs}, None
+        for q in qs:
+            e = places.quest(q)
+            ender = first_npc(qdb.quest(q).get(3))
+            if ender and ender != e.get("giver"):
+                e.update(ender=ender, enderName=places.npc(ender)["name"])
+                guide_npcs.add(ender)
+            got = db["quest_items"].get(q, []) if items else []
+            if asks is not None and got != asks:
+                raise ValueError("quest %d asks for other items than quest %d" % (q, qs[0]))
+            asks = got
+        if items and asks:
+            step["items"] = []
+            for item, count in asks:
+                item_name(item)
+                x, drops = {"item": item, "n": count}, [] if item in made else qdb.item(item).get(2) or []
+                if len(drops) > 3:
+                    x["dropsN"] = len(drops)
+                elif drops:
+                    x["drops"] = drops
+                    for n in drops:
+                        v = places.npc(n)
+                        if v.get("x") == -1:  # in a dungeon: QuestieDB has no place on a map, the client names it
+                            del v["x"], v["y"]
+                            v["zone"] = area_names().get(qdb.npc(n).get(9))
+                    guide_npcs.update(drops)
+                step["items"].append(x)
+        return step
+
+    spec_guides = []
+    for g in P.get("guides", ()):
+        steps = []
+        for s in g["steps"]:
+            if "talk" in s:
+                step = {"talk": s["talk"]}
+                for n in s["talk"]:
+                    places.npc(n)
+                guide_npcs.update(s["talk"])
+            elif "pick" in s:  # one of several masteries
+                step = {"pick": [dict(guide_step([q]), spec=spec) for spec, q in s["pick"]]}
+                for spec, _ in s["pick"]:
+                    specs[spec] = spell_names.get(spec, "spell %d" % spec)
+            else:
+                step = guide_step(s["quests"], not s.get("noItems"))
+            if s.get("note"):
+                step["note"] = s["note"]
+            steps.append(step)
+        specs[g["spec"]] = spell_names.get(g["spec"], "spell %d" % g["spec"])
+        grant = places.quest(db["quest_spells"][g["spec"]][0])  # the quest that teaches it: the level and skill
+        guide = {"spec": g["spec"], "icon": icons.get(g["spec"]), "level": grant.get("reqLevel"),
+                 "skill": grant.get("skill"), "note": g.get("note"), "steps": steps}
+        spec_guides.append(guide)
+
     # reagents (and tools) vendors always have: their price, by the side the vendors are on. Always: some Classic
     # vendor (CMaNGOS) has it without a limit; for one Classic vendors don't sell, at least VENDOR_MIN vendors sell it
     vendor_prices, sell, limited = {}, {}, []
@@ -532,7 +643,7 @@ def main():
     named = {g["npc"] for r in recipes.values() for g in r["get"] if g.get("npc")}
     named |= {n for r in list(recipes.values()) + ranks for n in r.get("trainers", ())}
     named |= {g["npc"] for r in ranks for g in r.get("vendors", ())}
-    named |= {q["giver"] for q in places.quests.values() if q.get("giver")}
+    named |= {q["giver"] for q in places.quests.values() if q.get("giver")} | guide_npcs
     npcs = {n: v for n, v in places.npcs.items() if n in named}  # reagent sellers only told the builder a side
 
     built = datetime.date.today().isoformat()
@@ -540,7 +651,7 @@ def main():
             "quests": places.quests, "vendorPrices": vendor_prices, "sell": sell, "items": items,
             "factions": factions_used, "specs": specs, "moved": moved, "seen": seen, "toolKinds": tool_kinds,
             "makesZero": sorted(recipes[s]["name"] for s in makes_zero if s in recipes), "limited": limited,
-            "twins": sorted(twins), "unreleased": sorted(unreleased)}
+            "twins": sorted(twins), "unreleased": sorted(unreleased), "specGuides": spec_guides}
     write_lua(data)
     write_report(data, left_out)
     how = Counter(source_kind(r) for r in recipes.values())
@@ -612,6 +723,19 @@ def write_lua(d):
         lines.append("  },")
     if P.get("chains"):  # the class quests that teach it, by side
         lines.append("  chains = { %s }," % ", ".join("%s = %s" % (k, lua(v)) for k, v in sorted(P["chains"].items())))
+    if d["specGuides"]:
+        lines += ["  -- the steps to each specialization (spec, its icon, the level and skill its quest asks): talk = NPCs",
+                  "  -- (one a side), quests = any one of them on your side (items = n of an item it asks; drops = the",
+                  "  -- NPCs that drop it, dropsN = how many do), pick = one of several masteries (spec). A quest's",
+                  "  -- ender = who it's handed in to, when that isn't its giver.",
+                  "  specGuides = {"]
+        for g in d["specGuides"]:
+            lines.append("    { %s," % ", ".join("%s = %s" % (k, lua(v)) for k, v in g.items()
+                                                 if k != "steps" and v is not None))
+            lines.append("      steps = {")
+            lines += ["        %s," % lua(s) for s in g["steps"]]
+            lines.append("      } },")
+        lines.append("  },")
     lines.append("}")
     (ROOT / "CraftLadder" / "Data" / ("%s.lua" % P.get("file", P["name"]))).write_text("\n".join(lines) + "\n", encoding="utf-8")
 

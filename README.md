@@ -47,6 +47,9 @@ gold an hour each zone earns.
   ladder too.
 - **Camp**: what each camp feature gives around a campfire at your level, in the order your role wants them, and how
   to get it.
+- **Specialization** (Blacksmithing, Engineering, Leatherworking): the steps to each specialization, with the quest
+  givers on the map, the quests done or in your log, what they ask for against your bags and bank, the recipes you
+  know or still need, and what's left to make or buy.
 - A minimap button and the addon compartment; the window remembers its size, scale and place.
 
 ## Screenshots

@@ -33,6 +33,38 @@ for _, data in ipairs(ns.Professions) do
     end
     for _, q in pairs(data.quests) do
         if q.giver and not data.npcs[q.giver] then problem("quest %s: giver %d not in npcs", q.name, q.giver) end
+        if q.ender and not data.npcs[q.ender] then problem("quest %s: ender %d not in npcs", q.name, q.ender) end
+    end
+    -- a specialization's steps: their quests, NPCs and items are in the data, both sides have a way through
+    local function questStep(g, s)
+        local sides = ""
+        for _, q in ipairs(s.quests) do
+            if not data.quests[q] then problem("%s spec %d: quest %d missing", data.name, g.spec, q) end
+            sides = sides .. (data.quests[q] and data.quests[q].faction or "")
+        end
+        for _, x in ipairs(s.items or {}) do
+            if not data.items[x.item] then problem("%s spec %d: item %d has no name", data.name, g.spec, x.item) end
+            for _, npc in ipairs(x.drops or {}) do
+                if not data.npcs[npc] then problem("%s spec %d: drop %d not in npcs", data.name, g.spec, npc) end
+            end
+        end
+        return sides
+    end
+    for _, g in ipairs(data.specGuides or {}) do
+        if not data.specs[g.spec] then problem("%s spec %d: no name", data.name, g.spec) end
+        local sides = ""
+        for _, s in ipairs(g.steps) do
+            if s.talk then
+                for _, npc in ipairs(s.talk) do
+                    if not data.npcs[npc] then problem("%s spec %d: NPC %d missing", data.name, g.spec, npc) end
+                end
+            elseif s.pick then
+                for _, o in ipairs(s.pick) do questStep(g, o) end
+            else
+                sides = questStep(g, s)
+            end
+        end
+        if not (sides:find("A") and sides:find("H")) then problem("%s spec %d: no last quest for a side", data.name, g.spec) end
     end
     print(("%s built %s: %d recipes, %d ranks"):format(data.name, data.built, recipes, #data.ranks))
 end

@@ -3,6 +3,17 @@
 What's new in Craft Ladder, newest first. The format follows [Keep a Changelog](https://keepachangelog.com), the
 version numbers [Semantic Versioning](https://semver.org).
 
+## Unreleased
+
+### Added
+
+- **Specialization** (Blacksmithing, Engineering, Leatherworking): a button beside the ladder's modes shows the steps
+  to each specialization of the profession, the one you pick remembered: Weaponsmith (and a weapon mastery after it)
+  or Armorsmith, Gnomish or Goblin Engineer, Dragonscale, Elemental or Tribal Leatherworking. Each step has its quest
+  givers on the map, says when a quest is in your log or done, and counts what it asks for against your bags and bank
+  ("2 / 4 Moonsteel Broadsword"). The recipes it takes say whether you know them and where to learn the rest; what's
+  still missing is made or bought, whichever costs less, with its ingredients and the total still to spend.
+
 ## 1.2.0 - 2026-10-20
 
 ### Added

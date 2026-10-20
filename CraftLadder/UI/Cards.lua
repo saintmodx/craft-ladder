@@ -1445,3 +1445,5 @@ function Cards.Render(f, l, lk, p, sel)
 end
 
 Cards.PaintCraft, Cards.CraftClick = paintCraft, craftClick
+-- the card's widgets, for the specialization's steps (UI/SpecPanel.lua): each made with its parent, Fit(width) after
+Cards.Widgets = { section = makeSection, line = makeLine, place = makePlace, item = makeItem }

@@ -145,6 +145,14 @@ function Player.Owned(data)
         for item in pairs(rank.mats or {}) do add(item) end
     end
     for item in pairs(data.tools or {}) do add(item) end
+    for _, g in ipairs(data.specGuides or {}) do -- what a specialization's quests ask for (Moonsteel Broadswords)
+        for _, step in ipairs(g.steps) do
+            for _, x in ipairs(step.items or {}) do add(x.item) end
+            for _, o in ipairs(step.pick or {}) do
+                for _, x in ipairs(o.items or {}) do add(x.item) end
+            end
+        end
+    end
     for item, n in pairs(owned) do
         if not n then owned[item] = nil end -- false only marked "looked at, none"
     end

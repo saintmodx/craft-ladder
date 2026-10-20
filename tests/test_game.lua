@@ -564,6 +564,92 @@ expect("Blacksmithing: the footer counts the sales; the Merchant's Favor box (it
 mock.output = {}
 SlashCmdList.CRAFTLADDER("chat blacksmithing")
 expect("chat printout of the Blacksmithing ladder", said("sell:") and said("back from sales"))
+-- the Specialization button: the steps to Weaponsmith or Armorsmith instead of the ladder and its card
+local function specLabels()
+    local out = {}
+    for _, f in ipairs(mock.shownChildren(frame.spec.scroll.child, "label")) do out[#out + 1] = strip(f.label.text) end
+    return out
+end
+local function specLabel(start) -- the heading that starts so
+    for _, l in ipairs(specLabels()) do if l:sub(1, #start) == start then return l end end
+    return ""
+end
+local function specItems() return mock.shownChildren(frame.spec.scroll.child, "item") end
+local function specItem(name)
+    for _, f in ipairs(specItems()) do if strip(f.name.text):find(name, 1, true) then return f end end
+end
+local function specText()
+    local out = {}
+    for _, f in ipairs(mock.shownChildren(frame.spec.scroll.child, "text")) do
+        if type(f.text) == "table" then out[#out + 1] = strip(f.text.text) end -- a line or a pin's
+    end
+    return table.concat(out, "\n")
+end
+expect("Blacksmithing: a Specialization button beside the modes", frame.list.spec:IsShown())
+mock.click(frame.list.spec)
+local labels = specLabels()
+expect("... its steps instead of the ladder and its card, the button lit and no mode", frame.spec:IsShown()
+    and not frame.list.scroll:IsShown() and not frame.detail:IsShown() and frame.list.spec.active
+    and not frame.list.modes[1].active)
+expect("... Weaponsmith first, the Horde's steps: Krathok, then Borgosh's quest, then a mastery",
+    labels[1] == "Weaponsmith" and labels[3] == "1. Talk to Krathok Moltenfist"
+    and labels[4] == "2. The Way of the Weaponsmith" and labels[5]:find("^3%. Master a weapon"))
+expect("... what the quest asks, none had yet; level 40 and skill 200 needed",
+    specItem("Moonsteel Broadsword") and strip(specItem("Moonsteel Broadsword").name.text):find("^0 / 4")
+    and specText():find("Needs level 40 and Blacksmithing 200; you're level 28 with 141%."))
+expect("... the recipes, the ingredients and what it all costs, in the footer too", labels[2] == "The recipes"
+    and specText():find("Ingredients:") and strip(frame.total.text):find("^To Weaponsmith: about "))
+-- the recipes fold, and stay folded (saved); open again
+local function recipesHead()
+    for _, f in ipairs(mock.shownChildren(frame.spec.scroll.child, "fold")) do
+        if rawget(f, "toggle") then return f end
+    end
+end
+local learnLines = select(2, specText():gsub("\nLearn ", ""))
+mock.click(recipesHead())
+expect("... the recipes fold: no recipe lines, how many to learn in the heading, saved",
+    ns.Player.Prof(ns.BLACKSMITHING).specRecipesFolded == true and not specText():find("\nLearn ")
+    and specLabel("The recipes"):find("%d+ to learn$") and learnLines > 0)
+frame:Hide(); frame:Show()
+expect("... still folded once the window opens again", not specText():find("\nLearn "))
+mock.click(recipesHead())
+expect("... and open again", ns.Player.Prof(ns.BLACKSMITHING).specRecipesFolded == nil
+    and select(2, specText():gsub("\nLearn ", "")) == learnLines)
+-- two broadswords in the bags; the quest in the log, then done (the talk before it too)
+fx.blacksmithing.owned[3853] = 2
+mock.questLog[5302] = 1
+mock.fire("BAG_UPDATE_DELAYED"); mock.fire("QUEST_ACCEPTED", 1, 5302); mock.runTimers()
+expect("... 2 of 4 broadswords; the quest in your log, so you talked to Krathok",
+    strip(specItem("Moonsteel Broadsword").name.text):find("^2 / 4") and specLabel("2."):find("in your quest log$")
+    and specLabel("1."):find("done$"))
+mock.questsDone[5302], mock.questLog[5302] = true, nil
+mock.fire("QUEST_TURNED_IN", 5302); mock.runTimers()
+expect("... handed in: done, nothing left to bring or learn", specLabel("2."):find("done$") and not specItem("Moonsteel")
+    and specLabel("The recipes") == "")
+-- Armorsmith: picked and remembered; Hank the Hammer's quests are the Alliance's
+mock.click(frame.spec.guides[2])
+labels = specLabels()
+expect("Armorsmith picked: remembered, the Horde's chain (Aturk, Ox), no Hank the Hammer",
+    ns.Player.Prof(ns.BLACKSMITHING).spec == 9788 and labels[1] == "Armorsmith"
+    and specText():find("Aturk the Anvil") and not specText():find("Hank the Hammer  "))
+local galvan = false
+for _, l in ipairs(labels) do galvan = galvan or l:find("The Mithril Order") ~= nil end
+expect("... through Galvan to the last quest", galvan and labels[#labels]:find("The Art of the Armorsmith"))
+-- a character with the specialization
+mock.spells[9787] = true
+mock.fire("LEARNED_SPELL_IN_TAB", 9787); mock.runTimers()
+mock.click(frame.spec.guides[1])
+expect("Weaponsmith learned: every step done but the mastery", specLabels()[1]:find("done$")
+    and specLabel("2."):find("done$") and not specLabel("3."):find("done$")
+    and strip(frame.total.text) == "You have Weaponsmith")
+mock.spells[9787] = nil
+fx.blacksmithing.owned[3853], mock.questsDone[5302] = nil, nil
+-- the window opens again on the steps; a mode goes back to the ladder
+frame:Hide(); frame:Show()
+expect("... opened again: the steps still", frame.spec:IsShown())
+mock.click(frame.list.modes[1])
+expect("... a mode: back to the ladder and its card", not frame.spec:IsShown() and frame.list.scroll:IsShown()
+    and frame.detail:IsShown() and frame.list.modes[1].active and not ns.Player.Prof(ns.BLACKSMITHING).specView)
 -- the Merchant's Favor recipes: the bar over the list switches to them, with where you stand on each (with the
 -- "Merchant's Favor recipes" box ticked: its setting shares the saved data, not the prices)
 CraftLadderDB.favor = true

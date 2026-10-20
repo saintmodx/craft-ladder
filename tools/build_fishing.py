@@ -134,11 +134,16 @@ def classicdb(refresh):
             item = int(r["item"])
             db["vendor_stock"][item] = db["vendor_stock"].get(item, False) or r["maxcount"] == "0"
     # spell -> the quests that teach or cast it as a reward (a quest that teaches a recipe with no plan to it)
-    db["quest_spells"] = defaultdict(list)
+    # quest -> the items it asks you to bring, [(item, count)] (QuestieDB names them, not how many); not the one it
+    # gives you to carry (a letter)
+    db["quest_spells"], db["quest_items"] = defaultdict(list), {}
     for r in records("quest_template"):
         for k in ("RewSpell", "RewSpellCast"):
             if r[k] not in ("0", ""):
                 db["quest_spells"][int(r[k])].append(int(r["entry"]))
+        db["quest_items"][int(r["entry"])] = [(int(r["ReqItemId%d" % i]), int(r["ReqItemCount%d" % i]))
+                                              for i in range(1, 5)
+                                              if r["ReqItemId%d" % i] not in ("0", "", r["SrcItemId"])]
     return db
 
 

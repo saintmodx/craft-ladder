@@ -232,7 +232,15 @@ function M.install(fx, ns)
                   [2018] = "Blacksmithing", [4036] = "Engineering", [3908] = "Tailoring",
                   [7411] = "Enchanting", [2259] = "Alchemy", [8613] = "Skinning", [2366] = "Herbalism" })[id]
     end }
-    IsPlayerSpell = function() return false end -- the game may not report recipes as spells: the window must
+    -- the game may not report recipes as spells: the window must; M.spells = the spells it does report
+    -- (specializations)
+    M.spells = {}
+    IsPlayerSpell = function(id) return M.spells[id] or false end
+    M.questsDone, M.questLog = {}, {} -- [quest] = true; [quest] = its index in the quest log
+    C_QuestLog = {
+        IsQuestFlaggedCompleted = function(q) return M.questsDone[q] or false end,
+        GetLogIndexForQuestID = function(q) return M.questLog[q] end,
+    }
     C_Item = {
         GetItemCount = function(item) -- no bank seen
             return fx.owned[item] or fa.owned[item] or fi.owned[item] or fx.mining.owned[item] or bs.owned[item]

@@ -147,7 +147,8 @@ function Fishing.Build(data, state, quote, opts)
     local lures = lureList(data, ctx)
     local values, zoneValues, itemValues = {}, {}, {}
     local better = rankBy(opts.mode)
-    local skill, cap = state.skill, state.maxSkill or 0
+    -- from the range's start when one is picked (ns.Calculate), with the rank that skill needs
+    local skill, cap = state.from or state.skill, state.fromCap or state.maxSkill or 0
     local target = state.target or cap
     local result = { from = skill, to = target, steps = {}, cost = 0, crafts = 0, earn = 0, missing = {},
                      values = itemValues, zones = zoneValues }

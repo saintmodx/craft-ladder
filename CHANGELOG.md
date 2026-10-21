@@ -10,6 +10,9 @@ version numbers [Semantic Versioning](https://semver.org).
 - **Working Overtime**: the Legacy perk's ranks (4% more chance of a skill-up each) now count in every ladder that
   levels a skill (crafting, gathering, Lockpicking, Fishing), so yellow and green steps take fewer crafts. A step's
   card says so in its headline ("Working Overtime 3/5: +12%").
+- **Pick the range to level**: From and To over the ladder (type them, or the mouse wheel; Shift: 10 at a time), or
+  click a rank's name under the skill bar to plan to its end. The ladder, its total and the auction house tab's
+  shopping follow; From above your skill plans ahead as if you'd reached it. Kept per profession until Reset.
 
 ### Changed
 

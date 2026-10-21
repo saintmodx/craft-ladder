@@ -115,6 +115,18 @@ function ns.Calculate(data)
         if choices[i].to <= state.skill then table.remove(choices, i) end
     end
     saved.choices = choices
+    -- the range picked (the window's From / To, until Reset): planned from its start as if you had reached it, with
+    -- the rank that skill needs (Lockpicking's From is always yours: its cap is the level's)
+    local range = saved.range
+    if range then
+        state.target = range.to or 300
+        if range.from and range.from > state.skill and not data.levelCaps then
+            state.from, state.fromCap = range.from, state.maxSkill
+            for _, r in ipairs(data.ranks) do
+                if r.cap >= range.from then state.fromCap = math.max(state.maxSkill, r.cap); break end
+            end
+        end
+    end
     local fishing = data.kind == "fishing"
     local mode = ns.LadderMode(data, state.skill)
     if data.levelCaps then data.ranks = ns.Mining.LevelRanks(data, state) end -- Lockpicking: the cap is the level x 5

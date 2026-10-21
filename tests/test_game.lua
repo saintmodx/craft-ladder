@@ -362,6 +362,35 @@ expect("... the card's headline says so, after the colours", clickFirstCraft()
 C_Traits = nil
 mock.fire("TRAIT_CONFIG_UPDATED"); mock.runTimers()
 expect("... gone with the perk", allCrafts() == before and ns.Ladder.overtime == 0)
+
+-- the range the ladder plans: From / To in the footer, Reset; a rank's name under the bar plans to its end
+local function set(box, n) box:SetText(n); box.scripts.OnEditFocusLost(box) end -- typed, then focus elsewhere
+local function last() local rs = rows(); return rs[#rs].step end
+do
+    local r, fa = frame.range, char().prof.firstaid
+    expect("range: shown with the ladder, your skill to 300, nothing to reset", r:IsShown()
+        and tostring(r.from.text) == "133" and tostring(r.to.text) == "300" and r.reset.disabled)
+    expect("... over the ladder's rows", r.point[1] == "TOPLEFT" and frame.list.scroll.point[3] <= r.point[3] - 22)
+    set(r.to, 140)
+    expect("To 140: saved, the ladder ends there, no Expert to learn", fa.range.to == 140 and not fa.range.from
+        and last().to == 140 and strip(rows()[1].name.text) ~= "Learn Expert" and not r.reset.disabled
+        and strip(frame.subtitle.text) == "First Aid 133 / 150, the ladder to 140")
+    set(r.from, 100)
+    expect("From below your skill: yours", tostring(r.from.text) == "133" and not fa.range.from)
+    set(r.from, 160)
+    expect("From 160: To moves above it, the ladder starts there, Expert taken as learned", fa.range.from == 160
+        and fa.range.to == 161 and rows()[1].step.from == 160 and strip(rows()[1].name.text) ~= "Learn Expert"
+        and strip(frame.subtitle.text) == "First Aid 133 / 150, the ladder from 160 to 161")
+    mock.click(frame.bar.rankHits[4])
+    expect("Artisan's name under the bar: planned to 300", fa.range.to == nil and fa.range.from == 160)
+    r.to.scripts.OnMouseWheel(r.to, -1)
+    expect("the mouse wheel: nothing until it stops", fa.range.to == nil)
+    mock.runTimers()
+    expect("... then To 299", fa.range.to == 299)
+    mock.click(r.reset)
+    expect("Reset: your skill to 300 again", fa.range == nil and tostring(r.from.text) == "133"
+        and tostring(r.to.text) == "300" and strip(rows()[1].name.text) == "Learn Expert")
+end
 mock.click(rows()[1])
 expect("First Aid: Expert can be learned now", strip(rows()[1].name.text) == "Learn Expert")
 mock.click(rows()[1])
@@ -400,6 +429,10 @@ local function caughtNames()
 end
 mock.click(tab("fishing"))
 expect("Fishing tab: header", strip(frame.subtitle.text) == "Fishing 78 / 150, the ladder to 300")
+set(frame.range.to, 100)
+expect("Fishing: the range too, To 100", frame.range:IsShown() and last().to == 100
+    and strip(frame.subtitle.text) == "Fishing 78 / 150, the ladder to 100")
+mock.click(frame.range.reset)
 expect("Fishing: the Barrens first, no getaways", strip(rows()[1].name.text) == "Fish in The Barrens"
     and strip(frame.detail.head.line2.text):find("^No fish get away here%. Catches worth about"))
 expect("Fishing: Skill mode by default, the switch shown", frame.list.modes[1].active and frame.list.modes[1]:IsShown())
@@ -496,6 +529,11 @@ mock.click(tab("firstaid"))
 -- the Mining tab: zones to mine, the ore smelted on the way, buying ore and smelting it as an option
 mock.click(tab("mining"))
 expect("Mining tab: header", strip(frame.subtitle.text) == "Mining 70 / 150, the ladder to 300")
+set(frame.range.to, 140)
+set(frame.range.from, 120)
+expect("Mining: the range too, 120 to 140", frame.range:IsShown() and rows()[1].step.from == 120
+    and last().to == 140 and strip(frame.subtitle.text) == "Mining 70 / 150, the ladder from 120 to 140")
+mock.click(frame.range.reset)
 expect("Mining: asks to open the Smelting window", frame.list.note:IsShown()
     and strip(frame.list.note.text):find("Open your Smelting window"))
 local firstMine = rows()[1].step
@@ -851,6 +889,7 @@ local ahRow
 for _, r in ipairs(rows()) do if not r.step.vendor then ahRow = ahRow or r end end
 expect("Engineering Gold: what earns at the auction house, the best first", ahRow and ahRow.step.kind == "profit"
     and strip(ahRow.cost.text):find("^%+") and ahRow.step.color)
+expect("... no ladder, no range", not frame.range:IsShown() and not frame.bar.rankHits[3]:IsShown())
 local toLearn
 for _, r in ipairs(rows()) do if r.step.kind == "profit" and r.step.learn.cost > 0 then toLearn = toLearn or r end end
 expect("... a recipe still to learn: the icon of where, no words to cut off", toLearn

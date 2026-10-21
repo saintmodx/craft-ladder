@@ -182,8 +182,8 @@ function Player.Overtime()
     return node and node.activeRank or 0
 end
 
--- The ladder always goes to 300: the professions end there, and planning only to the rank's cap would miss recipes
--- bought for later anyway.
+-- The ladder goes to 300 (unless a range is picked, ns.Calculate): the professions end there, and planning only to
+-- the rank's cap would miss recipes bought for later anyway.
 function Player.State(data)
     local skill, maxSkill = Player.Skill(data)
     local owned, inBank = Player.Owned(data)

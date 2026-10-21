@@ -50,6 +50,8 @@ gold an hour each zone earns.
 - **Specialization** (Blacksmithing, Engineering, Leatherworking): the steps to each specialization, with the quest
   givers on the map, the quests done or in your log, what they ask for against your bags and bank, the recipes you
   know or still need, and what's left to make or buy.
+- The range to level: From and To over the ladder (or a rank's name under the skill bar), Reset for your skill
+  to 300.
 - A minimap button and the addon compartment; the window remembers its size, scale and place.
 
 ## Screenshots

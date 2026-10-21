@@ -1,13 +1,14 @@
 -- Craft Ladder: the main window. It's built the first time it opens. It keeps the ladders it has calculated (each
 -- profession, each mode) and draws one again while nothing it depends on has changed (skill, level, recipes, prices,
 -- that profession's items in the bags), so switching back and opening again cost nothing.
---   header:   title, your skill in the profession shown (the ladder always goes to 300)
+--   header:   title, your skill in the profession shown and the range the ladder plans (to 300 unless you pick one)
 --   menu:     the character's professions (main, secondary, a rogue's class skills), each with its skill (UI/Menu.lua)
---   bar:      1-300 with the rank caps, the skill you have (gold), the ladder's steps and "you are here"
---   left:     the ladder, one line per step (click one to see it); or the recipes the supply camps' quartermasters
---             sell for Merchant's Favor (the bar over the list switches)
+--   bar:      1-300 with the rank caps, the skill you have (gold), the ladder's steps, darker outside its range
+--   left:     the ladder, one line per step (click one to see it), the range it plans above it (From, To, Reset);
+--             or the recipes the supply camps' quartermasters sell for Merchant's Favor (the bar over the list
+--             switches)
 --   right:    the step you picked: how to learn it, what to buy, the other recipes you could use there (UI/Cards.lua)
---   footer:   total cost, Merchant's Favor recipes on/off, how old the prices are
+--   footer:   total cost, Merchant's Favor recipes on/off
 local _, ns = ...
 local UI = ns.UI
 local C = UI.C
@@ -591,6 +592,9 @@ local function renderList()
     list.favor.label:SetText(ladder.favor and "Back to your ladder" or ("Merchant's Favor recipes (%d)"):format(favorCount))
     list.favor:SetActive(ladder.favor or false)
     local bar = favorCount > 0 and 26 or 0
+    -- the range the ladder plans, right over its rows (renderRange shows it or not)
+    frame.range:SetPoint("TOPLEFT", 12, -32 - bar)
+    bar = bar + (frame.range:IsShown() and 28 or 0)
     list.note:SetPoint("TOPLEFT", 12, -32 - bar)
     local top = bar + (#notes > 0 and (list.note:GetStringHeight() + 10) or 0)
     list.scroll:SetPoint("TOPLEFT", 8, -32 - top)
@@ -708,8 +712,10 @@ renderDetail = function() ns.Cards.Render(frame, ladder, lookup, prof, selected)
 
 local function renderHeader()
     local state = ladder.state
-    frame.subtitle:SetText(state.maxSkill > 0 and ("%s %d / %d, the ladder to 300"):format(prof.name, state.skill,
-        state.maxSkill) or ("No %s yet"):format(prof.name))
+    local plan = state.from and ("the ladder from %d to %d"):format(state.from, state.target)
+        or ("the ladder to %d"):format(state.target)
+    frame.subtitle:SetText(state.maxSkill > 0 and ("%s %d / %d, %s"):format(prof.name, state.skill, state.maxSkill,
+        plan) or ("No %s yet"):format(prof.name))
     local tips, x = MODE_TIPS[prof.key] or MODE_TIPS[prof.kind or (prof.resale and "craft")] or {}, 12
     local specView = ns.Player.Prof(prof).specView and prof.specGuides ~= nil
     -- left to right: Skill (Vendor sales), AH sales, Profit, Food (Cooking), Disenchant (Enchanting)
@@ -750,6 +756,44 @@ local function widenList(wide)
     end
     frame.spec:SetShown(wide)
     frame.detail:SetShown(not wide)
+end
+
+-- The range the ladder plans, from its boxes (saved per profession until Reset; none: your skill to 300). From is no
+-- lower than your skill, so it follows your skill once you pass it (Lockpicking's is always yours: its cap is the
+-- level's); To is above it, at most 300. Calculated again only when it changed.
+local function saveRange()
+    local skill, r = ladder.state.skill, frame.range
+    local from = prof.levelCaps and skill or math.max(skill, math.min(299, tonumber(r.from:GetText()) or skill))
+    local to = math.max(from + 1, math.min(300, tonumber(r.to:GetText()) or 300))
+    r.from:SetText(from)
+    r.to:SetText(to)
+    local p = ns.Player.Prof(prof)
+    local old, new = p.range or {}, { from = from > skill and from or nil, to = to < 300 and to or nil }
+    if new.from == old.from and new.to == old.to then return end
+    p.range = (new.from or new.to) and new or nil
+    Window.Refresh()
+end
+
+-- the mouse wheel: once it stops, not at every notch
+local rangeEdits = 0
+local function saveRangeSoon()
+    rangeEdits = rangeEdits + 1
+    local mine = rangeEdits
+    C_Timer.After(0.4, function()
+        if mine == rangeEdits and frame:IsShown() then saveRange() end
+    end)
+end
+
+-- The range's boxes: with a ladder only (not Profit, Food, Disenchant, the Merchant's Favor recipes or a
+-- specialization's steps), saying what the ladder plans; Reset only when it isn't the default.
+local function renderRange(spec)
+    local state, r = ladder.state, frame.range
+    r:SetShown((ladder.mode == "skill" or ladder.mode == "sell") and not ladder.favor and not spec
+        and state.skill < 300)
+    r.from.shown, r.to.shown = state.from or state.skill, state.target
+    if not r.from:HasFocus() then r.from:SetText(r.from.shown) end
+    if not r.to:HasFocus() then r.to:SetText(r.to.shown) end
+    r.reset:SetEnabled(ns.Player.Prof(prof).range ~= nil)
 end
 
 local function renderBar()
@@ -796,7 +840,18 @@ local function renderBar()
         local fs = bar.rankText[i]
         local current = state.skill >= r[1] and state.skill < r[2] or (r[2] == 300 and state.skill >= 300)
         UI.SetColor(fs, current and C.gold or C.dim)
+        bar.rankHits[i]:SetShown(frame.range:IsShown() and not prof.levelCaps and r[2] > state.skill)
     end
+    -- outside the range the ladder plans: darker
+    local from, to = state.from or state.skill, state.target
+    bar.before:ClearAllPoints()
+    bar.before:SetPoint("TOPLEFT", bar, "TOPLEFT", x(state.skill), 0)
+    bar.before:SetPoint("BOTTOMRIGHT", bar, "BOTTOMLEFT", x(from), 0)
+    bar.before:SetShown(from > state.skill)
+    bar.after:ClearAllPoints()
+    bar.after:SetPoint("TOPLEFT", bar, "TOPLEFT", x(to), 0)
+    bar.after:SetPoint("BOTTOMRIGHT")
+    bar.after:SetShown(to < 300)
 end
 
 -- Where the prices come from, how old they are and when AuctionDB may scan next (redrawn every second while open).
@@ -903,7 +958,7 @@ local function buildBar()
     local top = CreateFrame("Frame", nil, bar)
     top:SetAllPoints()
     top:SetFrameLevel(bar:GetFrameLevel() + 5)
-    bar.rankText, bar.ticks = {}, {}
+    bar.rankText, bar.ticks, bar.rankHits = {}, {}, {}
     for i, r in ipairs(RANK_NAMES) do
         if r[1] > 0 then
             local tick = top:CreateTexture(nil, "OVERLAY")
@@ -914,7 +969,21 @@ local function buildBar()
         local fs = UI.Label(top, 10, C.dim, nil, "CENTER")
         fs:SetText(("%s  %d - %d"):format(r[3], r[1], r[2]))
         bar.rankText[i] = fs
+        -- a rank's name, clicked: the ladder planned to its end
+        local hit = CreateFrame("Button", nil, top)
+        hit:SetAllPoints(fs)
+        hit:SetScript("OnClick", function()
+            frame.range.to:SetText(r[2])
+            saveRange()
+        end)
+        hit:SetScript("OnEnter", function(self) UI.Tooltip(self, { r[3], ("Plan the ladder to %d."):format(r[2]) }) end)
+        hit:SetScript("OnLeave", UI.HideTooltip)
+        bar.rankHits[i] = hit
     end
+    -- outside the range the ladder plans (renderBar places them)
+    bar.before, bar.after = top:CreateTexture(nil, "ARTWORK"), top:CreateTexture(nil, "ARTWORK")
+    bar.before:SetColorTexture(0, 0, 0, 0.55)
+    bar.after:SetColorTexture(0, 0, 0, 0.55)
     bar.pointer = top:CreateTexture(nil, "OVERLAY")
     bar.pointer:SetSize(10, 10)
     bar.pointer:SetTexture(UI.MEDIA .. "pointer")
@@ -1249,6 +1318,54 @@ local function build()
     end)
     frame.favor:SetPoint("BOTTOMLEFT", LEFT + LIST_W + 10, 14)
     frame.favor.tooltip = { "Merchant's Favor recipes", "Also use recipes bought with Merchant's Favor." }
+    -- the range the ladder plans, over the list (renderList places it): From and To, typed (Enter) or the mouse wheel
+    -- (Shift: 10 at a time); Reset
+    local range = CreateFrame("Frame", nil, frame.list)
+    range:SetSize(LIST_W - 24, 22)
+    local function box(tip)
+        local b = CreateFrame("EditBox", nil, range)
+        b:SetSize(40, 20)
+        UI.Panel(b, C.panel2, C.edge, 5, -4)
+        b:SetFont(UI.FONT, 12, "")
+        b:SetTextColor(C.text[1], C.text[2], C.text[3])
+        b:SetJustifyH("CENTER")
+        b:SetNumeric(true)
+        b:SetMaxLetters(3)
+        b:SetAutoFocus(false)
+        b:SetScript("OnEnterPressed", b.ClearFocus)
+        b:SetScript("OnEscapePressed", function(self)
+            self:SetText(self.shown or "") -- what it said: nothing changes
+            self:ClearFocus()
+        end)
+        b:SetScript("OnEditFocusLost", saveRange)
+        b:EnableMouseWheel(true)
+        b:SetScript("OnMouseWheel", function(self, delta)
+            self:SetText(math.max(0, (tonumber(self:GetText()) or 0) + delta * (IsShiftKeyDown() and 10 or 1)))
+            saveRangeSoon()
+        end)
+        b:SetScript("OnEnter", function(self) UI.Tooltip(self, tip) end)
+        b:SetScript("OnLeave", UI.HideTooltip)
+        return b
+    end
+    local fromLabel = UI.Label(range, 11, C.muted)
+    fromLabel:SetText("From")
+    fromLabel:SetPoint("LEFT")
+    range.from = box({ "From", "The skill the ladder starts at: yours, or higher to plan ahead (as if you had reached" ..
+        " it). Type it (Enter), or the mouse wheel (Shift: 10 at a time)." })
+    range.from:SetPoint("LEFT", fromLabel, "RIGHT", 6, 0)
+    local toLabel = UI.Label(range, 11, C.muted)
+    toLabel:SetText("to")
+    toLabel:SetPoint("LEFT", range.from, "RIGHT", 6, 0)
+    range.to = box({ "To", "The skill the ladder plans to: 300, or lower to stop sooner. Type it (Enter), or the" ..
+        " mouse wheel (Shift: 10 at a time). A rank's name under the bar plans to its end." })
+    range.to:SetPoint("LEFT", toLabel, "RIGHT", 6, 0)
+    range.reset = UI.Button(range, "Reset", 50, 20, function()
+        ns.Player.Prof(prof).range = nil
+        Window.Refresh()
+    end)
+    range.reset:SetPoint("LEFT", range.to, "RIGHT", 10, 0)
+    range.reset.tooltip = { "Reset", "The ladder from your skill to 300 again." }
+    frame.range = range
     buildGrip()
 
     -- the Craft bar follows the profession window, its recipe list and combat, only while the window is open
@@ -1320,7 +1437,7 @@ function Window.Refresh(cached)
     frame.camp:SetShown(camp)
     if camp then
         for _, f in ipairs({ frame.bar, frame.list, frame.detail, frame.total, frame.prices, frame.nextScan, frame.idle,
-                             frame.favor }) do
+                             frame.favor, frame.range }) do
             f:Hide()
         end
         ns.Menu.Render(frame, nil)
@@ -1371,11 +1488,13 @@ function Window.Refresh(cached)
     if idle then
         frame.subtitle:SetText("No profession yet")
         frame.favor:Hide()
+        frame.range:Hide()
         return
     end
     renderHeader()
-    renderBar()
     local spec = ns.Player.Prof(prof).specView and prof.specGuides ~= nil
+    renderRange(spec) -- before the bar: its ranks' names plan to their end only while the range shows
+    renderBar()
     widenList(spec)
     if spec then
         renderFooter()

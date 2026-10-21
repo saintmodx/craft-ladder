@@ -1496,7 +1496,8 @@ local function renderDetail()
             "Nothing you can get here has a price yet: Craft Ladder needs auction house prices.", "")
     elseif not step then
         headline(prof.icon, "Nothing to do here", C.gold,
-            state.skill >= 300 and ("You've reached 300 %s."):format(prof.name) or "No recipe found for your skill.", "")
+            state.skill >= state.target and ("You've reached %d %s."):format(state.target, prof.name)
+                or "No recipe found for your skill.", "")
     elseif step.kind == "rank" then
         rankDetail(step)
     elseif step.kind == "fish" then

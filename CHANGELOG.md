@@ -11,6 +11,12 @@ version numbers [Semantic Versioning](https://semver.org).
   levels a skill (crafting, gathering, Lockpicking, Fishing), so yellow and green steps take fewer crafts. A step's
   card says so in its headline ("Working Overtime 3/5: +12%").
 
+### Changed
+
+- When the auction house was last scanned now shows at the top of the window, in the middle. After 3 hours it turns
+  yellow and asks for a scan; after 12 hours it turns red with a warning sign, since the costs may be off by then.
+- The coloured line under the window's title is now a thin line in the frame's colour.
+
 ## 1.3.0 - 2026-10-20
 
 ### Added

@@ -189,7 +189,7 @@ C_TradeSkillUI.GetRecipeInfo, C_TradeSkillUI.GetBaseProfessionInfo = recipeInfo,
 expect("no 'open the Cooking window' note now", not frame.list.note:IsShown())
 expect("footer shows the total, and what selling the dishes brings back", strip(frame.total.text):find("^Spend")
     and strip(frame.total.text):find("back from sales"))
-expect("footer shows the price source", strip(frame.prices.text):find("AuctionDB"))
+expect("header shows the price source", strip(frame.prices.text):find("AuctionDB"))
 
 -- a bigger window: the details get wider; Ctrl + wheel scales it; right-click on the corner resets both
 frame:SetSize(1100, 760)
@@ -1219,11 +1219,23 @@ expect("the row you looked at is still picked when the window opens again", pick
     and frame.detail.head.step.from == picked)
 mock.click(tab("firstaid")); mock.click(tab("cooking"))
 expect("... and after another tab", frame.detail.head.step.from == picked)
-expect("footer: next AuctionDB scan in 7:12", strip(frame.nextScan.text) == "Next AuctionDB scan in 7:12")
+expect("header: next AuctionDB scan in 7:12", strip(frame.nextScan.text) == "Next AuctionDB scan in 7:12")
 local ticker = mock.tickers[#mock.tickers]
 mock.scanCooldown = 0
 ticker.fn()
 expect("the countdown ticks without a recalculation", strip(frame.nextScan.text):find("when you open"))
+-- the prices' age, on top: quiet while fresh, a nudge after 3 h, a warning after 12 h
+do
+    local realTime, scanTs = time, AuctionDB.sv.houses[UnitFactionGroup()].scans[1][1]
+    local function at(age) time = function() return scanTs + age end; ticker.fn(); return strip(frame.prices.text) end
+    expect("prices on top, centred", frame.prices.point[1] == "TOP")
+    expect("fresh prices: quiet", at(1800):find("^Prices: AuctionDB, scanned %d+:%d+ %(30m ago%)$"))
+    expect("5 h old: scan at the auction house",
+        at(5 * 3600) == "AuctionDB prices scanned 5h ago: scan at the auction house")
+    expect("13 h old: a warning, with its icon", at(13 * 3600):find("AlertNew.*costs may be off"))
+    time = realTime
+    ticker.fn()
+end
 -- AuctionDB scans again while the window is open: the ladder calculated again with its prices, once
 do
     local scans, calc, n = AuctionDB.sv.houses[UnitFactionGroup()].scans, ns.Calculate, 0

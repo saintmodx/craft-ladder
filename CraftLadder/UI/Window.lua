@@ -66,6 +66,7 @@ local DISENCHANT_TIP = "Beta. No ladder: what's in your bags that can be disench
     " need a higher Enchanting."
 local STEP_COLOR = { orange = C.orange, yellow = C.yellow, green = C.green, grey = C.grey }
 local BAG_ICON = "|TInterface\\Icons\\INV_Misc_Bag_08:14:14|t" -- a step made from what you have
+local ALERT_ICON = "|TInterface\\DialogFrame\\UI-Dialog-Icon-AlertNew:14:14|t" -- prices scanned long ago
 -- Where a step's recipe is learned, as the game shows that NPC in its dialogs (a recipe in your bags: its scroll);
 -- none once it's known or every character starts with it.
 local LEARN_ICONS = {
@@ -804,9 +805,18 @@ local function renderPrices()
     if not source then
         frame.prices:SetText(hex(C.bad) .. "No auction house prices: AuctionDB or Auctionator needed|r")
     elseif scanned then
+        -- quiet while fresh; after 3 h a nudge; after 12 h a warning: costs may be off by then
         local age = time() - scanned
-        local c = age > 3 * 86400 and C.bad or age > 86400 and C.warn or C.muted
-        frame.prices:SetText(hex(c) .. ("Prices: %s, scanned %s (%s)|r"):format(source, date("%H:%M", scanned), ns.Age(scanned)))
+        if age > 12 * 3600 then
+            frame.prices:SetText(hex(C.bad) .. ALERT_ICON .. (" %s prices scanned %s, costs may be off: scan at the" ..
+                " auction house|r"):format(source, ns.Age(scanned)))
+        elseif age > 3 * 3600 then
+            frame.prices:SetText(hex(C.warn) .. ("%s prices scanned %s: scan at the auction house|r"):format(source,
+                ns.Age(scanned)))
+        else
+            frame.prices:SetText(hex(C.muted) .. ("Prices: %s, scanned %s (%s)|r"):format(source,
+                date("%H:%M", scanned), ns.Age(scanned)))
+        end
     else
         frame.prices:SetText(hex(C.muted) .. "Prices: " .. source .. "|r")
     end
@@ -1090,12 +1100,16 @@ local function build()
     idle:Hide()
     frame.idle = idle
     ns.CampPanel.Build(frame, LEFT) -- the menu's Camp: this instead of the ladder
-    local accent = frame:CreateTexture(nil, "ARTWORK")
-    accent:SetPoint("TOPLEFT", 16, -58)
-    accent:SetPoint("TOPRIGHT", -16, -58)
-    accent:SetHeight(1)
-    local fc = UnitFactionGroup("player") == "Alliance" and C.alliance or C.horde
-    accent:SetColorTexture(fc[1], fc[2], fc[3], 0.7)
+    local rule = frame:CreateTexture(nil, "ARTWORK") -- under the header, in the frame's own colour
+    rule:SetPoint("TOPLEFT", 16, -58)
+    rule:SetPoint("TOPRIGHT", -16, -58)
+    rule:SetHeight(1)
+    rule:SetColorTexture(C.edge[1], C.edge[2], C.edge[3], 1)
+    -- the prices' age on top, where it's seen: an old scan makes every cost shaky
+    frame.prices = UI.Label(frame, 11, C.muted, nil, "CENTER")
+    frame.prices:SetPoint("TOP", 0, -18)
+    frame.nextScan = UI.Label(frame, 10, C.muted, nil, "CENTER")
+    frame.nextScan:SetPoint("TOP", frame.prices, "BOTTOM", 0, -5)
 
     buildBar()
 
@@ -1227,10 +1241,6 @@ local function build()
     end)
     frame.favor:SetPoint("BOTTOMLEFT", LEFT + LIST_W + 10, 14)
     frame.favor.tooltip = { "Merchant's Favor recipes", "Also use recipes bought with Merchant's Favor." }
-    frame.prices = UI.Label(frame, 11, C.muted, nil, "RIGHT")
-    frame.prices:SetPoint("BOTTOMRIGHT", -18, 22)
-    frame.nextScan = UI.Label(frame, 10, C.muted, nil, "RIGHT")
-    frame.nextScan:SetPoint("BOTTOMRIGHT", -18, 9)
     buildGrip()
 
     -- the Craft bar follows the profession window, its recipe list and combat, only while the window is open

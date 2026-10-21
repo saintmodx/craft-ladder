@@ -781,17 +781,17 @@ local function renderBar()
             seg:SetSize(math.max(2, x(step.to) - x(step.from) - 2), 4)
         end
     end
-    -- "you are here" reads to the left of its marker, or to the right near the start of the bar
+    -- the badge centred over the pointer, kept within the bar's ends
     local hx = x(state.skill)
     bar.pointer:ClearAllPoints()
-    bar.pointer:SetPoint("BOTTOM", bar, "TOPLEFT", hx, 3)
-    bar.here:SetText(("you are here: %d"):format(state.skill))
+    bar.pointer:SetPoint("BOTTOM", bar, "TOPLEFT", hx, 1)
+    bar.line:ClearAllPoints()
+    bar.line:SetPoint("CENTER", bar, "LEFT", hx, 0)
+    bar.here.text:SetText(("Skill %d"):format(state.skill))
+    local w = bar.here.text:GetStringWidth() + 16
+    bar.here:SetWidth(w)
     bar.here:ClearAllPoints()
-    if hx < 120 then
-        bar.here:SetPoint("BOTTOMLEFT", bar.pointer, "TOPLEFT", -2, 1)
-    else
-        bar.here:SetPoint("BOTTOMRIGHT", bar.pointer, "TOPRIGHT", 2, 1)
-    end
+    bar.here:SetPoint("BOTTOM", bar, "TOPLEFT", math.max(w / 2, math.min(width - w / 2, hx)), 12)
     for i, r in ipairs(RANK_NAMES) do
         local fs = bar.rankText[i]
         local current = state.skill >= r[1] and state.skill < r[2] or (r[2] == 300 and state.skill >= 300)
@@ -916,10 +916,18 @@ local function buildBar()
         bar.rankText[i] = fs
     end
     bar.pointer = top:CreateTexture(nil, "OVERLAY")
-    bar.pointer:SetSize(12, 12)
+    bar.pointer:SetSize(10, 10)
     bar.pointer:SetTexture(UI.MEDIA .. "pointer")
     bar.pointer:SetVertexColor(C.gold[1], C.gold[2], C.gold[3])
-    bar.here = UI.Label(top, 11, C.gold)
+    -- the skill you have, easy to spot: a gold badge over the pointer, a light line through the bar below it
+    bar.here = UI.Panel(CreateFrame("Frame", nil, top), C.gold, C.gold, 5, -2)
+    bar.here:SetHeight(18)
+    bar.here.text = UI.Label(bar.here, 13, C.bg, nil, "CENTER")
+    bar.here.text:SetPoint("CENTER", 0, 0)
+    bar.here.text:SetShadowOffset(0, 0)
+    bar.line = top:CreateTexture(nil, "OVERLAY")
+    bar.line:SetColorTexture(1, 1, 1, 0.9)
+    bar.line:SetSize(2, 16)
     frame.bar = bar
 end
 

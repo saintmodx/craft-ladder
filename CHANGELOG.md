@@ -16,6 +16,8 @@ version numbers [Semantic Versioning](https://semver.org).
 - When the auction house was last scanned now shows at the top of the window, in the middle. After 3 hours it turns
   yellow and asks for a scan; after 12 hours it turns red with a warning sign, since the costs may be off by then.
 - The coloured line under the window's title is now a thin line in the frame's colour.
+- Your skill on the bar is easier to spot: a gold "Skill 142" badge over the marker, and a light line through the bar
+  where you are, instead of the small "you are here: 142".
 
 ## 1.3.0 - 2026-10-20
 

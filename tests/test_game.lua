@@ -329,6 +329,11 @@ mock.click(laterRow)
 expect("... with its reagents in the bags: you have them, not 'you can make them now'",
     lines():find("You have the reagents for 3%.") and not lines():find("now with what you have"))
 expect("First Aid tab: header", strip(frame.subtitle.text) == "First Aid 133 / 150, the ladder to 300")
+do
+    local here = frame.bar.here
+    expect("the skill's badge: Skill 133, over the bar, as wide as its text", strip(here.text.text) == "Skill 133"
+        and here.point[1] == "BOTTOM" and here.point[4] >= here.width / 2 and here.width > 16)
+end
 expect("First Aid: the crafting card (Learn it, One craft, Batch)", clickFirstCraft() and craftCard())
 expect("... no perk, no Working Overtime", not strip(frame.detail.head.line2.text):find("Working Overtime"))
 

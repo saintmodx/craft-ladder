@@ -188,7 +188,7 @@ local function recipeLine(data, state, r)
     end
     -- a trainer's skill worked out from Classic's: said nowhere else in this view, as every recipe here would say it
     local why = (rec.guess or way.kind ~= "trainer") and ns.Describe.Unconfirmed(rec, way)
-    if why then line(why, C.dim) end
+    if why then line(why, C.muted) end
 end
 
 -- What a quest step still needs: the items, what to make and what to buy.

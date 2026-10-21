@@ -18,6 +18,8 @@ version numbers [Semantic Versioning](https://semver.org).
 - The coloured line under the window's title is now a thin line in the frame's colour.
 - Your skill on the bar is easier to spot: a gold "Skill 142" badge over the marker, and a light line through the bar
   where you are, instead of the small "you are here: 142".
+- Easier to read: the notes in a step's details, the Camp view's and the menu's headings are a lighter grey, and what
+  isn't available yet is less faint.
 
 ## 1.3.0 - 2026-10-20
 

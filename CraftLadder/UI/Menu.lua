@@ -110,7 +110,7 @@ function Menu.Build(frame)
     menu.entries, menu.heads = {}, {}
     for i, data in ipairs(ns.Professions) do menu.entries[i] = makeMenuEntry(menu, data) end
     for i, group in ipairs(MENU_GROUPS) do
-        menu.heads[i] = UI.Label(menu, 10, C.dim)
+        menu.heads[i] = UI.Label(menu, 10, C.muted)
         menu.heads[i]:SetText(group.title)
     end
     -- Camp, at the bottom: no skill, its own view

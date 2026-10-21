@@ -547,12 +547,12 @@ local function learnSection(step, rec)
     end
     for _, g in ipairs(rec.get) do -- a holiday's way, never the ladder's: where to get one then
         if g.event and way.kind ~= "known" then
-            line(("During %s: %s."):format(g.event, ns.Describe.Learn(g, prof)), C.dim)
+            line(("During %s: %s."):format(g.event, ns.Describe.Learn(g, prof)), C.muted)
         end
     end
     if way.guess then
         line(("The price is an estimate: Craft Ladder learns the real one when you visit the %s."):format(
-            way.kind == "trainer" and "trainer" or "vendor"), C.dim)
+            way.kind == "trainer" and "trainer" or "vendor"), C.muted)
     end
 end
 
@@ -704,7 +704,7 @@ local function craftDetail(step)
     for _, item in ipairs(items) do itemRow(item, step.buy[item]) end
     local made = math.floor(step.crafts * (rec.yield or 1) + 0.5)
     sellLines(rec, made, made .. " sell for ")
-    line("Craft counts are estimates: skill-ups are luck once a recipe is yellow.", C.dim)
+    line("Craft counts are estimates: skill-ups are luck once a recipe is yellow.", C.muted)
 
     if step.sale then
         local sale = step.sale
@@ -721,7 +721,7 @@ local function craftDetail(step)
             ns.Money(math.abs(net))), net < 0 and C.good or C.text)
         line(ladder.mode == "skill" and "Sure cost counts only what vendors pay: that money is sure. AH sales counts" ..
             " the auction house too." or "The auction house counts only when it pays 1.5 times a vendor and 5 or more" ..
-            " are listed, and for at most a quarter of what's listed.", C.dim)
+            " are listed, and for at most a quarter of what's listed.", C.muted)
     end
 
     if step.tool then return end
@@ -763,7 +763,7 @@ local function profitDetail(step)
     line(step.vendor and "Profit: what a vendor pays, less the ingredients at today's prices. How many you can make," ..
         " the auction house's ingredients decide." or "Profit: at the lowest listing after the auction house's cut," ..
         " with 5 or more listed; it counts only when it pays 1.5 times what a vendor does. How many sell, the auction" ..
-        " house doesn't say. Prices change: look again before buying.", C.dim)
+        " house doesn't say. Prices change: look again before buying.", C.muted)
 end
 
 -- What disenchanting gives (Disenchant mode, a bag's item or a recipe's): one disenchant's outcomes, what n bring, and
@@ -800,7 +800,7 @@ local function disenchanting(step, n, yours)
     end
     line(("What a disenchant gives is luck%s. Materials at the auction house after its cut; 3 lesser essences make a" ..
         " greater one."):format(bucket.seen and "" or (", from Classic's table (not checked in Forever yet): from %d" ..
-        " of your disenchants of items like it, what you got replaces it"):format(SEEN)), C.dim)
+        " of your disenchants of items like it, what you got replaces it"):format(SEEN)), C.muted)
 end
 
 -- Disenchant: what another profession makes, made and disenchanted: what one disenchant gives, what a batch brings,
@@ -841,7 +841,7 @@ local function bagDetail(step)
         " (after its cut%s)."):format(ns.Money(ah * ns.Prices.AH_CUT), e.qty and (", " .. e.qty .. " listed") or "")
         or "Not on the auction house.", C.muted)
     line(vendor and vendor > 0 and (ns.Money(vendor) .. " each at a vendor.") or "Vendors don't buy it.", C.muted)
-    line("The auction house counts with 5 or more listed. What made it doesn't count: it's made.", C.dim)
+    line("The auction house counts with 5 or more listed. What made it doesn't count: it's made.", C.muted)
 end
 
 -- Food: one dish for your class: what eating it raises, the level it asks, its skill-up colours, its recipe, what one
@@ -867,7 +867,7 @@ local function foodDetail(step)
     section("Or buy it")
     line(step.ah and ("One at the auction house: %s."):format(ns.Money(step.ah))
         or "None listed at the auction house now.", C.text)
-    line("What it raises is read from the game's files, not checked in game yet.", C.dim)
+    line("What it raises is read from the game's files, not checked in game yet.", C.muted)
 end
 
 -- Lockpicking and Poisons: the class quests for your race (or side), with their givers' pins.
@@ -880,7 +880,7 @@ local function chainSection()
         line(("%d. %s"):format(i, name), C.text)
         if quest and quest.giver then placeRow(quest.giver, "quest giver") end
     end
-    line(prof.chainNote, C.dim)
+    line(prof.chainNote, C.muted)
 end
 
 local function rankDetail(step)
@@ -1017,7 +1017,7 @@ local function fishDetail(step)
     if step.lure then
         line(("Put %s on your pole: +%d fishing for %d minutes, so no fish get away."):format(
             ns.Describe.ItemName(step.lure), prof.gear.lures[step.lure], prof.gear.lureMinutes), C.muted)
-        line("Fishing supplies vendors sell lures, in every capital.", C.dim)
+        line("Fishing supplies vendors sell lures, in every capital.", C.muted)
     else
         line("No lure needed: your skill keeps the fish from getting away.", C.good)
     end
@@ -1040,19 +1040,19 @@ local function fishDetail(step)
         table.sort(list, function(a, b) return a.p.count > b.p.count end)
         for _, x in ipairs(list) do poolRow(x.entry, x.p) end
         line(("Fish pools when you see them: Craft Ladder counts a third of your catches here from pools. That makes" ..
-            " a catch worth %s on average (%s in open water)."):format(ns.Money(step.value), ns.Money(z.open)), C.dim)
+            " a catch worth %s on average (%s in open water)."):format(ns.Money(step.value), ns.Money(z.open)), C.muted)
     else
-        line("No fishing pools known here yet. GatherMate2 adds the ones you fish, and Craft Ladder counts them.", C.dim)
+        line("No fishing pools known here yet. GatherMate2 adds the ones you fish, and Craft Ladder counts them.", C.muted)
     end
     local rate, log = ns.Fishing.Rate()
     if log and log.catches >= 50 then
         line(("Catches per point: from your %d catches, skill-ups come %d%% as often as Classic's rule says."):format(
-            log.catches, rate * 100 + 0.5), C.dim)
+            log.catches, rate * 100 + 0.5), C.muted)
     else
         line(("Catches per point follow Classic's rule (at 150, one point in about 4 catches) until Craft Ladder has" ..
-            " counted 50 of your catches (%d so far)."):format(log and log.catches or 0), C.dim)
+            " counted 50 of your catches (%d so far)."):format(log and log.catches or 0), C.muted)
     end
-    line("Zones and their fish come from Classic's world: Forever may differ.", C.dim)
+    line("Zones and their fish come from Classic's world: Forever may differ.", C.muted)
     if step.hour then return end
 
     section(("Other zones from %d"):format(step.from))
@@ -1152,10 +1152,10 @@ local function skinDetail(step)
     line("Which creatures can be skinned and what one gives come from Classic; where they are and their levels from" ..
         " QuestieDB's Forever data. The skill one needs is Classic's rule from its level (level x 5 past 20), the" ..
         " colours Mining's (yellow 25, green 50, grey 100 above it). A creature new in Forever counts once you've" ..
-        " skinned one.", C.dim)
+        " skinned one.", C.muted)
     if ladder.mode ~= "skill" then
         line(("Gold an hour assumes %d s a creature (kill, loot, skin) and a 60%% mount between them: about %d an" ..
-            " hour here."):format(prof.nodeSeconds, step.crafts / (step.seconds / 3600) + 0.5), C.dim)
+            " hour here."):format(prof.nodeSeconds, step.crafts / (step.seconds / 3600) + 0.5), C.muted)
     end
     if step.hour then return end
 
@@ -1203,10 +1203,10 @@ local function mineDetail(step)
     if not next(prof.recipes) then -- Herbalism: nothing to smelt
         line(("%s places come from GatherMate2's Forever data; what one gives and how often a rarer kind takes a" ..
             " place, from Classic. Skill-ups follow Classic's colours (yellow 25, green 50, grey 100 above what one" ..
-            " needs): Forever may differ."):format((g.one:gsub("^%l", string.upper))), C.dim)
+            " needs): Forever may differ."):format((g.one:gsub("^%l", string.upper))), C.muted)
         if ladder.mode ~= "skill" then
             line(("Gold an hour assumes 15 s a %s, a third of the zone's places with one up and a 60%% mount: about" ..
-                " %d an hour here."):format(g.one, step.crafts / (step.seconds / 3600) + 0.5), C.dim)
+                " %d an hour here."):format(g.one, step.crafts / (step.seconds / 3600) + 0.5), C.muted)
         end
         if step.hour then return end
         section(("Other zones, from %d"):format(step.from))
@@ -1257,20 +1257,20 @@ local function mineDetail(step)
         table.sort(mats)
         line(("%s: %s make %d %s, so per ore it's worth one of them; it takes both ores, as much as the scarcer" ..
             " one allows."):format(alloy.name, table.concat(mats, " and "), alloy.count, ns.Describe.ItemName(alloy.makes)),
-            C.dim)
+            C.muted)
     end
     if #ores == 0 then line("Nothing mined here can be smelted.", C.muted) end
-    line("Per ore, after the auction house's cut (only what's listed at least 5 times), or what a vendor pays.", C.dim)
+    line("Per ore, after the auction house's cut (only what's listed at least 5 times), or what a vendor pays.", C.muted)
     if not step.hour then
         line("Smelting gives skill-ups too: Craft Ladder counts the ore you mine as smelted, so you mine fewer nodes.",
-            C.dim)
+            C.muted)
     end
     line("Node places come from GatherMate2's Forever data; how often rare veins appear and the ore a node gives," ..
         " from Classic. Skill-ups follow Classic's colours (yellow 25, green 50, grey 100 above what a node needs):" ..
-        " Forever may differ.", C.dim)
+        " Forever may differ.", C.muted)
     if ladder.mode ~= "skill" then
         line(("Gold an hour assumes 15 s a node, a third of the zone's node places with a node up and a 60%% mount:" ..
-            " about %d nodes an hour here."):format(step.crafts / (step.seconds / 3600) + 0.5), C.dim)
+            " about %d nodes an hour here."):format(step.crafts / (step.seconds / 3600) + 0.5), C.muted)
     end
     if step.hour then return end
 
@@ -1339,7 +1339,7 @@ local function lockDetail(step)
             " first on the left again; the Shadowforge Lock under the big gear too, if nothing would pull.", C.text)
         line("3. Leave, right-click your portrait, Reset all instances and go in again: the game lets you in 5 times" ..
             " an hour.", C.text)
-        line("The round is zockify's Forever guide's: about 4 doors a run.", C.dim)
+        line("The round is zockify's Forever guide's: about 4 doors a run.", C.muted)
     end
 
     section(gather().here)
@@ -1362,7 +1362,7 @@ local function lockDetail(step)
         end
     end
     line("Chest places: GatherMate2's and QuestieDB's Forever data. Which lock a chest needs, and the colours (yellow" ..
-        " 25, green 50, grey 100 above it), are Classic's: Forever may differ.", C.dim)
+        " 25, green 50, grey 100 above it), are Classic's: Forever may differ.", C.muted)
 
     section(("Other zones, or boxes, from %d"):format(step.from))
     for _, o in ipairs(step.options) do optionRow(step, o) end
@@ -1382,7 +1382,7 @@ local function boxDetail(step)
     line(boxFrom(rec), C.muted)
     section(("Boxes to buy: %s"):format(step.missing and "?" or ns.Money(step.matCost)))
     for item, b in pairs(step.buy) do itemRow(item, b) end
-    line("A box gives one chance at a point, and what's inside is yours.", C.dim)
+    line("A box gives one chance at a point, and what's inside is yours.", C.muted)
 
     section(("Or pick locks in a zone, from %d"):format(step.from))
     for _, o in ipairs(step.options) do optionRow(step, o) end

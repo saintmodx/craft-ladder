@@ -21,6 +21,8 @@ version numbers [Semantic Versioning](https://semver.org).
 - Easier to read: the notes in a step's details and in the Camp view, and the menu's headings, are a lighter grey;
   what isn't available yet is less faint.
 - Money shows with the game's coin icons, as in its tooltips and at the auction house, instead of coloured letters.
+- Items in a step's details (ingredients, what a disenchant or a fishing spot gives) are in their quality's colour, as
+  in the game's tooltips.
 
 ## 1.3.0 - 2026-10-20
 

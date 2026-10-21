@@ -289,6 +289,15 @@ local function madeFrom(make)
     return table.concat(list, ", ")
 end
 
+-- An item's name in its quality's colour, as the game's tooltips show it; plain while the game doesn't know the item
+-- yet, and for common ones (white).
+local function qualityName(item)
+    local q = C_Item and C_Item.GetItemQualityByID and C_Item.GetItemQualityByID(item)
+    local c = q and q ~= 1 and ITEM_QUALITY_COLORS and ITEM_QUALITY_COLORS[q]
+    local name = ns.Describe.ItemName(item)
+    return c and (hex({ c.r, c.g, c.b }) .. name .. "|r") or name
+end
+
 local function itemRow(item, b)
     local f = get("item")
     local e = lookup(item)
@@ -300,7 +309,7 @@ local function itemRow(item, b)
         have = "  (you have " .. math.floor(b.have) ..
             (inBank and (inBank >= b.have and ", in the bank" or (", " .. inBank .. " in the bank")) or "") .. ")"
     end
-    f.name:SetText(("%d %s%s"):format(math.ceil(b.need), ns.Describe.ItemName(item),
+    f.name:SetText(("%d %s%s"):format(math.ceil(b.need), qualityName(item),
         hex(C.muted) .. have .. "|r"))
     local source = ns.Describe.PriceSource(e)
     if b.make and b.buy > 0 then
@@ -343,7 +352,7 @@ local function fishRow(item, share, cooking)
     local v = ladder.values and ladder.values[item]
     f.item = item
     f.icon:SetTexture(UI.ItemIcon(item))
-    f.name:SetText(ns.Describe.ItemName(item) .. (cooking and (hex(C.good) .. "  your Cooking uses it|r") or ""))
+    f.name:SetText(qualityName(item) .. (cooking and (hex(C.good) .. "  your Cooking uses it|r") or ""))
     f.sub:SetText(("%d%% of catches%s"):format(math.max(1, math.floor(share * 100 + 0.5)),
         v and v.how and (", " .. VALUE_HOW[v.how]) or ""))
     UI.SetColor(f.sub, C.muted)
@@ -592,7 +601,7 @@ local function oneCraft(step, rec)
         local n = rec.mats[r.item]
         f.item = r.item
         f.icon:SetTexture(UI.ItemIcon(r.item))
-        f.name:SetText(("%d %s"):format(n, ns.Describe.ItemName(r.item)))
+        f.name:SetText(("%d %s"):format(n, qualityName(r.item)))
         local where = r.e and (r.e.source == "vendor" and "vendor" or "auction house")
         local from = r.make and ((r.make.mining and "smelt" or prof.verb) .. " yourself"
             .. (r.bought and where and (" and " .. where) or "")) or where
@@ -775,8 +784,7 @@ local function disenchanting(step, n, yours)
         local f, worth = get("item"), ladder.worth(g.item)
         f.item = g.item
         f.icon:SetTexture(UI.ItemIcon(g.item))
-        f.name:SetText(("%s %s"):format(g.min == g.max and g.min or (g.min .. "-" .. g.max),
-            ns.Describe.ItemName(g.item)))
+        f.name:SetText(("%s %s"):format(g.min == g.max and g.min or (g.min .. "-" .. g.max), qualityName(g.item)))
         f.sub:SetText(("%d%% of disenchants, %s each"):format(math.floor(g.chance * 100 + 0.5), ns.Money(worth)))
         UI.SetColor(f.sub, C.muted)
         f.cost:SetText(ns.Money(g.chance * (g.min + g.max) / 2 * worth)) -- its part of the average

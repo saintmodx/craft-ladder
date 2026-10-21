@@ -340,6 +340,11 @@ do
 end
 expect("First Aid: the crafting card (Learn it, One craft, Batch)", clickFirstCraft() and craftCard())
 expect("... no perk, no Working Overtime", not strip(frame.detail.head.line2.text):find("Working Overtime"))
+expect("... its ingredients plain while the game doesn't know their quality", not items()[1].name.text:find("|c", 1, true))
+C_Item.GetItemQualityByID, ITEM_QUALITY_COLORS = function() return 2 end, { [2] = { r = 0.12, g = 1, b = 0 } }
+clickFirstCraft()
+expect("... in their quality's colour once it does (uncommon: green)", items()[1].name.text:find("|cff1eff00", 1, true))
+C_Item.GetItemQualityByID, ITEM_QUALITY_COLORS = nil, nil
 
 -- Working Overtime (a Legacy perk) at rank 3: read from the Legacy tree, fewer crafts, said on the card
 local function allCrafts()

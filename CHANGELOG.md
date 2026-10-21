@@ -3,6 +3,13 @@
 What's new in Craft Ladder, newest first. The format follows [Keep a Changelog](https://keepachangelog.com), the
 version numbers [Semantic Versioning](https://semver.org).
 
+## Unreleased
+
+### Changed
+
+- A step's other recipes read like the ladder's rows: "+" in green when a point earns, "-" in red when it costs, and
+  "you know it" in green instead of "learn: you know it".
+
 ## 1.4.0 - 2026-10-21
 
 ### Added

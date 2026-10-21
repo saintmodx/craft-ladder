@@ -704,7 +704,7 @@ Window.Shared = { W = W, DETAIL_CW = DETAIL_CW, MENU_W = MENU_W, STEP_COLOR = ST
                   RANK_ICON = RANK_ICON, craftsWord = craftsWord, wait = wait, recipeIcon = recipeIcon,
                   toolUsers = toolUsers, gather = gather, duration = duration, barsText = barsText,
                   useLevel = useLevel, favorSub = favorSub, foodColor = foodColor, MODE_TIPS = MODE_TIPS,
-                  DISENCHANT_TIP = DISENCHANT_TIP }
+                  DISENCHANT_TIP = DISENCHANT_TIP, signed = signed }
 
 renderDetail = function() ns.Cards.Render(frame, ladder, lookup, prof, selected) end
 

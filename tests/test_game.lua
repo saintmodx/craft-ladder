@@ -339,6 +339,17 @@ do
         and here.point[1] == "BOTTOM" and here.point[4] >= here.width / 2 and here.width > 16)
 end
 expect("First Aid: the crafting card (Learn it, One craft, Batch)", clickFirstCraft() and craftCard())
+do -- the card's recipes to pick, as the ladder's rows: a point that earns +, green; that costs -, red; known: green
+    local ok, signs = #options() > 0, 0
+    for _, o in ipairs(options()) do
+        local p, right = o.option.perPoint, o.right.text
+        if p and p > 0.5 then ok = ok and right:find(ns.UI.Hex(ns.UI.C.bad) .. "-", 1, true) == 1; signs = signs + 1 end
+        if p and p < -0.5 then ok = ok and right:find(ns.UI.Hex(ns.UI.C.good) .. "+", 1, true) == 1; signs = signs + 1 end
+        ok = ok and not o.sub.text:find("learn: you know it", 1, true)
+            and (not o.sub.text:find("you know it", 1, true) or o.sub.text:find(ns.UI.Hex(ns.UI.C.good), 1, true))
+    end
+    expect("... its recipes to pick: + green or - red a point, \"you know it\" green, no \"learn:\"", ok and signs > 0)
+end
 expect("... no perk, no Working Overtime", not strip(frame.detail.head.line2.text):find("Working Overtime"))
 expect("... its ingredients plain while the game doesn't know their quality", not items()[1].name.text:find("|c", 1, true))
 C_Item.GetItemQualityByID, ITEM_QUALITY_COLORS = function() return 2 end, { [2] = { r = 0.12, g = 1, b = 0 } }

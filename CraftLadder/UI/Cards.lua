@@ -14,7 +14,7 @@ ns.Cards = Cards
 local S = Window.Shared
 local W, DETAIL_CW, STEP_COLOR, BAG_ICON, RANK_ICON = S.W, S.DETAIL_CW, S.STEP_COLOR, S.BAG_ICON, S.RANK_ICON
 local craftsWord, wait, recipeIcon, toolUsers, gather = S.craftsWord, S.wait, S.recipeIcon, S.toolUsers, S.gather
-local duration, barsText, useLevel = S.duration, S.barsText, S.useLevel
+local duration, barsText, useLevel, signed = S.duration, S.barsText, S.useLevel, S.signed
 local hex = UI.Hex
 local CW = DETAIL_CW -- ... and now: the details take what a bigger window adds
 local STANDING = { [0] = "Hated", "Hostile", "Unfriendly", "Neutral", "Friendly", "Honored", "Revered", "Exalted" }
@@ -407,10 +407,14 @@ local function optionRow(step, o)
     f.dot:SetVertexColor(c[1], c[2], c[3])
     f.name:SetText(o.name .. (o.fromBags and (hex(C.good) .. "  with what you have|r") or ""))
     UI.SetColor(f.name, c)
+    -- a recipe you have: green, nothing to learn; else how to learn it
+    local have = (o.learn.kind == "known" and not o.learn.earlier) or o.learn.kind == "start"
     f.sub:SetText(("%d - %d, ~%d %s, %s"):format(o.from, o.to, math.ceil(o.crafts), craftsWord(),
         prof.doors and (o.fromBags and "from your bags" or "bought at the auction house")
+        or have and (hex(C.good) .. ns.Describe.Learn(o.learn, prof) .. "|r")
         or ("learn: " .. ns.Describe.Learn(o.learn, prof))))
-    f.right:SetText(o.perPoint and (ns.Money(o.perPoint) .. hex(C.muted) .. " / point|r") or (hex(C.bad) .. "no price|r"))
+    -- as the ladder's rows: what a point earns (+, green) or costs (-, red)
+    f.right:SetText(o.perPoint and (signed(-o.perPoint) .. hex(C.muted) .. " / point|r") or (hex(C.bad) .. "no price|r"))
     f.right2:SetText(o.cost and (ns.Money(o.cost) .. " in all" ..
         ((o.back or 0) > 0 and (", " .. ns.Money(o.back) .. " back") or "")) or "")
     f:Paint()

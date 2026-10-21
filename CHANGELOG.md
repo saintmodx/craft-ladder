@@ -23,6 +23,7 @@ version numbers [Semantic Versioning](https://semver.org).
 - Money shows with the game's coin icons, as in its tooltips and at the auction house, instead of coloured letters.
 - Items in a step's details (ingredients, what a disenchant or a fishing spot gives) are in their quality's colour, as
   in the game's tooltips.
+- A step's details use bigger text for their notes and for the lines under each item and option.
 
 ## 1.3.0 - 2026-10-20
 

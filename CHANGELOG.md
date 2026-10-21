@@ -7,31 +7,20 @@ version numbers [Semantic Versioning](https://semver.org).
 
 ### Added
 
-- **Working Overtime**: the Legacy perk's ranks (4% more chance of a skill-up each) now count in every ladder that
-  levels a skill (crafting, gathering, Lockpicking, Fishing), so yellow and green steps take fewer crafts. A step's
-  card says so in its headline ("Working Overtime 3/5: +12%").
-- **Pick the range to level**: From and To over the ladder (type them, or the mouse wheel; Shift: 10 at a time), or
-  click a rank's name under the skill bar to plan to its end. The ladder, its total and the auction house tab's
-  shopping follow; From above your skill plans ahead as if you'd reached it. Kept per profession until Reset.
-- **Craft in Profit**: a Profit row's card has the Craft bar too, set to as many as your bags allow.
+- **Range to level**: pick From and To over the ladder, or click a rank's name under the skill bar; Reset brings
+  back your skill to 300.
+- **Working Overtime**: the Legacy perk's skill-up bonus is counted, so ladders need fewer crafts.
+- **Craft in Profit**: the Craft bar on Profit's cards, set to as many as your bags allow.
 
 ### Changed
 
-- When the auction house was last scanned now shows at the top of the window, in the middle. After 3 hours it turns
-  yellow and asks for a scan; after 12 hours it turns red with a warning sign, since the costs may be off by then.
-- The coloured line under the window's title is now a thin line in the frame's colour.
-- Your skill on the bar is easier to spot: a gold "Skill 142" badge over the marker, and a light line through the bar
-  where you are, instead of the small "you are here: 142".
-- Easier to read: the notes in a step's details and in the Camp view, and the menu's headings, are a lighter grey;
-  what isn't available yet is less faint.
-- Money shows with the game's coin icons, as in its tooltips and at the auction house, instead of coloured letters.
-- Items in a step's details (ingredients, what a disenchant or a fishing spot gives) are in their quality's colour, as
-  in the game's tooltips.
-- A step's details use bigger text for their notes and for the lines under each item and option.
-- Profit: when nothing sells to a vendor for more than it costs, the list has no "Sell at the auction house" heading
-  (there's nothing to tell it apart from).
-- The modes have clearer names: **Vendor sales** (was Sure cost), **AH sales** (gathering: was Skill + Gold) and
-  **Profit** (was Gold), here and in the auction house tab. Gathering's first mode stays **Skill**.
+- Modes renamed: **Vendor sales** (was Sure cost), **AH sales** (gathering: was Skill + Gold), **Profit** (was Gold).
+- The last auction house scan shows at the top: yellow after 3 hours, red after 12.
+- Your skill on the bar is a gold "Skill 142" badge.
+- Easier to read: lighter grey notes, bigger text in a step's details, coin icons for money, items in their
+  quality's colour.
+- Profit: no "Sell at the auction house" heading when nothing sells to a vendor.
+- A neutral line under the window's title instead of the faction's colour.
 
 ## 1.3.0 - 2026-10-20
 

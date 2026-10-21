@@ -3,6 +3,14 @@
 What's new in Craft Ladder, newest first. The format follows [Keep a Changelog](https://keepachangelog.com), the
 version numbers [Semantic Versioning](https://semver.org).
 
+## Unreleased
+
+### Added
+
+- **Working Overtime**: the Legacy perk's ranks (4% more chance of a skill-up each) now count in every ladder that
+  levels a skill (crafting, gathering, Lockpicking, Fishing), so yellow and green steps take fewer crafts. A step's
+  card says so in its headline ("Working Overtime 3/5: +12%").
+
 ## 1.3.0 - 2026-10-20
 
 ### Added

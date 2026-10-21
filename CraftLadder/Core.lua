@@ -100,6 +100,7 @@ function ns.Calculate(data)
     data = data or ns.CurrentProfession()
     local start = debugprofilestop()
     local state = ns.Player.State(data)
+    ns.Ladder.overtime = state.overtime
     local quote, lookup = ns.Prices.ForGame()
     local saved = ns.Player.Prof(data)
     -- recipes you picked: forget the ones for stretches you've levelled past

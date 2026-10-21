@@ -330,6 +330,24 @@ expect("... with its reagents in the bags: you have them, not 'you can make them
     lines():find("You have the reagents for 3%.") and not lines():find("now with what you have"))
 expect("First Aid tab: header", strip(frame.subtitle.text) == "First Aid 133 / 150, the ladder to 300")
 expect("First Aid: the crafting card (Learn it, One craft, Batch)", clickFirstCraft() and craftCard())
+expect("... no perk, no Working Overtime", not strip(frame.detail.head.line2.text):find("Working Overtime"))
+
+-- Working Overtime (a Legacy perk) at rank 3: read from the Legacy tree, fewer crafts, said on the card
+local function allCrafts()
+    local n = 0
+    for _, r in ipairs(rows()) do if r.step.kind == "craft" then n = n + r.step.crafts end end
+    return n
+end
+local before = allCrafts()
+C_Traits = { GetConfigIDByTreeID = function(tree) return tree == 1187 and 7 or nil end,
+             GetNodeInfo = function(config, node) return config == 7 and node == 110290 and { activeRank = 3 } or nil end }
+mock.fire("TRAIT_CONFIG_UPDATED"); mock.runTimers()
+expect("Working Overtime 3/5: fewer crafts", allCrafts() < before)
+expect("... the card's headline says so, after the colours", clickFirstCraft()
+    and strip(frame.detail.head.line2.text):find("grey %d+, Working Overtime 3/5: %+12%%$"))
+C_Traits = nil
+mock.fire("TRAIT_CONFIG_UPDATED"); mock.runTimers()
+expect("... gone with the perk", allCrafts() == before and ns.Ladder.overtime == 0)
 mock.click(rows()[1])
 expect("First Aid: Expert can be learned now", strip(rows()[1].name.text) == "Learn Expert")
 mock.click(rows()[1])

@@ -12,10 +12,11 @@ local min, max, huge = math.min, math.max, math.huge
 local CAST_SECONDS = 20 -- a cast and the wait for a bite, about
 
 -- Chance that a catch raises the skill: every catch below 75, then 25 / (skill - 50) (Classic's rule: 1 in 2 at
--- 100, 1 in 4 at 150, 1 in 10 at 300), times `rate`: how Forever compares, from your own catches.
+-- 100, 1 in 4 at 150, 1 in 10 at 300), times `rate`: how Forever compares, from your own catches; plus Working
+-- Overtime's (ns.Ladder.Bonus).
 function Fishing.Chance(skill, rate)
     local c = skill < 75 and 1 or 25 / (skill - 50)
-    return min(1, c * (rate or 1))
+    return min(1, c * (rate or 1) + ns.Ladder.Bonus())
 end
 
 -- Catches from skill a to b, on average.
@@ -407,6 +408,8 @@ if CreateFrame then
             if IsFishingLoot and IsFishingLoot() and skill < maxSkill then
                 local log = ns.db.fishLog or { catches = 0, ups = 0, expected = 0 }
                 log.catches = log.catches + 1
+                -- with the perk the catch had, so the rate stays Forever's against Classic's
+                ns.Ladder.overtime = ns.Player.Overtime()
                 log.expected = log.expected + Fishing.Chance(skill)
                 ns.db.fishLog = log
             end

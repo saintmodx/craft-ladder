@@ -27,13 +27,18 @@ function Ladder.Color(colors, skill)
     return "orange"
 end
 
+-- The character's Working Overtime rank (a Legacy perk), set by ns.Calculate: 4% a rank added to a chance of a
+-- skill-up that isn't sure or none (added, not multiplied: a guess).
+Ladder.overtime = 0
+function Ladder.Bonus() return 0.04 * Ladder.overtime end
+
 -- Chance that one craft gives a skill point: sure while orange, then falling in a straight line to 0 at grey
--- (the usual Classic rule; real crafting is luck, so craft counts are estimates).
+-- (the usual Classic rule; real crafting is luck, so craft counts are estimates), plus Working Overtime's.
 function Ladder.Chance(colors, skill)
     local yellow, _, grey = thresholds(colors)
     if skill >= grey then return 0 end
     if skill < yellow then return 1 end
-    return (grey - skill) / (grey - yellow)
+    return min(1, (grey - skill) / (grey - yellow) + Ladder.Bonus())
 end
 
 -- Expected crafts to go from skill a to skill b with one recipe.

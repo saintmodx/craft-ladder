@@ -28,6 +28,12 @@ check("grey never", Ladder.Chance(coyote, 130), 0)
 check("crafts 85-90 orange", Ladder.Crafts(coyote, 85, 90), 5)
 check("skipped yellow uses green", Ladder.Chance({ 100, 0, 100, 105 }, 100), 1)
 check("orange to grey (campfire)", Ladder.Chance({ 0, 0, 0, 20 }, 19), 1)
+Ladder.overtime = 5 -- Working Overtime 5/5: +20% where a skill-up isn't sure or none
+check("overtime adds to green", Ladder.Chance(coyote, 110), 0.7)
+check("overtime: grey still never", Ladder.Chance(coyote, 130), 0)
+check("overtime: never above sure", Ladder.Chance(coyote, 91), 1)
+check("overtime: fishing too", ns.Fishing.Chance(150), 0.45)
+Ladder.overtime = 0
 assert(Ladder.Color(coyote, 89) == "orange" and Ladder.Color(coyote, 90) == "yellow" and Ladder.Color(coyote, 110) == "green")
 
 -- buying from the auction house: 1 listed at 10c and 9 at 12c (lowest 10, median 12, 10 listed), we need all 10.

@@ -1248,7 +1248,7 @@ local function build()
     local WATCH = { "SKILL_LINES_CHANGED", "CHAT_MSG_SKILL", "BAG_UPDATE_DELAYED", "AUCTION_HOUSE_CLOSED",
                     "MERCHANT_CLOSED", "PLAYER_LEVEL_UP", "NEW_RECIPE_LEARNED", "UPDATE_FACTION",
                     "LEARNED_SPELL_IN_TAB", "LEARNED_SPELL_IN_SKILL_LINE", "QUEST_ACCEPTED", "QUEST_TURNED_IN",
-                    "QUEST_REMOVED" }
+                    "QUEST_REMOVED", "TRAIT_CONFIG_UPDATED", "TRAIT_CONFIG_LIST_UPDATED" }
     for _, e in ipairs(WATCH) do pcall(events.RegisterEvent, events, e) end -- pcall: an event this client lacks
     local pending = false
     events:SetScript("OnEvent", function(_, event)

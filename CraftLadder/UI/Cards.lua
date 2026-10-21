@@ -1513,6 +1513,13 @@ local function renderDetail()
     else
         craftDetail(step)
     end
+    -- the steps whose counts come from the chance of a skill-up: Working Overtime in the headline, seen without
+    -- scrolling (a recipe's after its colours, a zone's after its count)
+    if step and state.overtime > 0 and not step.hour
+        and (step.kind == "craft" or step.kind == "mine" or step.kind == "fish") then
+        local fs = step.kind == "craft" and d.head.line2 or d.head.line1
+        fs:SetText(fs:GetText() .. (", Working Overtime %d/5: +%d%%"):format(state.overtime, 4 * state.overtime))
+    end
     d.scroll:SetContentHeight(y + 8)
     d.scroll:ScrollToTop()
 end

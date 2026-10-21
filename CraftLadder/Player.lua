@@ -174,6 +174,14 @@ function Player.Standing(faction)
     end
 end
 
+-- Working Overtime's rank, 0 - 5: a Legacy perk (the Professions tree, 1187), 4% more chance of a skill-up a rank.
+-- 0 before the game has loaded the Legacy trees, or in a client without them.
+function Player.Overtime()
+    local config = C_Traits and C_Traits.GetConfigIDByTreeID(1187)
+    local node = config and C_Traits.GetNodeInfo(config, 110290)
+    return node and node.activeRank or 0
+end
+
 -- The ladder always goes to 300: the professions end there, and planning only to the rank's cap would miss recipes
 -- bought for later anyway.
 function Player.State(data)
@@ -184,7 +192,7 @@ function Player.State(data)
         if IsPlayerSpell and IsPlayerSpell(spell) then specs[spell] = true end
     end
     return {
-        specs = specs,
+        specs = specs, overtime = Player.Overtime(),
         skill = skill, maxSkill = maxSkill, target = 300,
         faction = UnitFactionGroup("player") == "Alliance" and "A" or "H",
         level = UnitLevel("player"), class = select(2, UnitClass("player")), -- "WARRIOR": Cooking's food for it

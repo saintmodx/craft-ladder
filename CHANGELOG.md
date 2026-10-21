@@ -28,6 +28,8 @@ version numbers [Semantic Versioning](https://semver.org).
 - Items in a step's details (ingredients, what a disenchant or a fishing spot gives) are in their quality's colour, as
   in the game's tooltips.
 - A step's details use bigger text for their notes and for the lines under each item and option.
+- Profit: when nothing sells to a vendor for more than it costs, the list has no "Sell at the auction house" heading
+  (there's nothing to tell it apart from).
 - The modes have clearer names: **Vendor sales** (was Sure cost), **AH sales** (gathering: was Skill + Gold) and
   **Profit** (was Gold), here and in the auction house tab. Gathering's first mode stays **Skill**.
 

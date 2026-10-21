@@ -887,6 +887,20 @@ expect("Engineering Skill + Gold: the auction house buys some", frame.list.modes
 mock.click(frame.list.modes[2])
 local ahRow
 for _, r in ipairs(rows()) do if not r.step.vendor then ahRow = ahRow or r end end
+do -- nothing a vendor pays more for: the auction house's rows alone, no heading to tell them apart
+    local profits = ns.Ladder.Profits
+    ns.Ladder.Profits = function(...)
+        local l = profits(...)
+        for i = l.vendorRows, 1, -1 do table.remove(l.steps, i) end
+        l.vendorRows = 0
+        return l
+    end
+    ns.Window.Refresh()
+    expect("Profit, nothing for a vendor: the auction house's rows, no headings", #headings() == 0 and #rows() > 0
+        and not rows()[1].step.vendor)
+    ns.Ladder.Profits = profits
+    ns.Window.Refresh()
+end
 expect("Engineering Gold: what earns at the auction house, the best first", ahRow and ahRow.step.kind == "profit"
     and strip(ahRow.cost.text):find("^%+") and ahRow.step.color)
 expect("... no ladder, no range", not frame.range:IsShown() and not frame.bar.rankHits[3]:IsShown())

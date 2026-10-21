@@ -606,8 +606,8 @@ local function renderList()
         fillRow(row, LOCKS, 0)
         y = y + 44
     end
-    -- Gold: what sells to a vendor first (it folds), then what sells at the auction house; each heading shows, empty
-    -- or not
+    -- Gold: what sells to a vendor first (it folds), then what sells at the auction house, each under a heading (the
+    -- auction house's even when empty); nothing a vendor pays more for: no headings
     headPool:ReleaseAll()
     local vendorRows = ladder.vendorRows
     local folded = vendorRows and vendorRows > 0 and ns.Player.Prof(prof).vendorFolded
@@ -663,9 +663,11 @@ local function renderList()
             end, folded)
             if not folded then rows(1, vendorRows) end
         end
-        heading("Sell at the auction house", #ladder.steps - vendorRows, { "Sell at the auction house", "These earn" ..
-            " more at the auction house: 5 or more listed, and it pays 1.5 times what a vendor does. How many sell," ..
-            " the auction house doesn't say." })
+        if vendorRows > 0 then -- only the auction house's: the plain list, no heading to tell them apart
+            heading("Sell at the auction house", #ladder.steps - vendorRows, { "Sell at the auction house", "These" ..
+                " earn more at the auction house: 5 or more listed, and it pays 1.5 times what a vendor does. How many" ..
+                " sell, the auction house doesn't say." })
+        end
         if #ladder.steps == vendorRows then heading("nothing at today's prices", nil, nothing) end
         rows(vendorRows + 1, #ladder.steps)
     elseif ladder.now then -- Disenchant: what the bags hold, what to make, then what needs more skill

@@ -31,7 +31,11 @@ end
 local function said(pattern)
     for _, l in ipairs(mock.output) do if l:find(pattern) then return true end end
 end
-local function strip(s) return (s:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "")) end
+-- colours gone, coin icons back to g, s, c
+local function strip(s)
+    return (s:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "")
+        :gsub("|TInterface\\MoneyFrame\\UI%-(%a)%a*Icon[^|]*|t", string.lower))
+end
 local function char() return CraftLadderDB.chars["Player-TEST"] end
 
 expect("old saved recipes move under Cooking", ns.Player.Prof(ns.COOKING).known[2540] and char().known == nil)

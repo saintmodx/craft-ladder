@@ -28,7 +28,12 @@ frame:SetScript("OnEvent", function(_, event, name)
     end
 end)
 
--- 10526 -> "1g 5s 26c" (coloured), -73 -> "-73c"
+-- the game's coins, as its tooltips and the auction house show money: an icon the height of the text after the amount
+local GOLD = "|TInterface\\MoneyFrame\\UI-GoldIcon:0:0:2:0|t"
+local SILVER = "|TInterface\\MoneyFrame\\UI-SilverIcon:0:0:2:0|t"
+local COPPER = "|TInterface\\MoneyFrame\\UI-CopperIcon:0:0:2:0|t"
+
+-- 10526 -> "1g 5s 26c" (with coin icons), -73 -> "-73c"
 function ns.Money(copper)
     if not copper then return "|cff999999?|r" end
     copper = math.floor(copper + 0.5)
@@ -36,9 +41,9 @@ function ns.Money(copper)
     copper = math.abs(copper)
     local g, s, c = math.floor(copper / 10000), math.floor(copper / 100) % 100, copper % 100
     local parts = {}
-    if g > 0 then parts[#parts + 1] = g .. "|cffffd700g|r" end
-    if g > 0 or s > 0 then parts[#parts + 1] = s .. "|cffc7c7cfs|r" end
-    parts[#parts + 1] = c .. "|cffeda55fc|r"
+    if g > 0 then parts[#parts + 1] = g .. GOLD end
+    if g > 0 or s > 0 then parts[#parts + 1] = s .. SILVER end
+    parts[#parts + 1] = c .. COPPER
     return sign .. table.concat(parts, " ")
 end
 

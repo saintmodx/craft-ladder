@@ -735,7 +735,8 @@ end
 -- what the character owns counts at its price too: it could sell it instead. A recipe it doesn't know yet says after
 -- how many crafts it pays back.
 -- Returns { from, to, mode = "gold", steps = the vendor rows then the auction house rows, best first in each,
--- vendorRows = how many of them are first }; a row: { kind = "profit", recipe, crafts = 1, made, buy, matCost, learn,
+-- vendorRows = how many of them are first }; a row: { kind = "profit", recipe, crafts = 1, canCook = crafts the bags
+-- allow, made, buy, matCost, learn,
 -- sale, profit, cost, back, listed, payback = crafts that pay the recipe back, cooldown, vendor = in the first group,
 -- color = the recipe's colour at the character's skill (grey: no skill-up) }.
 function Ladder.Profits(data, state, quote, opts)
@@ -746,7 +747,9 @@ function Ladder.Profits(data, state, quote, opts)
     local vendorRows, ahRows = {}, {}
     local function add(list, spell, rec, way, made, matCost, buy, sale, listed)
         local profit = sale.total - matCost
+        local _, canCook = haveCrafts({ owned = owned, vendor = ctx.vendor, faction = ctx.faction }, rec) -- the bags'
         list[#list + 1] = { kind = "profit", recipe = spell, from = ctx.skill, to = ctx.skill, crafts = 1, made = made,
+                            canCook = canCook,
                             buy = buy, matCost = matCost, learn = way, sale = sale, profit = profit, cost = matCost,
                             back = sale.total, listed = listed, cooldown = rec.cooldown, vendor = list == vendorRows or nil,
                             color = Ladder.Color(rec.colors, ctx.skill),

@@ -934,6 +934,9 @@ if goldRow then mock.click(goldRow) end
 local goldCard = mock.shownChildren(frame.detail.scroll.child, "label")
 expect("... Gold: Learn it first, then One craft", goldRow and goldRow.step.kind == "profit"
     and strip(goldCard[1].label.text) == "Learn it" and strip(goldCard[2].label.text):find("^One craft"))
+expect("... Profit: the Craft bar, as many as the bags allow, no step to fill", frame.detail.craft:IsShown()
+    and frame.detail.craft.count.text == tostring(goldRow.step.canCook)
+    and not strip(frame.detail.craft.note.text):find("the step needs"))
 -- what sells to a vendor for more than it costs comes first, under a heading that folds
 local function vendorShown()
     for _, r in ipairs(rows()) do if r.step.vendor then return true end end

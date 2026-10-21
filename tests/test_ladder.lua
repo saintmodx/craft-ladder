@@ -626,6 +626,8 @@ check("Gold: Coarse Sharpening Stone's profit per craft, its 90c trainer fee asi
     coarseStone.sale.total - coarseStone.matCost)
 check("... the fee pays back after so many crafts", coarseStone.payback, math.ceil(90 / coarseStone.profit))
 check("Gold: the stone in your bags counts at its price", gold({ [2835] = 100 })[2660].matCost, roughStone.matCost)
+check("Gold: ... and the Craft bar can make 100 (the bags allow)", gold({ [2835] = 100 })[2660].canCook, 100)
+check("Gold: nothing in the bags, nothing to make", roughStone.canCook, 0)
 -- Gold's two groups: what a vendor pays more for than it costs, then what earns at the auction house. A: 20c of
 -- ingredients, a vendor pays 50c, the auction house 2s (both); B: a vendor pays 30c, the auction house 35c (not 1.5
 -- times as much: only the vendor); C: a vendor pays 10c, the auction house 1s (only the auction house)

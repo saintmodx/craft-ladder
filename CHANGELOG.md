@@ -13,6 +13,7 @@ version numbers [Semantic Versioning](https://semver.org).
 - **Pick the range to level**: From and To over the ladder (type them, or the mouse wheel; Shift: 10 at a time), or
   click a rank's name under the skill bar to plan to its end. The ladder, its total and the auction house tab's
   shopping follow; From above your skill plans ahead as if you'd reached it. Kept per profession until Reset.
+- **Craft in Profit**: a Profit row's card has the Craft bar too, set to as many as your bags allow.
 
 ### Changed
 

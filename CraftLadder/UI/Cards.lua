@@ -492,7 +492,8 @@ local function paintCraft(bar)
         .. "closed (the game crafts only with it open)." .. (prof.key == "cooking" and " Cooking needs a fire nearby."
         or "") }
     bar.note:SetText(why and (hex(C.warn) .. why .. "|r")
-        or ("Your bags allow %d"):format(can) .. ((step.kind == "favor" or step.kind == "disenchant") and "."
+        or ("Your bags allow %d"):format(can) .. ((step.kind == "favor" or step.kind == "disenchant"
+            or step.kind == "profit") and "."
             or ("; the step needs %d."):format(bar.need)))
 end
 
@@ -512,7 +513,9 @@ local function craftBar(step, rec)
     bar:ClearAllPoints()
     bar:SetPoint("TOPLEFT", 0, -y)
     bar:Show()
-    bar.count:SetText(tostring(math.max(0, math.min(canMake(step), bar.need)))) -- no more than the step needs
+    -- no more than the step needs; Profit's rows are one craft each: as many as the bags allow
+    local n = step.kind == "profit" and canMake(step) or math.min(canMake(step), bar.need)
+    bar.count:SetText(tostring(math.max(0, n)))
     paintCraft(bar)
     y = y + 32
 end
@@ -750,6 +753,7 @@ local function profitDetail(step)
             hex(C.good), ns.Money(step.profit)),
         step.vendor and "Sold to a vendor: vendors buy any number." or
             ("%d listed at the auction house now: sell a few at a time."):format(step.listed))
+    craftBar(step, rec)
     learnSection(step, rec)
     if step.payback then line(("Learning it pays back after %d %s."):format(step.payback, step.payback == 1 and "craft" or "crafts"), C.good) end
     recipeNotes(rec, step.learn)

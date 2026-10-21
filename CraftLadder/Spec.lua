@@ -9,16 +9,9 @@ ns.Spec = Spec
 
 local function hasFaction(f, faction) return f ~= nil and f:find(faction, 1, true) ~= nil end
 
--- Whether the game says a quest is done, or in the quest log now.
-local function questDone(q)
-    local done = C_QuestLog and C_QuestLog.IsQuestFlaggedCompleted or IsQuestFlaggedCompleted
-    return done ~= nil and done(q) == true
-end
-
-local function inLog(q)
-    local index = C_QuestLog and C_QuestLog.GetLogIndexForQuestID and C_QuestLog.GetLogIndexForQuestID(q)
-    return index ~= nil and index > 0
-end
+-- Whether the game says a quest is done, or in the quest log now (the shown character's, Player.lua).
+local function questDone(q) return ns.Player.QuestDone(q) end
+local function inLog(q) return ns.Player.QuestInLog(q) end
 
 -- The guide shown for a profession: the one picked last, else the specialization the character has, else the first.
 function Spec.Guide(data, specs)

@@ -716,15 +716,18 @@ local function renderHeader()
     local state = ladder.state
     local plan = state.from and ("the ladder from %d to %d"):format(state.from, state.target)
         or ("the ladder to %d"):format(state.target)
-    frame.subtitle:SetText(state.maxSkill > 0 and ("%s %d / %d, %s"):format(prof.name, state.skill, state.maxSkill,
-        plan) or ("No %s yet"):format(prof.name))
+    local me = ns.Player.Snap() -- another character: whose, and how old its snapshot is
+    frame.subtitle:SetText(state.maxSkill > 0 and ("%s%s %d / %d, %s%s"):format(me and (me.name .. "'s ") or "",
+        prof.name, state.skill, state.maxSkill, plan, me and (", as of " .. ns.Age(me.seen)) or "")
+        or me and ("%s has no %s yet"):format(me.name, prof.name) or ("No %s yet"):format(prof.name))
     local tips, x = MODE_TIPS[prof.key] or MODE_TIPS[prof.kind or (prof.resale and "craft")] or {}, 12
     local specView = ns.Player.Prof(prof).specView and prof.specGuides ~= nil
-    -- left to right: Skill (Vendor sales), AH sales, Profit, Food (Cooking), Disenchant (Enchanting)
+    -- left to right: Skill (Vendor sales), AH sales, Profit, Food (Cooking), Disenchant (Enchanting; not another
+    -- character's: it reads your bags)
     for _, i in ipairs({ 1, 3, 2, 4, 5 }) do
         local b = frame.list.modes[i]
         local tip = b.mode == "food" and (prof.food and FOOD_TIP or nil)
-            or b.mode == "disenchant" and (prof.disenchant and DISENCHANT_TIP or nil) or tips[b.mode]
+            or b.mode == "disenchant" and (prof.disenchant and not me and DISENCHANT_TIP or nil) or tips[b.mode]
         b:SetShown(tip ~= nil)
         if tip then
             local name = tips.names and tips.names[b.mode] or b.name
@@ -1165,6 +1168,7 @@ local function build()
     close:SetPoint("TOPRIGHT", -12, -14)
     close.tooltip = { "Close", "Escape closes it too." }
     ns.Menu.Build(frame) -- the menu (left)
+    ns.Chars.Build(frame) -- the account's characters (left of the window)
     -- a character with no profession at all: this instead of the ladder
     local idle = CreateFrame("Frame", nil, frame)
     idle:SetPoint("TOPLEFT", LEFT, -66)
@@ -1436,8 +1440,9 @@ end
 function Window.Refresh(cached)
     if not (frame and frame:IsShown()) then return end
     if not cached then version = version + 1 end
-    -- the menu's Camp: its panel instead of the ladder, nothing calculated
-    local camp = ns.Player.Saved().tab == "camp"
+    ns.Chars.Render(frame) -- the account's characters, left of the window
+    -- the menu's Camp: its panel instead of the ladder, nothing calculated (not another character's: it reads you)
+    local camp = ns.Player.Saved().tab == "camp" and not ns.Player.viewing
     frame.camp:SetShown(camp)
     if camp then
         for _, f in ipairs({ frame.bar, frame.list, frame.detail, frame.total, frame.prices, frame.nextScan, frame.idle,
@@ -1450,7 +1455,7 @@ function Window.Refresh(cached)
     end
     local ms
     local data = ns.CurrentProfession()
-    local key = data.key .. ":" .. ns.LadderMode(data)
+    local key = (ns.Player.viewing or "me") .. ":" .. data.key .. ":" .. ns.LadderMode(data)
     if fresh(cache[key]) then
         ladder, lookup = cache[key].ladder, cache[key].lookup
     else
@@ -1528,7 +1533,7 @@ function Window.Invalidate() version = version + 1 end
 
 -- A profession's ladder in its mode while it's still up to date (the minimap's tooltip uses it), or nil.
 function Window.Cached(data)
-    local entry = cache[data.key .. ":" .. ns.LadderMode(data)]
+    local entry = cache[(ns.Player.viewing or "me") .. ":" .. data.key .. ":" .. ns.LadderMode(data)]
     return fresh(entry) and entry.ladder or nil
 end
 

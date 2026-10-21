@@ -527,7 +527,8 @@ local function craftWhenOpen(bar)
 end
 
 local function craftBar(step, rec)
-    if prof.kind then return end -- gathering and Lockpicking: nothing to craft here
+    if prof.kind or ns.Player.viewing then return end -- gathering and Lockpicking: nothing to craft here; nor for
+                                                      -- another character
     local bar = frame.detail.craft
     bar.step, bar.rec, bar.need = step, rec, math.ceil(step.crafts)
     bar:ClearAllPoints()
@@ -904,7 +905,8 @@ end
 
 -- Lockpicking and Poisons: the class quests for your race (or side), with their givers' pins.
 local function chainSection()
-    local race = UnitRace and select(2, UnitRace("player"))
+    local me = ns.Player.Snap()
+    local race = me and me.race or UnitRace and select(2, UnitRace("player"))
     local chain = prof.chains[race] or prof.chains[ladder.state.faction]
     section(prof.chainTitle)
     for i, q in ipairs(chain) do

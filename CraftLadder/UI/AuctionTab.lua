@@ -528,6 +528,7 @@ for _, e in ipairs({ "AUCTION_HOUSE_SHOW", "COMMODITY_PRICE_UPDATED", "COMMODITY
 end
 events:SetScript("OnEvent", function(_, event, a, b)
     if event == "AUCTION_HOUSE_SHOW" then
+        ns.Player.viewing = nil -- the tab buys for you: yourself again, whoever the window showed
         attach()
     elseif event == "COMMODITY_PRICE_UPDATED" and pending then -- unit price, total
         pending.total = b

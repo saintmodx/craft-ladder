@@ -5,6 +5,15 @@ version numbers [Semantic Versioning](https://semver.org).
 
 ## Unreleased
 
+### Added
+
+- Your other characters on this realm and side, a button each left of the window (once two have logged in with
+  Craft Ladder): a click shows that character's professions and ladders as its last session left them, with its
+  skills, recipes, bags, bank and level, and says how old that is. To read, not to craft from: no Craft bar, Camp or
+  Disenchant for them. Click yourself to come back.
+- The bank counts in the ladder before you open it in a session without Bagnon too: Craft Ladder remembers what was
+  in it when it last closed (with Bagnon, its copy comes first).
+
 ### Changed
 
 - A step's other recipes read like the ladder's rows: "+" in green when a point earns, "-" in red when it costs, and

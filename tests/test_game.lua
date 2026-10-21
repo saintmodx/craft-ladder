@@ -1622,6 +1622,91 @@ mock.click(tab("cooking"))
 expect("... a profession's entry: its ladder again", not frame.camp:IsShown() and frame.list:IsShown()
     and not frame.menu.camp.active)
 
+-- The account's other characters: a snapshot of this one at login (and on skill-ups, bag changes...), a button each
+-- left of the window for those on this realm and side, their ladders as their last session saved them
+do
+    local stacks = { { itemID = 2672, stackCount = 4 }, { itemID = 2672, stackCount = 3 } }
+    C_Container = { GetContainerNumSlots = function(bag) return bag == 0 and #stacks or 0 end,
+                    GetContainerItemInfo = function(_, slot) return stacks[slot] end }
+    local taken, snapshot = 0, ns.Player.Snapshot
+    ns.Player.Snapshot = function() taken = taken + 1; snapshot() end
+    mock.fire("PLAYER_ENTERING_WORLD"); mock.fire("BAG_UPDATE_DELAYED")
+    mock.runTimers()
+    ns.Player.Snapshot = snapshot
+    local me = char().me
+    expect("a snapshot 2 s after entering the world, once for two events", taken == 1 and me and me.name == fx.name
+        and me.level == fx.level and me.skills.cooking[1] == fx.skill and me.skills.cooking[2] == fx.maxSkill
+        and me.bags[2672] == 7 and me.seen and me.realm == "Test")
+    C_Container = nil
+    -- the game answers with no profession at all (logging out, or just after entering the world): the last snapshot
+    -- stays
+    local professions = GetProfessions
+    GetProfessions = function() return nil end
+    mock.fire("PLAYER_LOGOUT")
+    GetProfessions = professions
+    expect("a snapshot without professions doesn't replace the last one", char().me.skills.cooking[1] == fx.skill
+        and char().me.bags[2672] == 7)
+    -- without Bagnon the bank is remembered by Craft Ladder itself: a snapshot of it when it closes (2 Stringy Wolf
+    -- Meat there), for the ladder before it's opened next time, and for the other characters
+    local bagnon, getCount = BrotherBags, C_Item.GetItemCount
+    BrotherBags = nil
+    C_Item.GetItemCount = function(item, bank) return getCount(item) + (bank and item == 2672 and 2 or 0) end
+    mock.fire("BANKFRAME_OPENED"); mock.fire("BANKFRAME_CLOSED")
+    expect("the bank closed: a snapshot a second later", (char().me.bank or {})[2672] ~= 2 and #mock.timers > 0)
+    mock.runTimers()
+    expect("... its Stringy Wolf Meat in it, nothing else", char().me.bank[2672] == 2 and count(char().me.bank) == 1)
+    C_Item.GetItemCount = getCount -- the game no longer knows the bank (a new session)
+    mock.click(tab("cooking"))
+    local owned, inBank = ns.Player.Owned(ns.COOKING)
+    expect("... your ladder counts it from the snapshot", inBank[2672] == 2 and owned[2672] == getCount(2672) + 2)
+    BrotherBags = { forever = { [fx.name .. " Test"] = { [-1] = { items = { "2672;3" } } } } }
+    expect("... Bagnon's count first when it's there", select(2, ns.Player.Owned(ns.COOKING))[2672] == 3)
+    BrotherBags = bagnon
+    expect("one character: no buttons", #mock.shownChildren(frame.chars, "guid") == 0)
+    local alt = { prof = { cooking = { known = { [2538] = true }, choices = {} } },
+                  me = { name = "Zug", surname = "Test", realm = "Test", faction = me.faction, class = "ROGUE",
+                         race = "Orc", level = 12, seen = time() - 2 * 3600, overtime = 2, specs = {}, quests = {},
+                         skills = { cooking = { 40, 75 }, firstaid = { 10, 75 } }, bags = { [2672] = 5 },
+                         bank = { [2672] = 4 } } }
+    CraftLadderDB.chars["Player-ALT"] = alt
+    CraftLadderDB.chars["Player-FAR"] = { prof = {}, me = { name = "Far", realm = "Elsewhere", faction = me.faction,
+        class = "MAGE", level = 1, seen = time(), skills = {}, specs = {}, quests = {}, bags = {} } }
+    ns.Window.Refresh(true)
+    local buttons = mock.shownChildren(frame.chars, "guid")
+    expect("two buttons: you first, picked, then Zug; not another realm's", #buttons == 2
+        and buttons[1].guid == "Player-TEST" and buttons[1].active and buttons[2].guid == "Player-ALT"
+        and not buttons[2].active)
+    mock.click(buttons[2])
+    expect("Zug's professions in the menu, from its snapshot; no Camp", ns.Player.viewing == "Player-ALT"
+        and strip(tab("cooking").skill.text) == "40 / 75" and strip(tab("firstaid").skill.text) == "10 / 75"
+        and not tab("mining").shown and not frame.menu.camp.shown)
+    local l = ns.Window.Cached(ns.COOKING)
+    expect("... its ladder from its skill, level, bags, bank (no Bagnon copy of it), recipes and Working Overtime",
+        l and l.state.skill == 40 and l.state.level == 12 and l.state.owned[2672] == 9 and l.state.inBank[2672] == 4
+        and l.state.overtime == 2 and count(l.state.known) == 1 and l.state.known[2538])
+    expect("... the header says whose and how old",
+        strip(frame.subtitle.text) == "Zug's Cooking 40 / 75, the ladder to 300, as of 2h ago")
+    clickFirstCraft()
+    expect("... no Craft bar on its cards", not frame.detail.craft.shown)
+    -- what the game records while Zug is shown is yours: the Cooking window, a merchant's prices
+    mock.window = "cooking"
+    mock.fire("TRADE_SKILL_SHOW"); mock.runTimers()
+    expect("the Cooking window read while Zug is shown: your recipes, Zug's untouched",
+        count(char().prof.cooking.known) == 6 and count(alt.prof.cooking.known) == 1)
+    char().vendorPrices[2678] = nil
+    mock.fire("MERCHANT_SHOW"); mock.runTimers()
+    expect("a merchant's prices while Zug is shown: yours", char().vendorPrices[2678] == 2 and not alt.vendorPrices)
+    mock.click(mock.shownChildren(frame.chars, "guid")[1])
+    expect("you again: your Cooking, Camp back", ns.Player.viewing == nil
+        and strip(tab("cooking").skill.text) == fx.skill .. " / " .. fx.maxSkill and frame.menu.camp.shown
+        and strip(frame.subtitle.text):find("^Cooking "))
+    mock.click(mock.shownChildren(frame.chars, "guid")[2])
+    mock.fire("AUCTION_HOUSE_SHOW")
+    expect("the auction house opens: yourself again, whoever was shown", ns.Player.viewing == nil)
+    CraftLadderDB.chars["Player-ALT"], CraftLadderDB.chars["Player-FAR"] = nil, nil
+    ns.Window.Refresh(true)
+end
+
 -- a recipe learned from a scroll: known at once, without opening the profession's window
 local wasKnown = ns.Player.Known(ns.COOKING)[3397]
 mock.fire("NEW_RECIPE_LEARNED", 3397)

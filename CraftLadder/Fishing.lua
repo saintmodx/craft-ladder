@@ -403,14 +403,14 @@ if CreateFrame then
     local last
     frame:SetScript("OnEvent", function(_, event)
         if not (ns.db and ns.FISHING) then return end
-        local skill, maxSkill = ns.Player.Skill(ns.FISHING)
+        local skill, maxSkill = ns.Player.Skill(ns.FISHING, true) -- yours, whoever the window shows
         if skill == 0 then return end
         if event == "LOOT_OPENED" then
             if IsFishingLoot and IsFishingLoot() and skill < maxSkill then
                 local log = ns.db.fishLog or { catches = 0, ups = 0, expected = 0 }
                 log.catches = log.catches + 1
                 -- with the perk the catch had, so the rate stays Forever's against Classic's
-                ns.Ladder.overtime = ns.Player.Overtime()
+                ns.Ladder.overtime = ns.Player.Overtime(true)
                 log.expected = log.expected + Fishing.Chance(skill)
                 ns.db.fishLog = log
             end

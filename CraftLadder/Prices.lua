@@ -214,7 +214,7 @@ if merchant then
                         price, stack = p, q
                     end
                     if price and price > 0 then
-                        local c = ns.Player.Saved()
+                        local c = ns.Player.Me() -- yours, whoever the window shows
                         c.vendorPrices = c.vendorPrices or {}
                         c.vendorPrices[id] = price / math.max(1, stack or 1)
                     end

@@ -69,7 +69,8 @@ end
 -- Shows the professions the character has (a rogue's class skills even before learning them), by group, the one
 -- shown picked. Returns how many it shows.
 function Menu.Render(frame, prof)
-    local menu, class = frame.menu, UnitClass and select(2, UnitClass("player"))
+    local menu, me = frame.menu, ns.Player.Snap()
+    local class = me and me.class or UnitClass and select(2, UnitClass("player"))
     for _, h in ipairs(menu.heads) do h:Hide() end
     for _, e in ipairs(menu.entries) do e:Hide() end
     local y, n = -10, 0
@@ -95,7 +96,8 @@ function Menu.Render(frame, prof)
         end
         if not first then y = y - 8 end
     end
-    menu.camp.active = ns.Player.Saved().tab == "camp"
+    menu.camp.active = ns.Player.Saved().tab == "camp" and not me
+    menu.camp:SetShown(not me) -- Camp reads your bags and level: not for another character
     paintEntry(menu.camp)
     return n
 end

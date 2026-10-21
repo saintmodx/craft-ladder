@@ -75,10 +75,12 @@ end
 -- what it makes), AH sales ("sell": the auction house too) or Profit ("gold": what earns most now, the default at 300
 -- until you pick another); a gathering one: Skill, AH sales (level where it earns most) or Profit (the zones by gold
 -- an hour, the default at 300); Enchanting has Disenchant too (what's worth more disenchanted). skill: the
--- character's (looked up when not given).
+-- character's (looked up when not given). Another character shown: not Disenchant (it reads your bags).
 function ns.LadderMode(data, skill)
     skill = skill or (ns.Player.Skill(data))
-    return data.skillOnly and "skill" or ns.Player.Prof(data).mode
+    local mode = ns.Player.Prof(data).mode
+    if mode == "disenchant" and ns.Player.viewing then mode = nil end
+    return data.skillOnly and "skill" or mode
         or ((data.resale or data.kind) and skill >= 300 and "gold") or "skill"
 end
 

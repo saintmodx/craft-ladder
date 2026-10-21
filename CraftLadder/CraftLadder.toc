@@ -46,6 +46,7 @@ UI\Widgets.lua
 UI\Window.lua
 UI\Cards.lua
 UI\Menu.lua
+UI\Chars.lua
 UI\CampPanel.lua
 UI\SpecPanel.lua
 UI\AuctionTab.lua

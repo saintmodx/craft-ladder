@@ -1,5 +1,5 @@
 -- Craft Ladder: a tab in the auction house window to buy what the ladder needs. Pick a crafting profession and its
--- mode (Sure cost, AH sales, Gold or Favor: the Merchant's Favor recipes, one craft each; the window's own): a row per
+-- mode (Vendor sales, AH sales, Profit or Favor: the Merchant's Favor recipes, one craft each; the window's own): a row per
 -- step with what it costs there; a click on a step
 -- unfolds a row per reagent you're short of, with how many to buy and a button: the first click asks the auction house
 -- the exact price, the second buys (the game buys only from a click). With Auctionator, a step's Search button (or a
@@ -13,7 +13,7 @@ ns.AuctionTab = AuctionTab
 
 local ROW_H = 34
 local INDENT = 22 -- a reagent's row, under its step
-local MODES = { { "skill", "Sure cost", 66 }, { "sell", "AH sales", 62 }, { "gold", "Gold", 48 },
+local MODES = { { "skill", "Vendor sales", 80 }, { "sell", "AH sales", 62 }, { "gold", "Profit", 52 },
                 { "favor", "Favor", 52 }, { "disenchant", "Disenchant (beta)", 110 } }
 local FAVOR_TIP = "Merchant's Favor recipes, the supply camps' quartermasters sell them: what one craft of each buys" ..
     " here, what you have counted first (bars smelted from your ore when that's cheaper)."

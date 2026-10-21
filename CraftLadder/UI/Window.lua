@@ -23,7 +23,7 @@ local MENU_W = 150
 local LEFT = 12 + MENU_W + 8 -- where the skill bar, the ladder and the footer start, right of the menu
 local DETAIL_CW = W - LEFT - LIST_W - 8 - 12 - 22 - 8 -- width of the step details' content at the smallest size
 local RANK_NAMES = { { 0, 75, "Apprentice" }, { 75, 150, "Journeyman" }, { 150, 225, "Expert" }, { 225, 300, "Artisan" } }
--- the mode switch by profession: Skill | Skill + Gold | Gold (crafting's named Sure cost | AH sales)
+-- the mode switch by profession: Skill | AH sales | Profit (crafting's Skill is named Vendor sales)
 local MODE_TIPS = {
     lockpicking = {}, -- Skill only
     fishing = { skill = "Fish where nothing gets away, spending as little as possible on lures.",
@@ -48,11 +48,11 @@ local MODE_TIPS = {
                    " for more, stone and gems counted). Grey nodes are mined too, so it takes more nodes.",
                gold = "No ladder: the zones where an hour of mining earns the most at your skill now (ore or bars," ..
                    " whichever sells for more, stone and gems counted), grey nodes too." },
-    craft = { names = { skill = "Sure cost", sell = "AH sales" },
+    craft = { names = { skill = "Vendor sales" },
               skill = "Level up for the least gold you're sure to spend: what you make goes to vendors, no" ..
                   " auctions to post or wait for.",
               sell = "Level up counting what you make sold at the auction house too (a quarter of what's listed" ..
-                  " at most, the rest to vendors). Cheaper than Sure cost if it sells: you post the auctions and" ..
+                  " at most, the rest to vendors). Cheaper than Vendor sales if it sells: you post the auctions and" ..
                   " wait, and what doesn't sell costs you the difference.",
               gold = "What you can make now that earns the most per craft, ingredients at their price (the ones you" ..
                   " have too). How many sell the auction house doesn't say: you see how many are listed." },
@@ -712,7 +712,7 @@ local function renderHeader()
         state.maxSkill) or ("No %s yet"):format(prof.name))
     local tips, x = MODE_TIPS[prof.key] or MODE_TIPS[prof.kind or (prof.resale and "craft")] or {}, 12
     local specView = ns.Player.Prof(prof).specView and prof.specGuides ~= nil
-    -- left to right: Skill, Skill + Gold, Gold, Food (Cooking), Disenchant (Enchanting)
+    -- left to right: Skill (Vendor sales), AH sales, Profit, Food (Cooking), Disenchant (Enchanting)
     for _, i in ipairs({ 1, 3, 2, 4, 5 }) do
         local b = frame.list.modes[i]
         local tip = b.mode == "food" and (prof.food and FOOD_TIP or nil)
@@ -1129,7 +1129,7 @@ local function build()
     UI.Panel(list, C.panel, C.edge, 8)
     -- plan for the skill, or for gold (placed by renderHeader: the professions have different ones)
     list.modes = {}
-    for i, m in ipairs({ { "skill", "Skill", 48 }, { "gold", "Gold", 48 }, { "sell", "Skill + Gold", 78 },
+    for i, m in ipairs({ { "skill", "Skill", 48 }, { "gold", "Profit", 48 }, { "sell", "AH sales", 62 },
                          { "food", "Food", 48 }, { "disenchant", "Disenchant (beta)", 110 } }) do
         local b = UI.Button(list, m[2], m[3], 18, function()
             ns.Player.Prof(prof).mode = m[1]

@@ -537,9 +537,10 @@ for _, s in ipairs(rows()) do
 end
 expect("Mining: a zone above your level is offered, marked", risky and strip(risky.name.text):find("creatures level %d+%+"))
 -- Gold: gold an hour, ore or bars
-expect("Mining: Skill, Skill + Gold and Gold", frame.list.modes[1]:IsShown() and frame.list.modes[2]:IsShown()
+expect("Mining: Skill, AH sales and Profit", frame.list.modes[1]:IsShown() and frame.list.modes[2]:IsShown()
     and frame.list.modes[3].tooltip[2]:find("Grey nodes are mined too")
-    and strip(frame.list.modes[1].label.text) == "Skill" and strip(frame.list.modes[3].label.text) == "Skill + Gold")
+    and strip(frame.list.modes[1].label.text) == "Skill" and strip(frame.list.modes[3].label.text) == "AH sales"
+    and strip(frame.list.modes[2].label.text) == "Profit")
 mock.click(frame.list.modes[3])
 expect("Mining Skill + Gold: saved, rows show what you mine is worth", char().prof.mining.mode == "sell"
     and strip(rows()[1].cost.text):find("^%+"))
@@ -568,9 +569,9 @@ mock.click(tab("firstaid"))
 mock.click(tab("blacksmithing"))
 expect("Blacksmithing tab: header", strip(frame.subtitle.text) == "Blacksmithing 141 / 150, the ladder to 300")
 expect("Blacksmithing: Expert first", strip(rows()[1].name.text) == "Learn Expert")
-expect("... the crafting modes: Sure cost, AH sales and Gold, named in their tooltips",
-    strip(frame.list.modes[1].label.text) == "Sure cost" and strip(frame.list.modes[3].label.text) == "AH sales"
-    and strip(frame.list.modes[2].label.text) == "Gold" and frame.list.modes[3].tooltip[1] == "AH sales")
+expect("... the crafting modes: Vendor sales, AH sales and Profit, named in their tooltips",
+    strip(frame.list.modes[1].label.text) == "Vendor sales" and strip(frame.list.modes[3].label.text) == "AH sales"
+    and strip(frame.list.modes[2].label.text) == "Profit" and frame.list.modes[3].tooltip[1] == "AH sales")
 expect("... what a step costs: red, with a minus", rows()[1].cost.text:sub(1, 11) == ns.UI.Hex(ns.UI.C.bad) .. "-")
 mock.click(rows()[1])
 expect("Expert Blacksmithing: only some trainers, the Horde's with pins", lines():find("Only these trainers teach it")
@@ -1037,7 +1038,7 @@ SlashCmdList.CRAFTLADDER("skinning")
 expect("Skinning tab: rows to skin in a zone", rows()[1] and strip(rows()[1].name.text):find("^Skin in ")
     and strip(rows()[1].sub.text):find("^%d+ %- %d+: .*Leather") and strip(rows()[1].cost.text):find("creatures$"))
 expect("... a gathering profession's modes keep their names after a crafting one's",
-    strip(frame.list.modes[1].label.text) == "Skill" and strip(frame.list.modes[3].label.text) == "Skill + Gold")
+    strip(frame.list.modes[1].label.text) == "Skill" and strip(frame.list.modes[3].label.text) == "AH sales")
 mock.click(rows()[1])
 expect("... its card lists the creatures there, with their level", lines():find("Which creatures can be skinned")
     and #items() > 0 and strip(items()[1].name.text):find("level %d+"))

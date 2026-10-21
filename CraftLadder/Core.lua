@@ -71,11 +71,11 @@ function ns.SetProfession(data)
     ns.Player.Saved().tab = data.key
 end
 
--- The mode a profession's ladder is planned in: a crafting profession that sells: Sure cost ("skill": only vendors buy
--- what it makes), AH sales ("sell": the auction house too) or Gold (what earns most now, the default at 300 until you
--- pick another); a gathering one: Skill, Skill + Gold (level where it earns most) or Gold (the zones by gold an hour,
--- the default at 300); Enchanting has Disenchant too (what's worth more disenchanted). skill: the character's (looked
--- up when not given).
+-- The mode a profession's ladder is planned in: a crafting profession that sells: Vendor sales ("skill": only vendors buy
+-- what it makes), AH sales ("sell": the auction house too) or Profit ("gold": what earns most now, the default at 300
+-- until you pick another); a gathering one: Skill, AH sales (level where it earns most) or Profit (the zones by gold
+-- an hour, the default at 300); Enchanting has Disenchant too (what's worth more disenchanted). skill: the
+-- character's (looked up when not given).
 function ns.LadderMode(data, skill)
     skill = skill or (ns.Player.Skill(data))
     return data.skillOnly and "skill" or ns.Player.Prof(data).mode

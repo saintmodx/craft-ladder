@@ -6,7 +6,7 @@ Whether you're leveling **Engineering, Alchemy, Blacksmithing, Tailoring, Cookin
 
 **[Download Craft Ladder on CurseForge](https://www.curseforge.com/wow/addons/craft-ladder)**
 
-![Blacksmithing's ladder in Sure cost mode, a step's card open](screenshots/ladder.png)
+![Blacksmithing's ladder in Vendor sales mode, a step's card open](screenshots/ladder.png)
 
 ## Professions
 
@@ -15,11 +15,11 @@ Whether you're leveling **Engineering, Alchemy, Blacksmithing, Tailoring, Cookin
 
 ## Modes
 
-- **Sure cost** (gathering: **Skill**): level up for the least gold you're sure to spend. What you make is counted as
-  sold to vendors only: no auctions to post or wait for (gathering: the fastest points).
-- **AH sales** (gathering: **Skill + Gold**): level up counting what the auction house pays for what you make too:
-  cheaper than Sure cost if it sells (gathering: where an hour earns the most on the way).
-- **Gold**: no ladder, just what you can make now that earns the most per craft (for gathering: the zones where an
+- **Vendor sales** (gathering: **Skill**): level up for the least gold you're sure to spend. What you make is counted
+  as sold to vendors only: no auctions to post or wait for (gathering: the fastest points).
+- **AH sales**: level up counting what the auction house pays for what you make too: cheaper than Vendor sales if it
+  sells (gathering: where an hour earns the most on the way).
+- **Profit**: no ladder, just what you can make now that earns the most per craft (for gathering: the zones where an
   hour earns the most at your skill).
 - **Food** (Cooking): the dishes worth eating for your class, grouped by role, by what their Well Fed raises, each in
   its skill-up colour.
@@ -54,13 +54,13 @@ gold an hour each zone earns.
 
 ## Screenshots
 
-Gold: what earns the most per craft now.
+Profit: what earns the most per craft now.
 
-![Blacksmithing in Gold mode](screenshots/gold.png)
+![Blacksmithing in Profit mode](screenshots/gold.png)
 
-Mining in Skill + Gold: the zones to level in, the nodes there and what they're worth.
+Mining in AH sales: the zones to level in, the nodes there and what they're worth.
 
-![Mining's ladder in Skill + Gold mode](screenshots/gathering.png)
+![Mining's ladder in AH sales mode](screenshots/gathering.png)
 
 The auction house tab, and what its Search button opens in Auctionator.
 

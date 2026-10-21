@@ -728,7 +728,7 @@ local function craftDetail(step)
         local net = step.cost - sale.total
         line(("About %s back, so this step %s %s."):format(ns.Money(sale.total), net < 0 and "earns" or "costs",
             ns.Money(math.abs(net))), net < 0 and C.good or C.text)
-        line(ladder.mode == "skill" and "Sure cost counts only what vendors pay: that money is sure. AH sales counts" ..
+        line(ladder.mode == "skill" and "Vendor sales counts only what vendors pay: that money is sure. AH sales counts" ..
             " the auction house too." or "The auction house counts only when it pays 1.5 times a vendor and 5 or more" ..
             " are listed, and for at most a quarter of what's listed.", C.muted)
     end

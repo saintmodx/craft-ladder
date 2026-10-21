@@ -193,7 +193,7 @@ local AH_CUT, AH_OVER_VENDOR = 0.95, 1.5
 
 -- What selling `made` of an item brings back: at the auction house (after its cut) when that pays at least 1.5 times
 -- what a vendor does and at least 5 are listed, for at most a quarter of what's listed (less what earlier steps put
--- there: `sold`); the rest at a vendor. ctx.vendorOnly (the Sure cost ladder): only vendors, whose money is sure.
+-- there: `sold`); the rest at a vendor. ctx.vendorOnly (the Vendor sales ladder): only vendors, whose money is sure.
 -- Returns { ah, ahEach, vendor, vendorEach, total }.
 local function resale(ctx, item, made, sold)
     local vendorEach, ahEach, ah = ctx.sell[item] or 0, 0, 0

@@ -189,6 +189,7 @@ function M.install(fx, ns)
     end
     debugprofilestop = function() return os.clock() * 1000 end
     time = os.time
+    GetTime = function() return M.now or 0 end
     SlashCmdList = {}
     IsShiftKeyDown = function() return false end
     IsControlKeyDown = function() return M.ctrl or false end

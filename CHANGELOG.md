@@ -10,6 +10,10 @@ version numbers [Semantic Versioning](https://semver.org).
 - A step's other recipes read like the ladder's rows: "+" in green when a point earns, "-" in red when it costs, and
   "you know it" in green instead of "learn: you know it".
 
+### Fixed
+
+- Craft with the profession window closed: one click is enough, it crafts once the window has opened.
+
 ## 1.4.0 - 2026-10-21
 
 ### Added

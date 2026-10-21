@@ -506,8 +506,24 @@ local function craftClick(bar)
     bar.count:ClearFocus()
     local n = math.floor(tonumber(bar.count:GetText()) or 0)
     if n <= 0 or not (T and T.CraftRecipe) then return end
-    if not professionOpen() and T.OpenTradeSkill then T.OpenTradeSkill(prof.skillLine) end
-    T.CraftRecipe(bar.step.recipe, n)
+    if professionOpen() then return T.CraftRecipe(bar.step.recipe, n) end
+    -- the window opens later than this click, and the game crafts nothing before its recipes are there: crafted
+    -- then (craftWhenOpen), once, if that's within 10 s
+    bar.pending = { recipe = bar.step.recipe, n = n, line = prof.skillLine, at = GetTime() }
+    if T.OpenTradeSkill then T.OpenTradeSkill(prof.skillLine) end
+    bar.note:SetText(("Opening your %s window: crafting once it's ready."):format(prof.window or prof.name))
+end
+
+-- The profession window's events: the craft a click asked for while it was closed, once its recipes are there.
+local function craftWhenOpen(bar)
+    local p, T = bar.pending, C_TradeSkillUI
+    if not p then return end
+    if GetTime() - p.at > 10 then bar.pending = false; return end -- the window never came: forget it
+    local info = T.GetBaseProfessionInfo and T.GetBaseProfessionInfo()
+    if info and info.professionID == p.line and T.GetRecipeInfo and T.GetRecipeInfo(p.recipe) then
+        bar.pending = false
+        T.CraftRecipe(p.recipe, p.n)
+    end
 end
 
 local function craftBar(step, rec)
@@ -1557,6 +1573,6 @@ function Cards.Render(f, l, lk, p, sel)
     renderDetail()
 end
 
-Cards.PaintCraft, Cards.CraftClick = paintCraft, craftClick
+Cards.PaintCraft, Cards.CraftClick, Cards.CraftWhenOpen = paintCraft, craftClick, craftWhenOpen
 -- the card's widgets, for the specialization's steps (UI/SpecPanel.lua): each made with its parent, Fit(width) after
 Cards.Widgets = { section = makeSection, line = makeLine, place = makePlace, item = makeItem }

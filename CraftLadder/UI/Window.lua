@@ -1303,6 +1303,7 @@ local function build()
     craft.button:SetPoint("LEFT", craft.count, "RIGHT", 6, 0)
     craft.note = UI.Label(craft, 11, C.muted)
     craft.note:SetPoint("LEFT", craft.button, "RIGHT", 10, 0)
+    craft.pending = false -- a Craft clicked while the profession window was closed (UI/Cards.lua)
     craft:Hide()
     detail.craft = craft
     frame.detail = detail
@@ -1373,8 +1374,9 @@ local function build()
     -- the Craft bar follows the profession window, its recipe list and combat, only while the window is open
     local craftEvents = CreateFrame("Frame", nil, frame)
     local CRAFT_WATCH = { "TRADE_SKILL_SHOW", "TRADE_SKILL_CLOSE", "TRADE_SKILL_LIST_UPDATE", "PLAYER_REGEN_DISABLED",
-                          "PLAYER_REGEN_ENABLED" }
+                          "PLAYER_REGEN_ENABLED", "TRADE_SKILL_DATA_SOURCE_CHANGED" }
     craftEvents:SetScript("OnEvent", function()
+        ns.Cards.CraftWhenOpen(frame.detail.craft) -- a Craft clicked while the window was closed
         if frame.detail.craft:IsShown() and ladder then ns.Cards.PaintCraft(frame.detail.craft) end
     end)
     -- what the ladders depend on: counted (every cached ladder is then out of date, or for the bags maybe); while the

@@ -170,14 +170,26 @@ bar.step.learn, bar.step.canCook = { kind = "known", cost = 0 }, 40
 mock.fire("PLAYER_REGEN_ENABLED") -- repaints the bar
 bar.count:SetText("2")
 mock.click(bar.button)
-expect("... window closed: \"Craft\" opens it and crafts in the same click", strip(bar.button.label.text) == "Craft"
-    and bar.button:IsEnabled() and opened == 185 and crafted and crafted[2] == 2)
-opened, crafted = nil, nil
+expect("... window closed: \"Craft\" opens it, and crafts nothing before its recipes are there", opened == 185
+    and not crafted and strip(bar.note.text):find("^Opening your Cooking window"))
 local recipeInfo = C_TradeSkillUI.GetRecipeInfo
 ProfessionsFrame = CreateFrame("Frame")
 ProfessionsFrame:Show()
 C_TradeSkillUI.GetBaseProfessionInfo = function() return { professionID = 185 } end
 C_TradeSkillUI.GetRecipeInfo = function() return { learned = true, numAvailable = 7 } end
+mock.fire("TRADE_SKILL_DATA_SOURCE_CHANGED")
+expect("... then crafts the count once they are", crafted and crafted[1] == bar.step.recipe and crafted[2] == 2)
+crafted = nil
+mock.fire("TRADE_SKILL_DATA_SOURCE_CHANGED")
+expect("... once", not crafted)
+ProfessionsFrame:Hide()
+mock.click(bar.button)
+mock.now = 11
+ProfessionsFrame:Show()
+mock.fire("TRADE_SKILL_DATA_SOURCE_CHANGED")
+expect("... not when the window comes 10 s later", not crafted)
+mock.now = nil
+opened = nil
 mock.fire("PLAYER_REGEN_ENABLED")
 bar.count:SetText("3")
 mock.click(bar.button)

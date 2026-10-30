@@ -3,6 +3,14 @@
 What's new in Craft Ladder, newest first. The format follows [Keep a Changelog](https://keepachangelog.com), the
 version numbers [Semantic Versioning](https://semver.org).
 
+## Unreleased
+
+### Fixed
+
+- With Auctionator and no AuctionDB, AH sales and Profit's auction house rows were empty: Craft Ladder now reads how
+  many are listed from Auctionator's own database, which its API doesn't give. With AuctionDB installed nothing
+  changes.
+
 ## 1.5.0 - 2026-10-21
 
 ### Added

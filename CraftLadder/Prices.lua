@@ -136,13 +136,27 @@ local function fromAuctionDB(item)
     return rec, scan
 end
 
+-- Auctionator's API says what an item costs, not how many are listed. Its own database keeps that too ("available",
+-- the most seen that day), so read it where AuctionDB isn't there to say: with AuctionDB the prices stay its own.
+-- Set by ForGame, so it isn't looked up for every item of a ladder.
+local auctionatorQty = false
+
 local function fromAuctionator(item)
     local api = Auctionator and Auctionator.API and Auctionator.API.v1
     if not (api and api.GetAuctionPriceByItemID) then return end
     local ok, p = pcall(api.GetAuctionPriceByItemID, ADDON, item)
     if not ok or not p then return end
     local okAge, age = pcall(api.GetAuctionAgeByItemID, ADDON, item)
-    return p, { source = "auctionator", ageDays = okAge and age or nil }
+    local e = { source = "auctionator", ageDays = okAge and age or nil }
+    local db = auctionatorQty and Auctionator.Database
+    if db and db.GetPriceHistory then
+        local okDays, days = pcall(db.GetPriceHistory, db, tostring(item))
+        local day = okDays and days and days[1]
+        if day and (day.available or 0) > 0 then
+            e.min, e.median, e.qty = day.minSeen or p, day.maxSeen or day.minSeen or p, day.available
+        end
+    end
+    return p, e
 end
 
 -- Which auction house data is there: "AuctionDB", "Auctionator" or nil, and when AuctionDB last scanned.
@@ -174,6 +188,7 @@ function Prices.Real()
 end
 
 function Prices.ForGame()
+    auctionatorQty = Prices.Source() ~= "AuctionDB"
     return Prices.Make({
         faction = playerFaction(),
         real = Prices.Real(),

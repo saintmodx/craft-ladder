@@ -1714,6 +1714,25 @@ expect("a recipe just learned is known before the window is opened", not wasKnow
     and ns.Player.Known(ns.COOKING)[3397] and ns.Player.Prof(ns.COOKING).known[3397])
 ns.Player.Prof(ns.COOKING).known[3397] = nil
 
+-- Auctionator alone (Classic Era has no AuctionDB to read): how many are listed comes from Auctionator's own
+-- database, which its API doesn't give; with AuctionDB there, nothing of its is read
+local savedADB = AuctionDB
+Auctionator = { API = { v1 = { GetAuctionPriceByItemID = function(_, item) return item == 999002 and 500 or nil end,
+                               GetAuctionAgeByItemID = function() return 1 end } },
+                Database = { GetPriceHistory = function(_, key)
+                    return key == "999002" and { { minSeen = 480, maxSeen = 520, available = 99 } } or {}
+                end } }
+AuctionDB = nil
+local _, lookupAuctionator = ns.Prices.ForGame()
+local priced = lookupAuctionator(999002, true)
+expect("Auctionator alone: how many are listed comes from its database", priced and priced.qty == 99
+    and priced.min == 480 and priced.median == 520)
+AuctionDB = savedADB
+local _, lookupBoth = ns.Prices.ForGame()
+local pricedBoth = lookupBoth(999002, true)
+expect("... with AuctionDB there, Auctionator's database is left alone", pricedBoth and pricedBoth.qty == nil)
+Auctionator = nil
+
 print(failed == 0 and "game smoke test OK" or (failed .. " checks FAILED"))
 io.write(failed == 0 and "game smoke test OK\n" or (failed .. " checks FAILED\n"))
 os.exit(failed == 0 and 0 or 1)

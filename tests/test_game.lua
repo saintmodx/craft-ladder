@@ -1041,14 +1041,31 @@ local function hoDisenchant(on)
 end
 do
     hoDisenchant(true)
+    -- a green sword (no recipe makes it) listed for 1s at Ho's last scan: worth buying to disenchant
+    local sword = 15210
+    AuctionDB.sv.houses[UnitFactionGroup()].items[sword] = { { 1792000916, 100, 150, 3 }, ho = true }
     ns.Player.Prof(ns.ENCHANTING).mode = nil
     SlashCmdList.CRAFTLADDER("enchanting")
     local deButton = frame.list.modes[5]
     expect("Enchanting: a Disenchant mode", deButton:IsShown() and strip(deButton.label.text) == "Disenchant (beta)")
     mock.click(deButton)
-    local deRows = rows()
+    local deRows, buys = {}, {}
+    for _, r in ipairs(rows()) do table.insert(r.step.kind == "auction" and buys or deRows, r) end
     local made = #deRows
     local loss = deRows[made]
+    local swordRow
+    for _, r in ipairs(buys) do if r.step.item == sword then swordRow = r end end
+    local buyHead
+    for _, h in ipairs(headings()) do if strip(h.title.text) == "Buy and disenchant" then buyHead = h end end
+    expect("... Buy and disenchant: what the auction house lists for less than disenchanting brings, last, the most" ..
+        " gained first", buyHead and swordRow and tostring(buyHead.count.text) == tostring(#buys)
+        and strip(swordRow.sub.text):find("^buy .+, ~.+ disenchanted, pays %d+%% of the time$")
+        and strip(swordRow.cost.text):find("^%+") and buys[1].step.gain >= buys[#buys].step.gain)
+    swordRow.scripts.OnEnter(swordRow)
+    mock.click(swordRow)
+    expect("... its card: the average, how often it pays, what it breaks into, the listing; no Auctionator: no Search",
+        lines():find("One disenchant brings more than it cost %d+%% of the time") and #items() >= 2
+        and lines():find("The cheapest listing: .+ Auction house, .+ 3 listed") and not frame.detail.search:IsShown())
     expect("... Disenchant: Ho's Tailoring, under \"Make and disenchant\", the best first, red at a loss",
         deButton.active and made >= 2 and deRows[1].step.kind == "disenchant"
         and strip(headings()[1].title.text) == "Make and disenchant" and loss.step.profit < 0
@@ -1062,7 +1079,7 @@ do
     expect("... the footer", strip(frame.total.text):find("^In your bags 0 to disenchant, 0 to sell; %d+ worth making"))
     -- the bags: Linen Cloth (nothing to disenchant), two Double-stitched Woolen Shoulders, a green sword no recipe
     -- makes (what the game says of it): "In your bags" first, the shoulders no longer among what to make
-    local shoulders, sword, locked = ns.TAILORING.recipes[3848].makes, 15210, false
+    local shoulders, locked = ns.TAILORING.recipes[3848].makes, false
     local bagItems = { 2589, shoulders, shoulders, sword }
     C_Container = { GetContainerNumSlots = function(bag) return bag == 0 and #bagItems or 0 end,
                     GetContainerItemInfo = function(_, slot)
@@ -1074,7 +1091,8 @@ do
     end
     fx.tailoring.owned[shoulders], fx.tailoring.owned[sword] = 2, 1 -- the game's count of them
     mock.fire("BAG_UPDATE_DELAYED"); mock.runTimers()
-    deRows = rows()
+    deRows = {}
+    for _, r in ipairs(rows()) do if r.step.kind ~= "auction" then deRows[#deRows + 1] = r end end
     local bagRows = {}
     for _, r in ipairs(deRows) do if r.step.kind == "bag" then bagRows[r.step.item] = r end end
     expect("... the bags first, under their own heading, the shoulders a row of 2, the sword too",
@@ -1087,7 +1105,7 @@ do
         and lines():find("Your 2 disenchanted: about") and lines():find("each at a vendor"))
     mock.output = {}
     SlashCmdList.CRAFTLADDER("chat enchanting")
-    expect("... and in chat", said("In your bags:") and said("Make and disenchant:")
+    expect("... and in chat", said("In your bags:") and said("Make and disenchant:") and said("Buy and disenchant:")
         and said("in your bags %d+ to disenchant, %d+ to sell; worth more disenchanted than sold: " .. (made - 1)
             .. " to make"))
     -- a disenchant: the item the game locked while casting, what the loot window gave

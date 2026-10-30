@@ -758,6 +758,56 @@ assert(table.concat(fvs, " ") == "1:known 2:learn 4:level 3:skill" and fv[1].can
             "Disenchant: at Enchanting 1 what asks more comes last, with the skill it asks")
     end
     check("... the same rows", #hoLow.steps, #ho.steps)
+    -- how often one disenchant brings more than it cost: of 75% 4-6 of a 10c dust only 6 beats 55c (a third), and the
+    -- 25% 1s shard does
+    check("Disenchant: how often one brings more than 55c", Disenchant.Chance({ gives = {
+        { item = 1, chance = 0.75, min = 4, max = 6 }, { item = 2, chance = 0.25, min = 1, max = 1 } } },
+        function(item) return item == 1 and 10 or 100 end, 55), 0.75 / 3 + 0.25)
+    -- one item's own disenchants: 3 sashes that gave Lesser Magic Essence, never its bucket's likeliest (Strange Dust),
+    -- make the sash's table theirs; its bucket keeps the data's (3 aren't 5). 3 that gave the dust once are luck.
+    local mine = {}
+    for i = 1, 3 do mine[i] = ("%d %d 10938:2"):format(sashRec.makes, 1792000000 + i) end
+    local byBucket, byItem = Disenchant.Seen(mine, bucketOf)
+    local sashOwn = Disenchant.Table(sashBucket, byBucket, sashRec.makes, byItem)
+    assert(sashOwn.byItem and sashOwn.seen == 3 and sashOwn.gives[1].item == 10938 and sashOwn.gives[1].chance == 1
+        and Disenchant.Table(sashBucket, byBucket) == sashTable,
+        "Disenchant: 3 of one item that never gave its bucket's likeliest: its own table")
+    mine[3] = ("%d %d 10940:3"):format(sashRec.makes, 1792000003)
+    byBucket, byItem = Disenchant.Seen(mine, bucketOf)
+    assert(Disenchant.Table(sashBucket, byBucket, sashRec.makes, byItem) == sashTable,
+        "... the likeliest came once: the bucket's still")
+    -- the auction house: what its last scan lists for less than disenchanting brings, on average. A green sword (Raider
+    -- Shortsword, level 20) at 1s; one gone from the last scan isn't there; a green of level 31-35 asks Enchanting 75
+    local sword, gone, high = 15210, nil, nil
+    for item, id in pairs(DE.items) do
+        if id == DE.items[sword] and item ~= sword and not gone then gone = item end
+        if DE.buckets[id].skill == 75 and DE.buckets[id].quality == 2 and not high then high = item end
+    end
+    local listings = { [sword] = { hoT.scanTs, 100, 150, 3 }, [gone] = { hoT.scanTs - 3600, 1, 1, 1 },
+                       [high] = { hoT.scanTs, 1, 1, 1 } }
+    local qah = ns.Prices.Make({ faction = "H", auctionDB = function(item)
+        return listings[item] or hoT.ah[item] or hoE.ah[item], hoT.scanTs end })
+    local function ahRows(enchanting, enchanters)
+        local l = Disenchant.Build(en, { skill = enchanting, faction = "H", known = hoE.known, owned = {} }, qah,
+            { auction = true, enchanters = enchanters })
+        local by = {}
+        for i = #l.steps - l.auction + 1, #l.steps do by[l.steps[i].item] = l.steps[i] end
+        return l, by
+    end
+    local ah, by = ahRows(150)
+    local sw = by[sword]
+    assert(ah.auction > 0 and ah.now == 0 and sw and sw.kind == "auction" and sw.price == 100 and sw.listed == 3
+        and sw.gain == sw.each - 100 and sw.chance > 0 and not sw.needSkill and not by[gone],
+        "Disenchant: the sword at 1s is worth buying to disenchant; one gone from the last scan isn't listed")
+    check("... how often it pays", sw.chance, Disenchant.Chance(sw.de, ah.worth, 100))
+    for i = #ah.steps - ah.auction + 2, #ah.steps do
+        local a, b = ah.steps[i - 1], ah.steps[i]
+        local ca, cb = not a.needSkill or a.alt ~= nil, not b.needSkill or b.alt ~= nil
+        assert(ca and not cb or ca == cb and b.gain <= a.gain, "... what you can disenchant first, the most gained first")
+    end
+    local _, lowBy = ahRows(1, { { name = "Zug", skill = 200 }, { name = "Yungzug", skill = 60 } })
+    assert(lowBy[high] and lowBy[high].needSkill == 75 and lowBy[high].alt.name == "Zug",
+        "... at Enchanting 1, a green of level 31-35 asks 75: Zug has 200, Yungzug 60")
 end)()
 
 -- a real ladder

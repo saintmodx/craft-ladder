@@ -816,9 +816,14 @@ local function disenchanting(step, n, yours)
         f.source = ns.Describe.PriceSource(lookup(g.item, true))
         place(f, 2)
     end
-    line(("%s%d disenchanted: about %s, at least %s 9 times out of 10."):format(yours and "Your " or "", n,
-        ns.Money(n * step.each), ns.Money(ns.Disenchant.Sure(step.each, step.spread, n))), C.text)
-    if bucket.seen then
+    if n > 1 then -- (for one, the outcomes above say it)
+        line(("%s%d disenchanted: about %s, at least %s 9 times out of 10."):format(yours and "Your " or "", n,
+            ns.Money(n * step.each), ns.Money(ns.Disenchant.Sure(step.each, step.spread, n))), C.text)
+    end
+    if bucket.byItem then
+        line(("What it gives: from your %d disenchants of this item, recorded in game: it breaks unlike items of its" ..
+            " kind."):format(bucket.seen), C.good)
+    elseif bucket.seen then
         line(("What it gives: from %d disenchants of items like it, recorded in game."):format(bucket.seen), C.good)
     elseif s then -- yours so far, before they replace the table
         local got = {}
@@ -875,6 +880,45 @@ local function bagDetail(step)
         or "Not on the auction house.", C.muted)
     line(vendor and vendor > 0 and (ns.Money(vendor) .. " each at a vendor.") or "Vendors don't buy it.", C.muted)
     line("The auction house counts with 5 or more listed. What made it doesn't count: it's made.", C.muted)
+end
+
+-- Disenchant: an item the auction house lists for less than disenchanting it brings: what buying one gains on average
+-- and how often, what it breaks into, the listing; with Auctionator, a button that searches it.
+local function auctionDetail(step)
+    local skill = ladder.state.skill
+    headline(UI.ItemIcon(step.item), ns.Describe.ItemName(step.item), step.needSkill and not step.alt and C.dim or C.text,
+        ("Buy one for %s; disenchanted, about %s on average: %s"):format(ns.Money(step.price), ns.Money(step.each),
+            signed(step.gain)),
+        step.needSkill and (hex(C.bad) .. ("Disenchanting it needs Enchanting %d; you have %d.|r "):format(
+            step.needSkill, skill) .. (step.alt and ("%s has %d."):format(step.alt.name, step.alt.skill)
+            or "None of your characters has it.")) or "")
+    line(("One disenchant brings more than it cost %d%% of the time."):format(math.floor(step.chance * 100 + 0.5)),
+        step.chance >= 0.5 and C.good or C.warn)
+    local api = Auctionator and Auctionator.API and Auctionator.API.v1
+    if api and api.MultiSearchAdvanced and not ns.Player.viewing then
+        local b = frame.detail.search
+        b.item = step.item
+        b:ClearAllPoints()
+        b:SetPoint("TOPLEFT", 0, -y)
+        b:Show()
+        y = y + 30
+    end
+    disenchanting(step, 1)
+    section("Buy it")
+    line(("The cheapest listing: %s. %s."):format(ns.Money(step.price),
+        (ns.Describe.PriceSource(lookup(step.item, true)):gsub("^%l", string.upper))), C.text)
+    line((ns.DISENCHANT.classic[step.item] and "Its level and quality are Classic's: Forever's client doesn't list it." ..
+        " " or "") .. "A random suffix (\"of the Monkey\") doesn't change what it breaks into. The listing may have" ..
+        " sold since the scan.", C.muted)
+end
+
+-- The card's Search button: Auctionator's Shopping tab with the item, once the game has its name (the auction house
+-- must be open).
+function Cards.Search(item)
+    local api = Auctionator and Auctionator.API and Auctionator.API.v1
+    local name = C_Item.GetItemNameByID and C_Item.GetItemNameByID(item)
+    if not name and C_Item.RequestLoadItemDataByID then C_Item.RequestLoadItemDataByID(item) end
+    if api and name then pcall(api.MultiSearchAdvanced, "CraftLadder", { { searchString = name, isExact = true } }) end
 end
 
 -- Food: one dish for your class: what eating it raises, the level it asks, its skill-up colours, its recipe, what one
@@ -1498,6 +1542,7 @@ local function renderDetail()
     d.head:Hide()
     d.back:Hide()
     d.craft:Hide()
+    d.search:Hide()
     y = 0
     local state = ladder.state
     local step = ladder.steps[selected]
@@ -1545,6 +1590,8 @@ local function renderDetail()
         disenchantDetail(step)
     elseif step.kind == "bag" then
         bagDetail(step)
+    elseif step.kind == "auction" then
+        auctionDetail(step)
     else
         craftDetail(step)
     end

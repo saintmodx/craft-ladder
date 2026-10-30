@@ -104,8 +104,8 @@ for _, f in ipairs(ns.CAMP.features) do
 end
 for _, f in ipairs(ns.CAMP.others) do campItem(f, "feature") end
 
--- disenchanting: each bucket's outcomes make 100%, every material has a name, every crafted item's bucket exists and
--- some profession makes it
+-- disenchanting: each bucket's outcomes make 100%, every material has a name, every item's bucket exists (crafted ones
+-- and the others the auction house may list)
 local DE, made = ns.DISENCHANT, {}
 for _, data in ipairs(ns.Professions) do
     for _, r in pairs(data.recipes) do if r.makes then made[r.makes] = true end end
@@ -124,15 +124,18 @@ for id, b in pairs(DE.buckets) do
         problem("Disenchant bucket %d: %g%%, skill %d", id, sum * 100, b.skill)
     end
 end
-local deItems = 0
+local deCrafted, deOthers = 0, 0
 for item, id in pairs(DE.items) do
-    deItems = deItems + 1
-    if not DE.buckets[id] or not made[item] then problem("Disenchant item %d: bucket %d, not made", item, id) end
+    if made[item] then deCrafted = deCrafted + 1 else deOthers = deOthers + 1 end
+    if not DE.buckets[id] or DE.noDisenchant[item] then problem("Disenchant item %d: bucket %d", item, id) end
+end
+for item in pairs(DE.classic) do
+    if not DE.items[item] then problem("Disenchant: classic item %d has no bucket", item) end
 end
 for lesser, greater in pairs(DE.greater) do
     if not (DE.names[lesser] and DE.names[greater]) then problem("Disenchant: essence %d or %d", lesser, greater) end
 end
-print(("Disenchant built %s: %d crafted items"):format(DE.built, deItems))
+print(("Disenchant built %s: %d crafted items, %d others"):format(DE.built, deCrafted, deOthers))
 
 for _, p in ipairs(problems) do print("PROBLEM: " .. p) end
 print(#problems == 0 and "OK" or (#problems .. " problems"))

@@ -74,6 +74,9 @@ local function tooltip(self)
         elseif step and step.kind == "disenchant" then
             GameTooltip:AddDoubleLine("Disenchant", ("%s, %s%s"):format(step.data.recipes[step.recipe].name,
                 step.profit >= 0 and "+" or "-", ns.Money(math.abs(step.profit))), 1, 1, 1, 1, 1, 1)
+        elseif step and step.kind == "auction" then
+            GameTooltip:AddDoubleLine("Buy and disenchant", ("%s, +%s"):format(ns.Describe.ItemName(step.item),
+                ns.Money(step.gain)), 1, 1, 1, 1, 1, 1)
         elseif step and step.kind == "profit" then
             GameTooltip:AddDoubleLine("Earns most", ("%s, +%s a craft"):format(data.recipes[step.recipe].name,
                 ns.Money(step.profit)), 1, 1, 1, 1, 1, 1)
@@ -82,7 +85,7 @@ local function tooltip(self)
                 or "learn " .. step.rank.name), 1, 1, 1, 1, 1, 1)
         end
         if #ladder.steps > 0 and step.kind ~= "profit" and step.kind ~= "food" and step.kind ~= "disenchant"
-            and step.kind ~= "bag" and not step.hour then
+            and step.kind ~= "bag" and step.kind ~= "auction" and not step.hour then
             GameTooltip:AddDoubleLine(("Up to %d"):format(ladder.to), ns.Money(ladder.cost), 1, 1, 1, 1, 1, 1)
         end
     end

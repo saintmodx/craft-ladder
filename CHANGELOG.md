@@ -3,6 +3,20 @@
 What's new in Craft Ladder, newest first. The format follows [Keep a Changelog](https://keepachangelog.com), the
 version numbers [Semantic Versioning](https://semver.org).
 
+## Unreleased
+
+### Added
+
+- Buy and disenchant: Enchanting's Disenchant mode lists what the auction house sells for less than disenchanting it
+  brings (from AuctionDB's last scan, or Auctionator), the most gained first, with how often a single disenchant pays
+  for itself and the Enchanting it asks (or which of your characters has it). Its card shows what it breaks into and
+  has a button that searches it with Auctionator.
+
+### Changed
+
+- Your own disenchants of one item replace the usual table for it after 3, when they never gave its most likely
+  material: Forever breaks some items differently.
+
 ## 1.5.1 - 2026-10-31
 
 ### Fixed

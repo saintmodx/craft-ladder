@@ -9,7 +9,8 @@
   - The buckets Forever added (blue items of levels 5-20) aren't Classic's: they take the green bucket of their class
     and levels, one more of everything (the user checked it on 2026-10-20: Novice Arcanist's Sash, a blue of level 15,
     gives 2-3 Strange Dust or Lesser Magic Essence, where a green gives 1-2).
-  - The crafted items: every item the professions' data makes (CraftLadder/Data/*.lua, `makes = `).
+  - The crafted items: every item the professions' data makes (CraftLadder/Data/*.lua, `makes = `); and every other
+    weapon and armor the auction house may list (ItemSparse's Bonding: not 1, bound when picked up, nor 4, a quest's).
   - seen_in_game.json's disenchants (what the game gave, recorded by the addon): a bucket with 5 or more of them takes
     what they gave instead (the addon does the same in game with the player's own); the report shows them all.
 
@@ -35,6 +36,7 @@ OUT_REPORT = TOOLS / "DisenchantReport.md"
 DATA = ROOT / "CraftLadder" / "Data"
 WEAPON, ARMOR = 2, 4
 NO_DISENCHANT = 0x8000  # ItemSparse.Flags_0
+ERA = "1.15.9.70003"  # Classic Era's client: its buckets, and the items Forever's doesn't list
 # 3 lesser essences make a greater one and a greater splits into 3 lesser (Classic's, a right-click in the bags)
 GREATER = {10938: 10939, 10998: 11082, 11134: 11135, 11174: 11175, 16202: 16203}
 QUALITY = {2: "green", 3: "blue", 4: "epic"}
@@ -101,7 +103,7 @@ def main():
             bid = bucket_of(cls, int(r["Quality"]), int(r["ItemLevel"]))
             if bid:
                 votes[bid][int(r["DisenchantID"])] += 1
-    era = {int(r["ID"]) for r in wago.table("ItemDisenchantLoot", "1.15.9.70003", args.refresh)}
+    era = {int(r["ID"]) for r in wago.table("ItemDisenchantLoot", ERA, args.refresh)}
     out_buckets, guessed = {}, []
     for bid, b in sorted(buckets.items()):
         cls, quality, low, high = int(b["Class"]), int(b["Quality"]), int(b["MinLevel"]), int(b["MaxLevel"])
@@ -126,29 +128,46 @@ def main():
             guessed.append(bid)
         out_buckets[bid] = out
 
+    made = set()  # the crafted items
+    for path in DATA.glob("*.lua"):
+        made |= {int(x) for x in re.findall(r"makes = (\d+)", path.read_text(encoding="utf-8"))}
+    # the items Forever's client doesn't list (most of Classic's: the game gets them from the server) are Classic
+    # Era's client's, a guess (marked `classic`): of the weapons and armor both list, Forever changed about 1%. Era's
+    # from 200000 on are Season of Discovery's (Forever's own are in its client), but what Forever's recipes make
+    era_sparse = {int(r["ID"]): r for r in wago.table("ItemSparse", ERA, args.refresh)}
+    era_sparse = {k: r for k, r in era_sparse.items() if k < 200000 or k in made}
+    classic = set(era_sparse) - set(sparse)
+    known = {**era_sparse, **sparse}
+
     def item_bucket(item):
         """The bucket an item falls in, whether it's a shield or an off-hand item, or (None, ...)."""
-        s, i = sparse.get(item), items.get(item)
+        s, i = known.get(item), items.get(item)
         if not (s and i) or int(i["ClassID"]) not in (WEAPON, ARMOR) or int(s["OverallQualityID"]) not in QUALITY:
             return None, False
         cls = effective_class(int(i["ClassID"]), int(i["SubclassID"]), int(i["InventoryType"]))
         return bucket_of(cls, int(s["OverallQualityID"]), int(s["ItemLevel"])), cls != int(i["ClassID"])
 
     # the crafted items that can be disenchanted
-    made = set()
-    for path in DATA.glob("*.lua"):
-        made |= {int(x) for x in re.findall(r"makes = (\d+)", path.read_text(encoding="utf-8"))}
     out_items, shields, no_de = {}, [], []
     for item in sorted(made):
         bid, shield = item_bucket(item)
-        if bid and int(sparse[item]["Flags_0"]) & NO_DISENCHANT:
+        if bid and int(known[item]["Flags_0"]) & NO_DISENCHANT:
             no_de.append(item)
         elif bid:
             out_items[item] = bid
             if shield:
                 shields.append(item)
+    crafted = dict(out_items)
+    # every other weapon and armor the auction house may list (not bound when picked up, not a quest item): what Buy
+    # to disenchant looks for there, without the game loading thousands of items to learn their bucket
+    for item in sorted(known):
+        if item in out_items or int(known[item]["Bonding"]) in (1, 4) or int(known[item]["Flags_0"]) & NO_DISENCHANT:
+            continue
+        bid = item_bucket(item)[0]
+        if bid:
+            out_items[item] = bid
     # every weapon and armor the game won't disenchant: what the bags have is looked up in game
-    no_de_all = sorted(k for k, s in sparse.items() if int(s["Flags_0"]) & NO_DISENCHANT and item_bucket(k)[0])
+    no_de_all = sorted(k for k, s in known.items() if int(s["Flags_0"]) & NO_DISENCHANT and item_bucket(k)[0])
 
     # what the game gave (any item disenchanted): a bucket with SEEN or more takes it
     seen = defaultdict(list)
@@ -164,17 +183,19 @@ def main():
 
     mats = sorted({g["item"] for b in out_buckets.values() for g in b["gives"]} | set(GREATER) | set(GREATER.values()))
     prices = wago.item_prices(build, args.refresh)
-    name = lambda x: sparse[x]["Display_lang"] if x in sparse else str(x)  # noqa: E731
+    name = lambda x: known[x]["Display_lang"] if x in known else str(x)  # noqa: E731
     today = datetime.date.today().isoformat()
     lines = [
-        "-- Craft Ladder: what disenchanting a crafted item gives.",
+        "-- Craft Ladder: what disenchanting an item gives.",
         "-- GENERATED by tools/build_disenchant.py on %s - don't edit by hand; fix the builder and rebuild." % today,
         "-- buckets: Forever's (client build %s: weapon or armor, quality, item levels); gives = what one" % build,
         "-- disenchant gives, one of them: chance 0-1, min-max of it (CMaNGOS's, Classic's numbers); skill = the",
         "-- Enchanting it asks (Classic's rule, a guess); guess = a bucket Forever added: its green twin's, one more",
         "-- of each (checked for one item); seen = how many recorded disenchants it's taken from then.",
-        "-- items = the crafted items that can be disenchanted, their bucket (a shield or an off-hand item as a",
-        "-- weapon); noDisenchant = every weapon and armor the game won't disenchant (the client's flag).",
+        "-- items = the items that can be disenchanted, their bucket (a shield or an off-hand item as a weapon): the",
+        "-- crafted ones and every other the auction house may list (not bound when picked up, not a quest item);",
+        "-- classic = those whose level, quality and binding are Classic Era's client's: Forever's doesn't list them",
+        "-- (a guess); noDisenchant = every weapon and armor the game won't disenchant (the client's flag).",
         "-- greater = the essence 3 of a lesser make; sell = what a vendor pays for each material; names = theirs.",
         "local _, ns = ...",
         "",
@@ -189,6 +210,8 @@ def main():
         return ["    " + " ".join(entries[i:i + 10]) for i in range(0, len(entries), 10)]
     lines += ["  },", "  items = {"]
     lines += rows(["[%d] = %d," % (item, bid) for item, bid in out_items.items()])
+    lines += ["  },", "  classic = {"]
+    lines += rows(["[%d] = true," % item for item in out_items if item in classic])
     lines += ["  },", "  noDisenchant = {"]
     lines += rows(["[%d] = true," % item for item in no_de_all])
     lines += ["  },",
@@ -199,7 +222,7 @@ def main():
     OUT_LUA.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
     # the report: the buckets, the guesses, and what the game gave
-    per_bucket = Counter(out_items.values())
+    per_bucket = Counter(crafted.values())
     rep = ["# Disenchanting", "", "Built %s from client build %s and CMaNGOS classic-db." % (today, build), "",
            "## Buckets", "",
            "| Bucket | Class | Quality | Levels | Skill | Gives | Crafted items | Seen in game |",
@@ -224,10 +247,14 @@ def main():
             " Novice Arcanist's Sash: 2-3 Strange Dust or Lesser Magic Essence)." % ", ".join(map(str, guessed)),
             "- Shields and off-hand items count as weapons (CMaNGOS's): %d crafted ones (%s)." % (
                 len(shields), ", ".join(name(x) for x in shields[:12]) + (", ..." if len(shields) > 12 else "")),
-            "", "%d crafted items can be disenchanted; %d can't (the client's flag)." % (len(out_items), len(no_de))]
+            "- %d items Forever's client doesn't list take Classic Era's level, quality and binding (`classic`):"
+            " Forever changed about 1%% of the weapons and armor both list." % sum(1 for x in out_items if x in classic),
+            "", "%d crafted items can be disenchanted; %d can't (the client's flag). %d other items the auction house"
+            " may list can be disenchanted." % (len(crafted), len(no_de), len(out_items) - len(crafted))]
     OUT_REPORT.write_text("\n".join(rep) + "\n", encoding="utf-8")
-    print("%s: %d buckets (%d new in Forever), %d crafted items, %d shields and off-hands, %d disenchants seen" % (
-        OUT_LUA.name, len(out_buckets), len(guessed), len(out_items), len(shields), sum(len(r) for r in seen.values())))
+    print("%s: %d buckets (%d new in Forever), %d crafted items, %d others, %d shields and off-hands, %d disenchants"
+          " seen" % (OUT_LUA.name, len(out_buckets), len(guessed), len(crafted), len(out_items) - len(crafted),
+                     len(shields), sum(len(r) for r in seen.values())))
 
 
 if __name__ == "__main__":

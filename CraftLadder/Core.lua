@@ -144,8 +144,9 @@ function ns.Calculate(data)
                    standing = ns.Player.Standing,
                    vendorOnly = data.resale and mode == "skill" or nil,
                    crafts = disenchant and craftingProfessions(data, state) or nil,
-                   seen = disenchant and ns.Disenchant.Seen(ns.db.disenchantLog, ns.Disenchant.BucketOf) or nil,
-                   bags = disenchant and ns.Disenchant.Bags() or nil }
+                   bags = disenchant and ns.Disenchant.Bags() or nil,
+                   auction = disenchant or nil, enchanters = disenchant and ns.Disenchant.Enchanters(data.key) or nil }
+    if disenchant then opts.seen, opts.seenItems = ns.Disenchant.Seen(ns.db.disenchantLog, ns.Disenchant.BucketOf) end
     local ladder = build(data, state, quote, opts)
     ladder.mode = mode
     ladder.state, ladder.data = state, data
@@ -269,6 +270,15 @@ local function printLadder(data)
                 s.data.recipes[s.recipe].name, s.data.name, ns.Money(s.cost), ns.Money(s.back),
                 s.profit >= 0 and "|cff40c040+" or "|cffff4040-", ns.Money(math.abs(s.profit)),
                 s.needSkill and (" |cffff4040needs Enchanting " .. s.needSkill .. "|r") or ""))
+        elseif s.kind == "auction" then
+            local first = #ladder.steps - ladder.auction + 1
+            if i == first then print("  |cffffd200Buy and disenchant:|r") end
+            if i < first + 10 then -- the 10 best: the window has them all
+                print(("  %s: buy for %s, disenchanted about %s on average - |cff40c040+%s|r, more %d%% of the time%s")
+                    :format(ns.Describe.ItemName(s.item), ns.Money(s.price), ns.Money(s.each), ns.Money(s.gain),
+                    math.floor(s.chance * 100 + 0.5), s.needSkill and (" |cffff4040needs Enchanting " .. s.needSkill
+                    .. (s.alt and (", " .. s.alt.name .. " has " .. s.alt.skill) or "") .. "|r") or ""))
+            end
         elseif s.kind == "profit" then
             if s.vendor and i == 1 then print("  |cffffd200Sell to a vendor:|r") end
             if i == ladder.vendorRows + 1 then print("  |cffffd200Sell at the auction house:|r") end
@@ -310,8 +320,8 @@ local function printLadder(data)
         local de = 0
         for i = 1, ladder.bags do de = de + (ladder.steps[i].disenchant and 1 or 0) end
         chat(("in your bags %d to disenchant, %d to sell; worth more disenchanted than sold: %d to make, %d more" ..
-            " need a higher Enchanting (on average, at today's prices)."):format(de, ladder.bags - de,
-            ladder.now - ladder.bags, #ladder.steps - ladder.now))
+            " need a higher Enchanting, %d to buy at the auction house (on average, at today's prices)."):format(de,
+            ladder.bags - de, ladder.now - ladder.bags, #ladder.steps - ladder.now - ladder.auction, ladder.auction))
         return
     elseif ladder.steps[1] and ladder.steps[1].kind == "profit" then
         chat(("%d sell to a vendor for more than they cost, %d earn at the auction house (per craft, at today's" ..

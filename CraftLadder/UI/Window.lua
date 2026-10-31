@@ -770,6 +770,8 @@ local function renderHeader()
     for _, i in ipairs({ 1, 3, 2, 4 }) do
         local b = frame.list.modes[i]
         local tip = b.mode == "food" and (prof.food and FOOD_TIP or nil) or tips[b.mode]
+        -- at 300 the two ladders have no rows left: they go, and Profit and Specialization move left into their place
+        if state.skill >= 300 and (b.mode == "skill" or b.mode == "sell") then tip = nil end
         b:SetShown(tip ~= nil)
         if tip then
             local name = tips.names and tips.names[b.mode] or b.name

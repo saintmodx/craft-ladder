@@ -969,12 +969,19 @@ expect("... the footer: what sells at the auction house (and to a vendor, if any
 mock.output = {}
 SlashCmdList.CRAFTLADDER("chat engineering")
 expect("... and in chat", said("sell to a vendor for more than they cost") and said("Sell at the auction house:"))
-mock.click(frame.list.modes[1])
-ns.Player.Prof(ns.ENGINEERING).mode = nil
+mock.click(frame.list.modes[3]) -- AH sales picked while there was still something to level
 fx.engineering.skill, fx.engineering.maxSkill = 300, 300
+mock.fire("SKILL_LINES_CHANGED")
 mock.click(tab("firstaid")); mock.click(tab("engineering"))
-expect("Engineering at 300: Gold first", frame.list.modes[2].active and not frame.list.modes[1].active)
+expect("Engineering at 300: Gold first", frame.list.modes[2].active)
+expect("... Vendor sales and AH sales gone: nothing left to level", not frame.list.modes[1]:IsShown()
+    and not frame.list.modes[3]:IsShown() and frame.list.modes[2]:IsShown())
+expect("... Profit takes their place, Specialization after it", frame.list.modes[2].point[2] == 12
+    and frame.list.spec:IsShown() and frame.list.spec.point[2]
+        == 12 + frame.list.modes[2]:GetWidth() + 4)
+ns.Player.Prof(ns.ENGINEERING).mode = nil
 fx.engineering.skill, fx.engineering.maxSkill = 38, 75
+mock.fire("SKILL_LINES_CHANGED")
 mock.click(tab("firstaid"))
 
 -- a profession the character hasn't got: shown (to plan it), but not in the menu

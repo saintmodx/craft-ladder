@@ -78,6 +78,8 @@ end
 function ns.LadderMode(data, skill)
     skill = skill or (ns.Player.Skill(data))
     local mode = ns.Player.Prof(data).mode
+    -- at 300 there's nothing left to level, so Vendor sales and AH sales are hidden: a mode picked earlier isn't kept
+    if skill >= 300 and (mode == "skill" or mode == "sell") then mode = nil end
     return data.skillOnly and "skill" or mode
         or ((data.resale or data.kind) and skill >= 300 and "gold") or "skill"
 end

@@ -12,6 +12,8 @@ version numbers [Semantic Versioning](https://semver.org).
   those are what the profession is worth levelling towards, and at low skill the group was usually empty. The
   auction house group is unchanged, only what you can make now, and the auction house tab's shopping list skips the
   rows you can't craft.
+- At 300 in a profession the Vendor sales and AH sales buttons are gone: there is nothing left to level with them,
+  so Profit and Specialization take their place. A mode picked before 300 isn't kept either.
 
 ### Fixed
 

@@ -845,16 +845,16 @@ end
 -- what one craft takes and what selling it instead brings. prof is the recipe's profession here (so the Craft bar
 -- makes it); Cards.Render sets it back.
 local function disenchantDetail(step)
-    local rec, skill = prof.recipes[step.recipe], ladder.state.skill
+    local rec, skill = prof.recipes[step.recipe], ladder.from -- the account's best Enchanting: an item can be mailed
     local result = (step.profit >= 0 and hex(C.good) .. "+" or hex(C.bad) .. "-") .. ns.Money(math.abs(step.profit))
         .. "|r"
     headline(UI.ItemIcon(rec.makes), rec.name,
         step.needSkill and C.dim or step.color ~= "grey" and STEP_COLOR[step.color] or C.text,
         ("One craft%s costs about %s; disenchanted, about %s on average: %s"):format(
             step.made > 1 and (" (makes " .. step.made .. ")") or "", ns.Money(step.cost), ns.Money(step.back), result),
-        step.needSkill and (hex(C.bad) .. ("Disenchanting it needs Enchanting %d; you have %d."):format(step.needSkill,
-            skill) .. "|r") or ("A %s recipe you know."):format(prof.name))
-    craftBar(step, rec)
+        step.needSkill and (hex(C.bad) .. ("Disenchanting it needs Enchanting %d; the best of yours is %d."):format(
+            step.needSkill, skill) .. "|r") or ("A %s recipe %s knows."):format(prof.name, step.who or "you"))
+    if step.live then craftBar(step, rec) end -- only your own character can craft it from here
     disenchanting(step, ns.Disenchant.BATCH)
     if step.profit < 0 then
         line("Making it costs more than disenchanting brings: disenchant it when you make it anyway, for skill.",
@@ -863,16 +863,20 @@ local function disenchantDetail(step)
     oneCraft(step, rec)
 end
 
--- Disenchant: an item in the bags: disenchant it or sell it, whichever brings more on average.
+-- Disenchant: an item a character of yours holds: disenchant it or sell it, whichever brings more on average.
 local function bagDetail(step)
     local e = lookup(step.item, true)
     local ah = e and (e.min or e.unit)
-    local vendor = ns.Prices.VendorSell(prof, step.item)
+    local vendor = ns.DISENCHANT.sell[step.item] or ns.Prices.VendorSell(prof, step.item)
     headline(UI.ItemIcon(step.item), ns.Describe.ItemName(step.item), step.disenchant and C.good or C.text,
-        ("Best: %s. %d in your bags: disenchanted, about %s on average; sold, %s."):format(ns.Disenchant.Verdict(step),
-            step.count, ns.Money(step.each * step.count), ns.Money(step.sale.each * step.count)),
-        step.needSkill and (hex(C.bad) .. ("Disenchanting it needs Enchanting %d; you have %d."):format(step.needSkill,
-            ladder.state.skill) .. "|r") or (step.bound and "Soulbound: no auction house." or ""))
+        ("Best: %s. %d in %s's %s: disenchanted, about %s on average; sold, %s."):format(
+            ns.Disenchant.Verdict(step), step.count, step.who or "your", step.where or "bags",
+            ns.Money(step.each * step.count), ns.Money(step.sale.each * step.count)),
+        step.needSkill and (hex(C.bad) .. ("Disenchanting it needs Enchanting %d; the best of yours is %d."):format(
+            step.needSkill, ladder.from) .. "|r") or (step.bound and "Soulbound: no auction house." or ""))
+    if step.alt and step.alt.name ~= step.who then
+        line(("%s has the most Enchanting of yours, %d: mail it there."):format(step.alt.name, step.alt.skill), C.muted)
+    end
     disenchanting(step, step.count, true)
     section("Or sell it")
     line(step.bound and "Soulbound: the auction house won't take it." or ah and ("%s each at the auction house" ..
@@ -885,13 +889,13 @@ end
 -- Disenchant: an item the auction house lists for less than disenchanting it brings: what buying one gains on average
 -- and how often, what it breaks into, the listing; with Auctionator, a button that searches it.
 local function auctionDetail(step)
-    local skill = ladder.state.skill
-    headline(UI.ItemIcon(step.item), ns.Describe.ItemName(step.item), step.needSkill and not step.alt and C.dim or C.text,
+    headline(UI.ItemIcon(step.item), ns.Describe.ItemName(step.item), step.needSkill and C.dim or C.text,
         ("Buy one for %s; disenchanted, about %s on average: %s"):format(ns.Money(step.price), ns.Money(step.each),
             signed(step.gain)),
-        step.needSkill and (hex(C.bad) .. ("Disenchanting it needs Enchanting %d; you have %d.|r "):format(
-            step.needSkill, skill) .. (step.alt and ("%s has %d."):format(step.alt.name, step.alt.skill)
-            or "None of your characters has it.")) or "")
+        step.needSkill and (hex(C.bad) .. ("Disenchanting it needs Enchanting %d; the best of yours is %d:" ..
+            " no character of yours can.|r"):format(step.needSkill, ladder.from))
+            or step.alt and ("%s has the most Enchanting of yours, %d: mail it there."):format(step.alt.name,
+                step.alt.skill) or "")
     line(("One disenchant brings more than it cost %d%% of the time."):format(math.floor(step.chance * 100 + 0.5)),
         step.chance >= 0.5 and C.good or C.warn)
     local api = Auctionator and Auctionator.API and Auctionator.API.v1
@@ -1554,11 +1558,11 @@ local function renderDetail()
     elseif state.maxSkill == 0 and not prof.levelCaps then -- Lockpicking's ladder starts with learning Pick Lock
         headline(prof.icon, "No " .. prof.name .. " yet", C.gold,
             ("Any %s trainer teaches Apprentice %s."):format(prof.name, prof.name), "")
-    elseif not step and ladder.mode == "disenchant" then
-        headline(prof.icon, "Nothing to disenchant", C.gold, "Your bags hold nothing to disenchant, and " ..
-            (ladder.known == 0 and "none of the recipes you know makes something to disenchant: open your crafting" ..
-                " profession's window once so Craft Ladder knows its recipes." or "nothing you can make is worth" ..
-                " more disenchanted than sold at today's prices."), "")
+    elseif not step and ladder.account then
+        headline(prof.icon, "Nothing to disenchant", C.gold, "No character of yours holds anything to disenchant," ..
+            " and " .. (ladder.known == 0 and "none of the recipes they know makes something to disenchant: open a" ..
+                " crafting profession's window once so Craft Ladder knows its recipes." or "nothing they can make is" ..
+                " worth more disenchanted than sold at today's prices."), "")
     elseif not step and ladder.mode == "gold" and prof.resale then
         headline(prof.icon, "Nothing earns now", C.gold,
             "Nothing you can make sells for more than it costs at today's prices.", "")

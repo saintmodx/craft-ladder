@@ -142,15 +142,39 @@ local function bagnonBank(name, surname)
     return bank
 end
 
+-- The gear the bank holds that can be disenchanted, slot by slot: it isn't any profession's item, so there's no list
+-- of ids to ask the game about. Only while the bank is open does the game know it.
+local function bankGear()
+    local cc, out = C_Container, {}
+    if not (cc and cc.GetContainerNumSlots and cc.GetContainerItemInfo) then return out end
+    local bags = { BANK_CONTAINER or -1 }
+    for i = 1, NUM_BANKBAGSLOTS or 7 do bags[#bags + 1] = (NUM_BAG_SLOTS or 4) + i end
+    for _, bag in ipairs(bags) do
+        for slot = 1, cc.GetContainerNumSlots(bag) or 0 do
+            local info = cc.GetContainerItemInfo(bag, slot)
+            local item = info and info.itemID
+            if item and ns.DISENCHANT.items[item] then out[item] = (out[item] or 0) + (info.stackCount or 1) end
+        end
+    end
+    return out
+end
+
 -- While the bank is open the game counts it as items move; Bagnon saves its copy only when the bank closes, so until
 -- then that copy still has what was just taken out to the bags (counted twice). Closed: the snapshot of the bank
--- (Player.BankSnapshot), for a game without Bagnon.
-local bankOpen = false
+-- (Player.BankSnapshot), for a game without Bagnon. Its gear is kept as the bank last showed it: once the bank is
+-- closed the game won't say what its slots hold any more.
+local bankOpen, bankItems = false, nil
 local bankFrame = CreateFrame("Frame")
 bankFrame:RegisterEvent("BANKFRAME_OPENED")
 bankFrame:RegisterEvent("BANKFRAME_CLOSED")
+bankFrame:RegisterEvent("BAG_UPDATE_DELAYED")
 bankFrame:SetScript("OnEvent", function(_, event)
+    if event == "BAG_UPDATE_DELAYED" then
+        if bankOpen then bankItems = bankGear() end -- something moved in or out of the open bank
+        return
+    end
     bankOpen = event == "BANKFRAME_OPENED"
+    if bankOpen then bankItems = bankGear() end
     if not bankOpen then C_Timer.After(1, Player.BankSnapshot) end -- the counts settle after the event
 end)
 
@@ -181,10 +205,16 @@ local function bankOf(me)
     return bagnonBank(me.name, me.surname) or me.bank
 end
 
+-- A character's bank as above, { [item] = count } or nil: the Disenchant view reads every character's. Yours while
+-- the bank is open: the game's own count of its gear, since Bagnon's copy still holds what you just took out.
+function Player.Bank(me, live)
+    if live and bankOpen then return bankGear() end
+    return me and bankOf(me) or nil
+end
+
 -- How many of each of a profession's items the character has: bags, plus the bank as the game, Bagnon or the bank's
 -- snapshot knows it (whichever saw more; only the game's while the bank is open). Returns owned, and inBank = the
--- bank's part of it. Enchanting's count what the bags hold that its Disenchant mode may disenchant too. Another
--- character's: the bags its snapshot holds, the bank as Bagnon or its snapshot saw it.
+-- bank's part of it. Another character's: the bags its snapshot holds, the bank as Bagnon or its snapshot saw it.
 function Player.Owned(data)
     local count = (C_Item and C_Item.GetItemCount) or GetItemCount
     local owned, inBank = {}, {}
@@ -202,8 +232,6 @@ function Player.Owned(data)
         end
     end
     eachItem(data, add)
-    -- Enchanting's Disenchant mode: what the bags hold that can be disenchanted (so the window sees it come and go)
-    for _, b in ipairs(data.disenchant and not me and ns.Disenchant.Bags() or {}) do add(b.item) end
     for item, n in pairs(owned) do
         if not n then owned[item] = nil end -- false only marked "looked at, none"
     end
@@ -347,6 +375,7 @@ function Player.BankSnapshot()
     for item, n in pairs(bank) do
         if not n then bank[item] = nil end -- false only marked "looked at, none"
     end
+    for item, n in pairs(bankItems or {}) do bank[item] = (bank[item] or 0) + n end -- its gear too, for Disenchant
     me.bank = bank
 end
 

@@ -1,5 +1,6 @@
 -- Craft Ladder: the main window's menu (left): the character's professions by group (main, secondary, a rogue's
--- class skills), each with its skill (the bar: the way to 300); at the bottom, Camp (the buffs a campfire gives).
+-- class skills), each with its skill (the bar: the way to 300); after them Disenchant (the account's, what's worth
+-- disenchanting), and at the bottom Camp (the buffs a campfire gives).
 -- UI/Window.lua builds it and draws it again.
 local _, ns = ...
 local UI = ns.UI
@@ -96,6 +97,14 @@ function Menu.Render(frame, prof)
         end
         if not first then y = y - 8 end
     end
+    -- Disenchant, after the professions: the whole account's, so it shows while any character of yours enchants
+    local enchants = #ns.Disenchant.Enchanters(ns.ENCHANTING) > 0
+    menu.de:SetShown(enchants)
+    if enchants then
+        menu.de:SetPoint("TOPLEFT", 6, y)
+        menu.de.active = ns.Player.Saved().tab == "disenchant" and not me
+        paintEntry(menu.de)
+    end
     menu.camp.active = ns.Player.Saved().tab == "camp" and not me
     menu.camp:SetShown(not me) -- Camp reads your bags and level: not for another character
     paintEntry(menu.camp)
@@ -115,6 +124,22 @@ function Menu.Build(frame)
         menu.heads[i] = UI.Label(menu, 10, C.muted)
         menu.heads[i]:SetText(group.title)
     end
+    -- Disenchant, after the last profession (Menu.Render places it): no skill of its own, the account's view
+    local de = makeMenuEntry(menu, { name = "Disenchant", icon = "Interface\\Icons\\INV_Enchant_Disenchant" })
+    de.bar:Hide()
+    de.fill:Hide()
+    de.skill:SetText("")
+    de.name:ClearAllPoints()
+    de.name:SetPoint("LEFT", de.icon, "RIGHT", 8, 0)
+    de.tooltip = { "Disenchant", "What's worth disenchanting on your whole account: what every character's bags and" ..
+        " bank hold, what the auction house lists for less than disenchanting it brings, and what your crafting" ..
+        " professions make that's worth more disenchanted than sold." }
+    de:SetScript("OnClick", function()
+        ns.Player.viewing = nil -- the account's view: yourself again
+        ns.Player.Me().tab = "disenchant"
+        Window.Refresh(true)
+    end)
+    menu.de = de
     -- Camp, at the bottom: no skill, its own view
     local camp = makeMenuEntry(menu, { name = "Camp", icon = ns.UI.ItemIcon(ns.CAMP.fires[1].item) })
     camp:SetPoint("BOTTOMLEFT", 6, 6)

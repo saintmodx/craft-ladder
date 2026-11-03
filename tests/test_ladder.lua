@@ -684,23 +684,30 @@ assert(table.concat(fvs, " ") == "1:known 2:learn 4:level 3:skill" and fv[1].can
     local hoE = dofile(root .. "tests/fixtures/ho_enchanting.lua")
     local qho = ns.Prices.Make({ faction = "H", auctionDB = function(item)
         return hoT.ah[item] or hoE.ah[item], hoT.scanTs end })
-    local function hoRows(enchanting, bags)
-        return Disenchant.Build(en, { skill = enchanting, faction = "H", known = hoE.known, owned = {} }, qho,
-            { crafts = { { data = ns.TAILORING, state = { skill = 103, faction = "H", level = 20, known = hoT.known,
-                                                         owned = hoT.owned } } }, bags = bags })
+    -- the view is the account's: here one character, Ho, with its Tailoring and its own Enchanting
+    local function hoRows(enchanting, bags, enchanters)
+        return Disenchant.Account(qho, {
+            chars = { { name = "Ho", live = true, crafts = { { data = ns.TAILORING,
+                state = { skill = 103, faction = "H", level = 20, known = hoT.known, owned = hoT.owned } } } } },
+            bags = bags, enchanters = enchanters or { { name = "Ho", skill = enchanting, live = true } } })
+    end
+    local function groupOf(list, key)
+        for _, g in ipairs(list.groups) do if g.key == key then return g end end
     end
     local function named(list, name)
         for _, r in ipairs(list.steps) do
-            if ns.TAILORING.recipes[r.recipe].name == name then return r end
+            if r.recipe and ns.TAILORING.recipes[r.recipe].name == name then return r end
         end
     end
     local ho = hoRows(150)
-    assert(ho.known == 13 and ho.bags == 0 and ho.now == #ho.steps and #ho.steps > 0,
+    local hoCrafts = groupOf(ho, "crafts")
+    assert(ho.known == 13 and ho.bags == 0 and ho.auction == 0 and ho.enchanter.name == "Ho"
+        and hoCrafts.from == 1 and hoCrafts.to == #ho.steps and #ho.steps > 0,
         ("Disenchant: Ho's rows (%d of %d known)"):format(#ho.steps, ho.known))
     for i, r in ipairs(ho.steps) do
         local rec = ns.TAILORING.recipes[r.recipe]
-        assert(r.data == ns.TAILORING and DE.items[rec.makes] == r.bucket and hoT.known[r.recipe],
-            "... a Tailoring recipe Ho knows, its item's bucket")
+        assert(r.data == ns.TAILORING and DE.items[rec.makes] == r.bucket and hoT.known[r.recipe] and r.who == "Ho"
+            and r.live, "... a Tailoring recipe Ho knows, its item's bucket, whose it is")
         assert(r.each > r.sale.each and r.profit == r.back - r.cost and r.cost == r.matCost and not r.needSkill,
             "... worth more disenchanted than sold: " .. rec.name)
         assert(i == 1 or r.profit <= ho.steps[i - 1].profit, "... the best first")
@@ -719,18 +726,29 @@ assert(table.concat(fvs, " ") == "1:known 2:learn 4:level 3:skill" and fv[1].can
     -- shoulders no longer among what to make
     local shoulders = ns.TAILORING.recipes[3848].makes
     local function bag(item, count, bound)
-        return { item = item, count = count, bound = bound, bucket = DE.items[item],
-                 sell = ns.TAILORING.sell[item] or 0 }
+        return { item = item, count = count, bound = bound, sell = ns.TAILORING.sell[item] or 0 }
     end
     local withBags = hoRows(150, { bag(sashRec.makes, 1, true), bag(shoulders, 2, false) })
     local first, second = withBags.steps[1], withBags.steps[2]
-    assert(withBags.bags == 2 and first.kind == "bag" and first.item == shoulders and first.disenchant
+    assert(withBags.bags == 2 and groupOf(withBags, "bags").from == 1 and first.kind == "bag"
+        and first.item == shoulders and first.disenchant and first.who == "Ho" and first.where == "bags"
         and Disenchant.Verdict(first) == "disenchant", "Disenchant: the bags first, what to disenchant first")
     check("... what disenchanting both gains over selling them", first.gain, 2 * (first.each - first.sale.each))
     assert(second.item == sashRec.makes and second.bound and not second.disenchant and second.sale.how == "vendor"
         and second.sale.each == ns.TAILORING.sell[sashRec.makes] and Disenchant.Verdict(second) == "sell to a vendor",
         "... a soulbound sash: a vendor's price, sold")
     check("... the shoulders aren't among what to make", #withBags.steps, #ho.steps + 1)
+    -- another character's: its snapshot's bags and its bank, no bound flag of its own (only what's always bound when
+    -- picked up), and nothing of it can be crafted from here
+    local others = Disenchant.Account(qho, { chars = { { name = "Zug", bags = { [shoulders] = 1 },
+        bank = { [sashRec.makes] = 2 } } }, enchanters = { { name = "Zug", skill = 150 } } })
+    local zugBags = groupOf(others, "bags")
+    assert(others.bags == 2 and zugBags.to == 2, "Disenchant: another character's bags and bank")
+    for i = 1, 2 do
+        local r = others.steps[i]
+        assert(r.who == "Zug" and not r.live and r.where == (r.item == shoulders and "bags" or "bank")
+            and r.bound == (DE.bop[r.item] or false), "... whose it is, where it is, bound only when always bound")
+    end
     -- what the game gave replaces a bucket's table from 5 disenchants: 4 sashes that gave a Small Glimmering Shard
     -- leave it, the 5th (3 Strange Dust) makes it theirs: the shard 4 in 5, the dust 1 in 5; worth more than a vendor
     -- pays now
@@ -747,15 +765,22 @@ assert(table.concat(fvs, " ") == "1:known 2:learn 4:level 3:skill" and fv[1].can
     assert(own.seen == 5 and own.gives[1].item == 10978 and own.gives[1].min == 1 and own.gives[2].item == 10940
         and own.gives[2].min == 3 and own.gives[2].max == 3 and own.skill == sashTable.skill, "... 5: what they gave")
     check("... the shard in 4 of 5", own.gives[1].chance, 0.8)
-    local withSeen = Disenchant.Build(en, { skill = 150, faction = "H", known = hoE.known, owned = {} }, qho,
-        { crafts = { { data = ns.TAILORING, state = { skill = 103, faction = "H", level = 20, known = hoT.known,
-                                                     owned = hoT.owned } } }, seen = five })
+    local withSeen = Disenchant.Account(qho, {
+        chars = { { name = "Ho", live = true, crafts = { { data = ns.TAILORING,
+            state = { skill = 103, faction = "H", level = 20, known = hoT.known, owned = hoT.owned } } } } },
+        enchanters = { { name = "Ho", skill = 150, live = true } }, seen = five })
     local sashSeen = named(withSeen, "Novice Arcanist's Sash")
     assert(sashSeen and sashSeen.de.seen == 5 and sashSeen.seen.n == 5, "... and the ladder prices it so")
     local hoLow = hoRows(1)
-    for i, r in ipairs(hoLow.steps) do
-        assert((i > hoLow.now) == (DE.buckets[r.bucket].skill > 1) and (r.needSkill or 1) == DE.buckets[r.bucket].skill,
+    local lowCrafts = groupOf(hoLow, "crafts")
+    local short = false
+    for i = lowCrafts.from, lowCrafts.to do
+        local r = hoLow.steps[i]
+        local needs = DE.buckets[r.bucket].skill > 1
+        assert((r.needSkill ~= nil) == needs and (r.needSkill or 1) == DE.buckets[r.bucket].skill
+            and not (short and not needs),
             "Disenchant: at Enchanting 1 what asks more comes last, with the skill it asks")
+        short = short or needs
     end
     check("... the same rows", #hoLow.steps, #ho.steps)
     -- how often one disenchant brings more than it cost: of 75% 4-6 of a 10c dust only 6 beats 55c (a third), and the
@@ -780,36 +805,42 @@ assert(table.concat(fvs, " ") == "1:known 2:learn 4:level 3:skill" and fv[1].can
     -- Shortsword, level 20) at 1s; one gone from the last scan isn't there; a green of level 31-35 asks Enchanting 75
     local sword, gone, high = 15210, nil, nil
     for item, id in pairs(DE.items) do
-        if id == DE.items[sword] and item ~= sword and not gone then gone = item end
-        if DE.buckets[id].skill == 75 and DE.buckets[id].quality == 2 and not high then high = item end
+        if not DE.bop[item] then
+            if id == DE.items[sword] and item ~= sword and not gone then gone = item end
+            if DE.buckets[id].skill == 75 and DE.buckets[id].quality == 2 and not high then high = item end
+        end
     end
     local listings = { [sword] = { hoT.scanTs, 100, 150, 3 }, [gone] = { hoT.scanTs - 3600, 1, 1, 1 },
                        [high] = { hoT.scanTs, 1, 1, 1 } }
     local qah = ns.Prices.Make({ faction = "H", auctionDB = function(item)
         return listings[item] or hoT.ah[item] or hoE.ah[item], hoT.scanTs end })
     local function ahRows(enchanting, enchanters)
-        local l = Disenchant.Build(en, { skill = enchanting, faction = "H", known = hoE.known, owned = {} }, qah,
-            { auction = true, enchanters = enchanters })
-        local by = {}
-        for i = #l.steps - l.auction + 1, #l.steps do by[l.steps[i].item] = l.steps[i] end
-        return l, by
+        local l = Disenchant.Account(qah, { auction = true, chars = {},
+            enchanters = enchanters or { { name = "Ho", skill = enchanting, live = true } } })
+        local g, by = nil, {}
+        for _, x in ipairs(l.groups) do if x.key == "auction" then g = x end end
+        for i = g.from, g.to do by[l.steps[i].item] = l.steps[i] end
+        return l, by, g
     end
-    local ah, by = ahRows(150)
+    local ah, by, ahGroup = ahRows(150)
     local sw = by[sword]
-    assert(ah.auction > 0 and ah.now == 0 and sw and sw.kind == "auction" and sw.price == 100 and sw.listed == 3
-        and sw.gain == sw.each - 100 and sw.chance > 0 and not sw.needSkill and not by[gone],
+    assert(ah.auction > 0 and #ah.steps == ah.auction and sw and sw.kind == "auction" and sw.price == 100
+        and sw.listed == 3 and sw.gain == sw.each - 100 and sw.chance > 0 and not sw.needSkill and not by[gone],
         "Disenchant: the sword at 1s is worth buying to disenchant; one gone from the last scan isn't listed")
     check("... how often it pays", sw.chance, Disenchant.Chance(sw.de, ah.worth, 100))
-    for i = #ah.steps - ah.auction + 2, #ah.steps do
+    for i = ahGroup.from + 1, ahGroup.to do
         local a, b = ah.steps[i - 1], ah.steps[i]
-        local ca, cb = not a.needSkill or a.alt ~= nil, not b.needSkill or b.alt ~= nil
+        local ca, cb = not a.needSkill, not b.needSkill
         assert(ca and not cb or ca == cb and b.gain <= a.gain, "... what you can disenchant first, the most gained first")
     end
-    local _, lowBy = ahRows(1, { { name = "Zug", skill = 200 }, { name = "Yungzug", skill = 60 } })
-    assert(lowBy[high] and lowBy[high].needSkill == 75 and lowBy[high].alt.name == "Zug",
-        "... at Enchanting 1, a green of level 31-35 asks 75: Zug has 200, Yungzug 60")
+    local _, aloneBy = ahRows(1)
+    assert(aloneBy[high] and aloneBy[high].needSkill == 75 and not aloneBy[high].alt,
+        "... at Enchanting 1 and no other enchanter, a green of level 31-35 asks 75")
+    local _, lowBy = ahRows(nil, { { name = "Ho", skill = 1, live = true }, { name = "Zug", skill = 200 },
+                                   { name = "Yungzug", skill = 60 } })
+    assert(lowBy[high] and not lowBy[high].needSkill and lowBy[high].alt.name == "Zug",
+        "... the account's best Enchanting counts (Zug's 200): mail it there")
 end)()
-
 -- a real ladder
 local fx = dofile(root .. "tests/fixtures/" .. fixtureName .. ".lua")
 data = ns.ProfessionByKey[fx.profession or "cooking"]

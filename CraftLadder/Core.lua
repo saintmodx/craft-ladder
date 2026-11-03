@@ -74,12 +74,10 @@ end
 -- The mode a profession's ladder is planned in: a crafting profession that sells: Vendor sales ("skill": only vendors buy
 -- what it makes), AH sales ("sell": the auction house too) or Profit ("gold": what earns most now, the default at 300
 -- until you pick another); a gathering one: Skill, AH sales (level where it earns most) or Profit (the zones by gold
--- an hour, the default at 300); Enchanting has Disenchant too (what's worth more disenchanted). skill: the
--- character's (looked up when not given). Another character shown: not Disenchant (it reads your bags).
+-- an hour, the default at 300). skill: the character's (looked up when not given).
 function ns.LadderMode(data, skill)
     skill = skill or (ns.Player.Skill(data))
     local mode = ns.Player.Prof(data).mode
-    if mode == "disenchant" and ns.Player.viewing then mode = nil end
     return data.skillOnly and "skill" or mode
         or ((data.resale or data.kind) and skill >= 300 and "gold") or "skill"
 end
@@ -88,14 +86,13 @@ local function smeltFor(data)
     return data.smelt and { skill = (ns.Player.Skill(ns.MINING)), recipes = ns.MINING.recipes } or nil
 end
 
--- Enchanting's Disenchant mode looks at what the character's crafting professions make: each one's data, its state
--- (the shown one's is `state`) and the bars it may smelt.
-local function craftingProfessions(shown, state)
+-- The Disenchant view looks at what a character's crafting professions make: each one's data, its state and the bars
+-- it may smelt. The shown character's (Player.viewing), so the caller sets that first.
+local function craftingProfessions()
     local list = {}
     for _, data in ipairs(ns.Professions) do
         if data.resale and not data.secondary and select(2, ns.Player.Skill(data)) > 0 then
-            list[#list + 1] = { data = data, state = data == shown and state or ns.Player.State(data),
-                                smelt = smeltFor(data) }
+            list[#list + 1] = { data = data, state = ns.Player.State(data), smelt = smeltFor(data) }
         end
     end
     return list
@@ -132,9 +129,7 @@ function ns.Calculate(data)
     local fishing = data.kind == "fishing"
     local mode = ns.LadderMode(data, state.skill)
     if data.levelCaps then data.ranks = ns.Mining.LevelRanks(data, state) end -- Lockpicking: the cap is the level x 5
-    local disenchant = data.disenchant and mode == "disenchant"
     local build = fishing and ns.Fishing.Build or data.kind == "mining" and ns.Mining.Build
-        or disenchant and ns.Disenchant.Build
         or data.resale and mode == "gold" and ns.Ladder.Profits or data.food and mode == "food" and ns.Ladder.Food
         or ns.Ladder.Build
     local opts = { favor = ns.db.favor, choices = choices, realPrices = ns.Prices.Real(),
@@ -142,15 +137,38 @@ function ns.Calculate(data)
                    seenPools = fishing and ns.Fishing.SeenPools(data) or nil,
                    smelt = smeltFor(data),
                    standing = ns.Player.Standing,
-                   vendorOnly = data.resale and mode == "skill" or nil,
-                   crafts = disenchant and craftingProfessions(data, state) or nil,
-                   bags = disenchant and ns.Disenchant.Bags() or nil,
-                   auction = disenchant or nil, enchanters = disenchant and ns.Disenchant.Enchanters(data.key) or nil }
-    if disenchant then opts.seen, opts.seenItems = ns.Disenchant.Seen(ns.db.disenchantLog, ns.Disenchant.BucketOf) end
+                   vendorOnly = data.resale and mode == "skill" or nil }
     local ladder = build(data, state, quote, opts)
     ladder.mode = mode
     ladder.state, ladder.data = state, data
     ladder.quote, ladder.opts = quote, opts -- the Merchant's Favor recipes plan their ingredients as the ladder does
+    return ladder, lookup, debugprofilestop() - start
+end
+
+-- The menu's Disenchant view: the whole account's, so it reads every character (through Player.viewing) and hands
+-- Disenchant.Account what it found, which then does the arithmetic. Returns what ns.Calculate does.
+function ns.CalculateDisenchant()
+    local start = debugprofilestop()
+    local was = ns.Player.viewing
+    ns.Player.viewing = nil
+    local quote, lookup = ns.Prices.ForGame()
+    local chars, bags = {}, nil
+    for i, c in ipairs(ns.Player.Chars()) do
+        ns.Player.viewing = i > 1 and c.guid or nil
+        chars[#chars + 1] = { name = c.me.name, live = i == 1 or nil, bags = i > 1 and c.me.bags or nil,
+                              bank = ns.Player.Bank(c.me, i == 1), crafts = craftingProfessions() }
+        if i == 1 then bags = ns.Disenchant.Bags() end -- yours from the game: it knows what's bound
+    end
+    ns.Player.viewing = nil
+    local opts = { chars = chars, bags = bags, bucketOf = ns.Disenchant.BucketOf, auction = true,
+                   realPrices = ns.Prices.Real(), standing = ns.Player.Standing,
+                   enchanters = ns.Disenchant.Enchanters(ns.ENCHANTING) }
+    opts.seen, opts.seenItems = ns.Disenchant.Seen(ns.db.disenchantLog, ns.Disenchant.BucketOf)
+    local ladder = ns.Disenchant.Account(quote, opts)
+    -- the cards and the menu ask a profession for its name, icon and recipes: Enchanting's, whoever is shown
+    ladder.data, ladder.state = ns.ENCHANTING, ns.Player.State(ns.ENCHANTING)
+    ladder.quote, ladder.opts = quote, opts
+    ns.Player.viewing = was
     return ladder, lookup, debugprofilestop() - start
 end
 
@@ -256,29 +274,6 @@ local function printLadder(data)
             print(("  %s%s|r: %s, level %d - %s%s"):format(s.later and "|cff999999" or "", data.recipes[s.recipe].name,
                 ns.Describe.Buff(s.buff), s.eat, s.cost and ("cook one for " .. ns.Money(s.cost)) or "no price",
                 s.ah and (", buy one for " .. ns.Money(s.ah)) or ""))
-        elseif s.kind == "bag" then
-            if i == 1 then print("  |cffffd200In your bags:|r") end
-            print(("  %s%s|r x%d: %s - disenchanted about %s each, sold %s%s%s"):format(
-                s.disenchant and COLORS.green or "", ns.Describe.ItemName(s.item), s.count, ns.Disenchant.Verdict(s), ns.Money(s.each),
-                ns.Money(s.sale.each), s.bound and " (soulbound)" or "",
-                s.needSkill and (" |cffff4040needs Enchanting " .. s.needSkill .. "|r") or ""))
-        elseif s.kind == "disenchant" then
-            if i == ladder.bags + 1 and i <= ladder.now then print("  |cffffd200Make and disenchant:|r") end
-            if i == ladder.now + 1 then print("  |cffffd200Needs more Enchanting:|r") end
-            print(("  %s%s|r (%s): one craft costs %s, disenchanted about %s on average - %s%s|r%s"):format(
-                s.needSkill and COLORS.grey or s.color ~= "grey" and COLORS[s.color] or "",
-                s.data.recipes[s.recipe].name, s.data.name, ns.Money(s.cost), ns.Money(s.back),
-                s.profit >= 0 and "|cff40c040+" or "|cffff4040-", ns.Money(math.abs(s.profit)),
-                s.needSkill and (" |cffff4040needs Enchanting " .. s.needSkill .. "|r") or ""))
-        elseif s.kind == "auction" then
-            local first = #ladder.steps - ladder.auction + 1
-            if i == first then print("  |cffffd200Buy and disenchant:|r") end
-            if i < first + 10 then -- the 10 best: the window has them all
-                print(("  %s: buy for %s, disenchanted about %s on average - |cff40c040+%s|r, more %d%% of the time%s")
-                    :format(ns.Describe.ItemName(s.item), ns.Money(s.price), ns.Money(s.each), ns.Money(s.gain),
-                    math.floor(s.chance * 100 + 0.5), s.needSkill and (" |cffff4040needs Enchanting " .. s.needSkill
-                    .. (s.alt and (", " .. s.alt.name .. " has " .. s.alt.skill) or "") .. "|r") or ""))
-            end
         elseif s.kind == "profit" then
             if s.vendor and i == 1 then print("  |cffffd200Sell to a vendor:|r") end
             if i == ladder.vendorRows + 1 then print("  |cffffd200Sell at the auction house:|r") end
@@ -315,13 +310,6 @@ local function printLadder(data)
     end
     if ladder.mode == "food" then
         chat(("food for your class, %d dishes (grey: above your level)."):format(#ladder.steps))
-        return
-    elseif ladder.mode == "disenchant" then
-        local de = 0
-        for i = 1, ladder.bags do de = de + (ladder.steps[i].disenchant and 1 or 0) end
-        chat(("in your bags %d to disenchant, %d to sell; worth more disenchanted than sold: %d to make, %d more" ..
-            " need a higher Enchanting, %d to buy at the auction house (on average, at today's prices)."):format(de,
-            ladder.bags - de, ladder.now - ladder.bags, #ladder.steps - ladder.now - ladder.auction, ladder.auction))
         return
     elseif ladder.steps[1] and ladder.steps[1].kind == "profit" then
         chat(("%d sell to a vendor for more than they cost, %d earn at the auction house (per craft, at today's" ..
@@ -363,6 +351,43 @@ local function status()
         ns.lastCalcMs and (" Last calculation: %.1f ms."):format(ns.lastCalcMs) or ""))
 end
 
+-- The Disenchant view in chat (/craft chat disenchant): its three groups, the 10 best rows of each (the window has
+-- them all), every row with whose it is.
+local function printDisenchant()
+    local ladder, _, ms = ns.CalculateDisenchant()
+    local source, scanned = ns.Prices.Source()
+    chat(("Disenchant, your account. Prices: %s%s. (%.1f ms)"):format(source or "none - only vendor prices",
+        scanned and (", scanned " .. ns.Age(scanned)) or "", ms))
+    if not ladder.enchanter then
+        chat("no character of yours has Enchanting yet - any Enchanting trainer teaches it.")
+    end
+    for _, g in ipairs(ladder.groups) do
+        print(("  |cffffd200%s (%d%s):|r"):format(g.name, g.to - g.from + 1,
+            g.gain > 0 and (", about " .. ns.Money(g.gain) .. " in all") or ""))
+        if g.to < g.from then print("    nothing at today's prices") end
+        for i = g.from, math.min(g.to, g.from + 9) do
+            local s = ladder.steps[i]
+            local needs = s.needSkill and (" |cffff4040needs Enchanting " .. s.needSkill .. "|r")
+                or s.alt and (" |cffffd200" .. s.alt.name .. " can disenchant it|r") or ""
+            if s.kind == "bag" then
+                print(("    %s%s|r x%d (%s, %s): %s - disenchanted about %s each, sold %s%s%s"):format(
+                    s.disenchant and COLORS.green or "", ns.Describe.ItemName(s.item), s.count, s.who, s.where,
+                    ns.Disenchant.Verdict(s), ns.Money(s.each), ns.Money(s.sale.each),
+                    s.bound and " (soulbound)" or "", needs))
+            elseif s.kind == "auction" then
+                print(("    %s: buy for %s, disenchanted about %s on average - |cff40c040+%s|r, more %d%% of the" ..
+                    " time%s"):format(ns.Describe.ItemName(s.item), ns.Money(s.price), ns.Money(s.each),
+                    ns.Money(s.gain), math.floor(s.chance * 100 + 0.5), needs))
+            else
+                print(("    %s%s|r (%s, %s): one craft costs %s, disenchanted about %s on average - %s%s|r%s"):format(
+                    s.needSkill and COLORS.grey or s.color ~= "grey" and COLORS[s.color] or "",
+                    s.data.recipes[s.recipe].name, s.who, s.data.name, ns.Money(s.cost), ns.Money(s.back),
+                    s.profit >= 0 and "|cff40c040+" or "|cffff4040-", ns.Money(math.abs(s.profit)), needs))
+            end
+        end
+    end
+end
+
 -- "first aid", "firstaid", "cooking" -> that profession's data
 local function professionNamed(text)
     text = text:gsub("%s+", "")
@@ -378,12 +403,18 @@ SlashCmdList.CRAFTLADDER = function(msg)
     local chatFor = msg:match("^chat%s*(.*)$")
     if msg == "" then
         ns.Window.Toggle()
+    elseif chatFor == "disenchant" then
+        printDisenchant()
     elseif chatFor then
         printLadder(professionNamed(chatFor))
     elseif msg == "status" then
         status()
     elseif msg == "minimap" then
         ns.Minimap.Toggle()
+    elseif msg == "disenchant" then
+        ns.Player.viewing = nil -- the view is the account's: yourself again
+        ns.Player.Me().tab = "disenchant"
+        ns.Window.Open()
     elseif professionNamed(msg) then
         ns.SetProfession(professionNamed(msg))
         ns.Window.Open()
@@ -391,7 +422,8 @@ SlashCmdList.CRAFTLADDER = function(msg)
         local names = {}
         for _, data in ipairs(ns.Professions) do names[#names + 1] = "/craft " .. data.name:lower() end
         chat("/craft - open or close the window; " .. table.concat(names, ", ") .. " - open it on that profession;" ..
-            " /craft chat - the ladder in chat; /craft minimap - hide or show the minimap button; /craft status." ..
+            " /craft disenchant - what's worth disenchanting on your account; /craft chat - the ladder in chat" ..
+            " (/craft chat disenchant too); /craft minimap - hide or show the minimap button; /craft status." ..
             " /chef works too.")
     end
 end

@@ -60,11 +60,23 @@ local MODE_TIPS = {
 }
 local FOOD_TIP = "No ladder: the dishes worth eating for your class, a group per role, by what eating one raises" ..
     " (Well Fed). The ones you can eat now first, the best first; grey ones need a higher level."
-local DISENCHANT_TIP = "Beta. No ladder: what's in your bags that can be disenchanted, and whether disenchanting or" ..
-    " selling it brings more; then what your crafting professions make with the recipes you know that's worth more" ..
-    " disenchanted than sold, the best first (red: making it costs more than disenchanting brings); then what the" ..
-    " auction house lists for less than disenchanting it brings. What a disenchant gives is luck: the average, from" ..
-    " Classic's table until your own disenchants replace it. Grey ones need a higher Enchanting."
+-- The Disenchant view's groups (the menu's own entry, the whole account's): the heading's tooltip, and what it says
+-- when a group is empty. What a disenchant gives is luck: the average, from Classic's table until your own
+-- disenchants replace it.
+local DISENCHANT_GROUPS = {
+    bags = { tip = "What every character of yours holds in its bags and bank that can be disenchanted, whatever made" ..
+                 " it: disenchant it or sell it, whichever brings more on average (a soulbound one only to a vendor)." ..
+                 " The biggest gain first. Click to fold or open.",
+             empty = "nothing of yours can be disenchanted" },
+    auction = { tip = "What the auction house's last scan lists for less than disenchanting it brings on average (the" ..
+                    " materials after its cut), what one gains first; how often one disenchant brings more than it" ..
+                    " cost. Click to fold or open.",
+                empty = "nothing at the last scan" },
+    crafts = { tip = "What any character's crafting professions make with the recipes it knows that's worth more" ..
+                   " disenchanted than sold, the best first. Red: making it costs more than disenchanting brings." ..
+                   " Grey: no Enchanting of yours reaches it yet. Click to fold or open.",
+               empty = "nothing worth making at today's prices" },
+}
 local STEP_COLOR = { orange = C.orange, yellow = C.yellow, green = C.green, grey = C.grey }
 local BAG_ICON = "|TInterface\\Icons\\INV_Misc_Bag_08:14:14|t" -- a step made from what you have
 local ALERT_ICON = "|TInterface\\DialogFrame\\UI-Dialog-Icon-AlertNew:14:14|t" -- prices scanned long ago
@@ -517,14 +529,15 @@ local function fillRow(row, step, index)
         row.name:SetText(rec.name)
         -- what needs a higher Enchanting is grey (the user's rule); else the recipe's skill-up colour, as Gold's rows
         UI.SetColor(row.name, step.needSkill and C.dim or step.color ~= "grey" and STEP_COLOR[step.color] or C.text)
-        row.sub:SetText(("%s, disenchanted ~%s, sold %s%s"):format(step.data.name, ns.Money(step.each),
-            step.sale.how and ns.Money(step.sale.each) or "-",
+        row.sub:SetText(("%s, %s, disenchanted ~%s, sold %s%s"):format(step.who or "you", step.data.name,
+            ns.Money(step.each), step.sale.how and ns.Money(step.sale.each) or "-",
             step.needSkill and (" - " .. hex(C.bad) .. "Enchanting " .. step.needSkill .. "|r") or ""))
     elseif step.kind == "bag" then -- what to do with it: disenchant (green) or sell
         row.icon:SetTexture(UI.ItemIcon(step.item))
         row.name:SetText(ns.Describe.ItemName(step.item) .. (step.count > 1 and (" x" .. step.count) or ""))
         UI.SetColor(row.name, step.disenchant and C.good or C.text)
-        row.sub:SetText(("%s: ~%s disenchanted, %s sold%s%s"):format(ns.Disenchant.Verdict(step), ns.Money(step.each),
+        row.sub:SetText(("%s's %s - %s: ~%s disenchanted, %s sold%s%s"):format(step.who or "your", step.where or "bags",
+            ns.Disenchant.Verdict(step), ns.Money(step.each),
             step.sale.how and ns.Money(step.sale.each) or "-", step.bound and ", soulbound" or "",
             step.needSkill and (" - " .. hex(C.bad) .. "Enchanting " .. step.needSkill .. "|r") or ""))
     elseif step.kind == "auction" then -- buy it to disenchant: what one gains on average, and how often it pays
@@ -606,8 +619,9 @@ local function renderList()
     end
     list.note:SetText(table.concat(notes, "\n"))
     list.note:SetShown(#notes > 0)
-    -- the bar that switches to the Merchant's Favor recipes and back (a profession whose quartermaster sells some)
-    local favorCount = ns.Favor.Count(prof)
+    -- the bar that switches to the Merchant's Favor recipes and back (a profession whose quartermaster sells some;
+    -- not in the Disenchant view, which is no profession's ladder)
+    local favorCount = not ladder.account and ns.Favor.Count(prof) or 0
     list.favor:SetShown(favorCount > 0)
     list.favor.label:SetText(ladder.favor and "Back to your ladder" or ("Merchant's Favor recipes (%d)"):format(favorCount))
     list.favor:SetActive(ladder.favor or false)
@@ -632,9 +646,10 @@ local function renderList()
     local vendorRows = ladder.vendorRows
     local folded = vendorRows and vendorRows > 0 and ns.Player.Prof(prof).vendorFolded
     if folded and selected <= vendorRows and #ladder.steps > vendorRows then selected = vendorRows + 1 end
-    -- Food: a group per role, each folds; a class with one role (a rogue) gets the plain list
+    -- Food: a group per role, each folds; a class with one role (a rogue) gets the plain list. The Disenchant view's
+    -- three groups fold the same way, but they're the account's, so what's folded is saved for the account.
     local roles = ladder.groups and #ladder.groups > 1 and ladder.groups
-    local shutRoles = ns.Player.Prof(prof).foodFolded or {}
+    local shutRoles = (ladder.account and ns.db.disenchantFolded or ns.Player.Prof(prof).foodFolded) or {}
     for _, g in ipairs(roles or {}) do -- the picked row in a folded group gives way to the first one shown
         if selected >= g.from and selected <= g.to and shutRoles[g.name] then
             for _, o in ipairs(ladder.groups) do
@@ -663,14 +678,28 @@ local function renderList()
     end
     if roles then
         for _, g in ipairs(roles) do
-            heading(g.name, g.to - g.from + 1, { g.name, "Dishes for this role, by what eating one raises. Click to" ..
-                " fold or open." }, function()
-                local saved = ns.Player.Prof(prof)
-                saved.foodFolded = saved.foodFolded or {}
-                saved.foodFolded[g.name] = not saved.foodFolded[g.name] or nil
+            local group = ladder.account and DISENCHANT_GROUPS[g.key]
+            local count = g.to - g.from + 1
+            -- the Disenchant view: what the group brings in all, next to how many rows it has
+            heading(g.name, group and g.gain > 0 and ("%d, +%s"):format(count, ns.Money(g.gain)) or count,
+                { g.name, group and group.tip or "Dishes for this role, by what" ..
+                " eating one raises. Click to fold or open." }, function()
+                if ladder.account then
+                    ns.db.disenchantFolded = ns.db.disenchantFolded or {}
+                    ns.db.disenchantFolded[g.name] = not ns.db.disenchantFolded[g.name] or nil
+                else
+                    local saved = ns.Player.Prof(prof)
+                    saved.foodFolded = saved.foodFolded or {}
+                    saved.foodFolded[g.name] = not saved.foodFolded[g.name] or nil
+                end
                 Window.Refresh(true) -- only the view changes
             end, shutRoles[g.name])
-            if not shutRoles[g.name] then rows(g.from, g.to) end
+            if not shutRoles[g.name] then
+                if group and g.to < g.from then
+                    heading(group.empty, nil, { "Nothing here", group.tip })
+                end
+                rows(g.from, g.to)
+            end
         end
     elseif vendorRows then
         local nothing = { "Nothing here", "Nothing earns this way at today's prices." }
@@ -690,36 +719,6 @@ local function renderList()
         end
         if #ladder.steps == vendorRows then heading("nothing at today's prices", nil, nothing) end
         rows(vendorRows + 1, #ladder.steps)
-    elseif ladder.now then -- Disenchant: what the bags hold, what to make, then what needs more skill
-        if ladder.bags > 0 then
-            heading("In your bags", ladder.bags, { "In your bags", "What your bags hold that can be disenchanted:" ..
-                " disenchant it or sell it, whichever brings more on average (a soulbound one only to a vendor)." ..
-                " What made it doesn't count any more." })
-            rows(1, ladder.bags)
-        end
-        heading("Make and disenchant", ladder.now - ladder.bags, { "Make and disenchant", "Worth more disenchanted" ..
-            " than sold, on average: what disenchanting one brings less what making it costs. Red: making it costs" ..
-            " more than disenchanting brings." })
-        if ladder.now == ladder.bags then
-            heading("nothing at today's prices", nil, { "Nothing here", "Nothing you can make is worth more" ..
-                " disenchanted than sold at today's prices." })
-        end
-        rows(ladder.bags + 1, ladder.now)
-        local made = #ladder.steps - ladder.auction -- the recipes' rows end here
-        if made > ladder.now then
-            heading("Needs more Enchanting", made - ladder.now, { "Needs more Enchanting", "Worth it too," ..
-                " but your Enchanting can't disenchant them yet (Classic's skill rule, not checked in Forever)." })
-            rows(ladder.now + 1, made)
-        end
-        heading("Buy and disenchant", ladder.auction, { "Buy and disenchant", "What the auction house's last scan" ..
-            " lists for less than disenchanting it brings on average (the materials after the auction house's cut)," ..
-            " what one gains first; how often one disenchant brings more than it cost. Grey: none of your characters" ..
-            " has the Enchanting for it." })
-        if ladder.auction == 0 then
-            heading("nothing at the last scan", nil, { "Nothing here", "Nothing the auction house's last scan" ..
-                " lists is worth more disenchanted than it costs." })
-        end
-        rows(made + 1, #ladder.steps)
     else
         rows(1, #ladder.steps)
     end
@@ -734,7 +733,7 @@ Window.Shared = { W = W, DETAIL_CW = DETAIL_CW, MENU_W = MENU_W, STEP_COLOR = ST
                   RANK_ICON = RANK_ICON, craftsWord = craftsWord, wait = wait, recipeIcon = recipeIcon,
                   toolUsers = toolUsers, gather = gather, duration = duration, barsText = barsText,
                   useLevel = useLevel, favorSub = favorSub, foodColor = foodColor, MODE_TIPS = MODE_TIPS,
-                  DISENCHANT_TIP = DISENCHANT_TIP, signed = signed }
+                  signed = signed }
 
 renderDetail = function() ns.Cards.Render(frame, ladder, lookup, prof, selected) end
 
@@ -744,6 +743,16 @@ renderDetail = function() ns.Cards.Render(frame, ladder, lookup, prof, selected)
 
 local function renderHeader()
     local state = ladder.state
+    if ladder.account then -- the Disenchant view: the account's, no modes to pick and no specialization
+        local who = ladder.enchanter
+        frame.subtitle:SetText(("Disenchant, your whole account: %s"):format(who and (who.live
+            and ("your Enchanting %d is the best of yours"):format(who.skill)
+            or ("%s has the most Enchanting, %d"):format(who.name, who.skill))
+            or "no character of yours has Enchanting yet"))
+        for _, b in ipairs(frame.list.modes) do b:Hide() end
+        frame.list.spec:Hide()
+        return
+    end
     local plan = state.from and ("the ladder from %d to %d"):format(state.from, state.target)
         or ("the ladder to %d"):format(state.target)
     local me = ns.Player.Snap() -- another character: whose, and how old its snapshot is
@@ -752,12 +761,10 @@ local function renderHeader()
         or me and ("%s has no %s yet"):format(me.name, prof.name) or ("No %s yet"):format(prof.name))
     local tips, x = MODE_TIPS[prof.key] or MODE_TIPS[prof.kind or (prof.resale and "craft")] or {}, 12
     local specView = ns.Player.Prof(prof).specView and prof.specGuides ~= nil
-    -- left to right: Skill (Vendor sales), AH sales, Profit, Food (Cooking), Disenchant (Enchanting; not another
-    -- character's: it reads your bags)
-    for _, i in ipairs({ 1, 3, 2, 4, 5 }) do
+    -- left to right: Skill (Vendor sales), AH sales, Profit, Food (Cooking)
+    for _, i in ipairs({ 1, 3, 2, 4 }) do
         local b = frame.list.modes[i]
-        local tip = b.mode == "food" and (prof.food and FOOD_TIP or nil)
-            or b.mode == "disenchant" and (prof.disenchant and not me and DISENCHANT_TIP or nil) or tips[b.mode]
+        local tip = b.mode == "food" and (prof.food and FOOD_TIP or nil) or tips[b.mode]
         b:SetShown(tip ~= nil)
         if tip then
             local name = tips.names and tips.names[b.mode] or b.name
@@ -923,12 +930,15 @@ local function renderFooter()
             have and ("; you have %d favor"):format(have) or "")
     elseif ladder.mode == "food" then
         text = ("%d dishes for your class; the cost is one dish from bought ingredients"):format(#ladder.steps)
-    elseif ladder.mode == "disenchant" then
-        local de, earn = 0, 0
-        for i = 1, ladder.bags do de = de + (ladder.steps[i].disenchant and 1 or 0) end
-        for i = ladder.bags + 1, ladder.now do earn = earn + (ladder.steps[i].profit > 0 and 1 or 0) end
-        text = ("In your bags %d to disenchant, %d to sell; %d worth making, %d buying to disenchant (on average)")
-            :format(de, ladder.bags - de, earn, ladder.auction)
+    elseif ladder.account then
+        local de, earn, all = 0, 0, 0
+        for _, s in ipairs(ladder.steps) do
+            if s.kind == "bag" and s.disenchant then de = de + 1
+            elseif s.kind == "disenchant" and s.profit > 0 and not s.needSkill then earn = earn + 1 end
+        end
+        for _, g in ipairs(ladder.groups) do all = all + g.gain end
+        text = ("Disenchant %d of yours, buy %d, make %d: about %s in all (at today's prices)")
+            :format(de, ladder.auction, earn, ns.Money(all))
     elseif #ladder.steps > 0 and ladder.steps[1].hour then
         text = ("%d zones at skill %d; the best about %s an hour"):format(#ladder.steps,
             ladder.from, ns.Money(ladder.steps[1].perHour))
@@ -966,7 +976,7 @@ local function renderFooter()
             for _, g in ipairs(rec.get) do prof.hasFavor = prof.hasFavor or g.favor ~= nil end
         end
     end
-    frame.favor:SetShown(prof.hasFavor)
+    frame.favor:SetShown(prof.hasFavor and not ladder.account)
 end
 
 ---------------------------------------------------------------------------------------------------------------
@@ -1139,6 +1149,8 @@ end
 local function fresh(entry)
     if not entry or entry.version ~= version or entry.scan ~= lastScan() then return false end
     if entry.bags ~= bagsVersion then
+        -- the Disenchant view counts every weapon and armor the bags hold, not one profession's items
+        if entry.ladder.account then return false end
         local now, was = ns.Player.Owned(entry.ladder.data), entry.ladder.state.owned or {}
         for item, n in pairs(now) do if was[item] ~= n then return false end end
         for item in pairs(was) do if not now[item] then return false end end
@@ -1235,7 +1247,7 @@ local function build()
     -- plan for the skill, or for gold (placed by renderHeader: the professions have different ones)
     list.modes = {}
     for i, m in ipairs({ { "skill", "Skill", 48 }, { "gold", "Profit", 48 }, { "sell", "AH sales", 62 },
-                         { "food", "Food", 48 }, { "disenchant", "Disenchant (beta)", 110 } }) do
+                         { "food", "Food", 48 } }) do
         local b = UI.Button(list, m[2], m[3], 18, function()
             ns.Player.Prof(prof).mode = m[1]
             ns.Player.Prof(prof).favorView, ns.Player.Prof(prof).specView = nil, nil
@@ -1489,17 +1501,24 @@ function Window.Refresh(cached)
         return
     end
     local ms
+    -- the menu's Disenchant: the whole account's, not a profession's ladder (its own cache entry)
+    local account = ns.Player.Saved().tab == "disenchant" and not ns.Player.viewing
     local data = ns.CurrentProfession()
-    local key = (ns.Player.viewing or "me") .. ":" .. data.key .. ":" .. ns.LadderMode(data)
+    local key = account and "disenchant"
+        or ((ns.Player.viewing or "me") .. ":" .. data.key .. ":" .. ns.LadderMode(data))
     if fresh(cache[key]) then
         ladder, lookup = cache[key].ladder, cache[key].lookup
     else
-        ladder, lookup, ms = ns.Calculate(data)
+        if account then -- an `and ... or` here would keep only the first of the three it returns
+            ladder, lookup, ms = ns.CalculateDisenchant()
+        else
+            ladder, lookup, ms = ns.Calculate(data)
+        end
         cache[key] = { ladder = ladder, lookup = lookup, version = version, bags = bagsVersion, scan = lastScan() }
     end
     drawnScan = cache[key].scan
     if not ns.Player.Prof(ladder.data).favorView then frame.favorRounds = 0 end
-    if ns.Player.Prof(ladder.data).favorView and ns.Favor.Count(ladder.data) > 0 then
+    if not account and ns.Player.Prof(ladder.data).favorView and ns.Favor.Count(ladder.data) > 0 then
         ladder = ns.Favor.Ladder(ladder, ns.db.favorPrices or {})
         -- the levels to wear what they make come from the game's item data: again once it has loaded them (5 times
         -- at most)
@@ -1524,7 +1543,7 @@ function Window.Refresh(cached)
     shownProf = prof
     if selected > #ladder.steps then selected = math.max(1, #ladder.steps) end
     -- no profession and none opened (/craft <profession> opens one to plan): the idle screen
-    local idle = ns.Menu.Render(frame, prof) == 0 and not ns.Player.Saved().tab
+    local idle = ns.Menu.Render(frame, not account and prof or nil) == 0 and not ns.Player.Saved().tab
     frame.idle:SetShown(idle)
     for _, f in ipairs({ frame.bar, frame.list, frame.detail, frame.total, frame.prices, frame.nextScan }) do
         f:SetShown(not idle)

@@ -54,7 +54,7 @@ add(ns.LEATHERWORKING, { key = "leatherworking", name = "Leatherworking", skillL
 add(ns.ALCHEMY, { key = "alchemy", name = "Alchemy", skillLine = 171, apprentice = 2259, icon = 136240, verb = "make",
                   resale = true, smelt = true })
 add(ns.ENCHANTING, { key = "enchanting", name = "Enchanting", skillLine = 333, apprentice = 7411, icon = 136244,
-                     verb = "make", resale = true, smelt = true, disenchant = true })
+                     verb = "make", resale = true, smelt = true })
 -- Poisons: rogues only, learned from a class quest at 20, the cap is the level x 5 (levelCaps), Skill only; what it
 -- makes is kept for the rogue's weapons, not sold
 add(ns.POISONS, { key = "poisons", name = "Poisons", skillLine = 40, icon = 136242, verb = "make", levelCaps = true,

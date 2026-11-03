@@ -7,13 +7,23 @@ version numbers [Semantic Versioning](https://semver.org).
 
 ### Added
 
-- Buy and disenchant: Enchanting's Disenchant mode lists what the auction house sells for less than disenchanting it
-  brings (from AuctionDB's last scan, or Auctionator), the most gained first, with how often a single disenchant pays
-  for itself and the Enchanting it asks (or which of your characters has it). Its card shows what it breaks into and
-  has a button that searches it with Auctionator.
+- Disenchant is a view of its own now, after the professions in the menu, and it covers your whole account. Three
+  groups, each folding, the biggest gain on top of each: what every character of yours holds that can be disenchanted
+  (its bags and its bank, every row saying whose it is and where), what the auction house sells for less than
+  disenchanting it brings, and what any character's crafting professions make that's worth more disenchanted than
+  sold. Each heading says what its group brings in all, and the footer what all three do. Disenchanting is luck, so a
+  row says what one brings on average and its card what a batch brings at least 9 times out of 10, what it breaks
+  into, and how often buying one pays for itself; with Auctionator, a button that searches it. The Enchanting that
+  counts is the best of your characters, since an item can be mailed, and the card says where to send it.
+  `/craft disenchant` opens the view, `/craft chat disenchant` prints it.
+- Gear bound when picked up counts there too, so another character's dungeon and quest greens and blues show up
+  without the game having to load them first, each with what a vendor pays for it. A bank keeps its gear as well,
+  from when you last closed it, so it counts without Bagnon too.
 
 ### Changed
 
+- Enchanting has no Disenchant mode of its own any more, in the window or in the auction house tab: the menu's
+  Disenchant view does everything it did, for every character instead of one.
 - Your own disenchants of one item replace the usual table for it after 3, when they never gave its most likely
   material: Forever breaks some items differently.
 

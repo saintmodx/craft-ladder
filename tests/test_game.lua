@@ -1020,8 +1020,9 @@ expect("Alchemy: the Philosopher's Stone last, needed for transmutes", lastRow a
 mock.click(lastRow)
 expect("... its card says none of its recipes is for leveling", lines():find("None of them is for leveling"))
 fx.alchemy.skill, fx.alchemy.maxSkill = 0, 0
--- Enchanting's Disenchant mode (Ho: Enchanting 150, Tailoring 103, prices from both snapshots): what's worth more
--- disenchanted than sold, what you have first; every disenchant recorded
+-- The menu's Disenchant view, the whole account's (Ho: Enchanting 150, Tailoring 103, prices from both snapshots,
+-- plus Zug whose snapshot holds gear): what the characters hold, what to buy at the auction house, what to make,
+-- each group folding; every disenchant recorded
 local function hoDisenchant(on)
     local hoT = dofile(root .. "tests/fixtures/ho_tailoring.lua")
     local hoE = dofile(root .. "tests/fixtures/ho_enchanting.lua")
@@ -1036,7 +1037,6 @@ local function hoDisenchant(on)
     fx.enchanting.skill, fx.enchanting.maxSkill = on and 150 or 0, on and 150 or 0
     fx.tailoring.skill, fx.tailoring.maxSkill = on and 103 or 0, on and 150 or 0
     ns.Player.Prof(ns.TAILORING).known = on and hoT.known or {}
-    ns.Player.Prof(ns.ENCHANTING).mode = on and "disenchant" or nil
     ns.Window.Invalidate()
 end
 do
@@ -1044,42 +1044,82 @@ do
     -- a green sword (no recipe makes it) listed for 1s at Ho's last scan: worth buying to disenchant
     local sword = 15210
     AuctionDB.sv.houses[UnitFactionGroup()].items[sword] = { { 1792000916, 100, 150, 3 }, ho = true }
-    ns.Player.Prof(ns.ENCHANTING).mode = nil
+    -- Zug, another character of the account: its snapshot's bags hold a green nobody crafts, bound when picked up
+    local bop
+    for item in pairs(ns.DISENCHANT.bop) do
+        if not ns.DISENCHANT.classic[item] and (ns.DISENCHANT.sell[item] or 0) > 0 and (not bop or item < bop) then
+            bop = item
+        end
+    end
+    local shoulders = ns.TAILORING.recipes[3848].makes
+    CraftLadderDB.chars["Player-ALT"] = { prof = {}, me = { name = "Zug", surname = "Test", realm = "Test",
+        faction = UnitFactionGroup() == "Alliance" and "A" or "H", class = "ROGUE", race = "Orc", level = 12,
+        seen = time() - 3600, specs = {}, quests = {}, skills = {}, bags = { [bop] = 1 },
+        bank = { [shoulders] = 3 } } }
     SlashCmdList.CRAFTLADDER("enchanting")
-    local deButton = frame.list.modes[5]
-    expect("Enchanting: a Disenchant mode", deButton:IsShown() and strip(deButton.label.text) == "Disenchant (beta)")
-    mock.click(deButton)
-    local deRows, buys = {}, {}
-    for _, r in ipairs(rows()) do table.insert(r.step.kind == "auction" and buys or deRows, r) end
-    local made = #deRows
-    local loss = deRows[made]
+    expect("Enchanting has no Disenchant mode of its own any more", #frame.list.modes == 4)
+    local de = frame.menu.de
+    expect("the menu's Disenchant, after the professions", de:IsShown() and strip(de.name.text) == "Disenchant")
+    mock.click(de)
+    local function headTexts()
+        local out = {}
+        for _, h in ipairs(headings()) do out[#out + 1] = strip(h.title.text) end
+        return table.concat(out, " | ")
+    end
+    local function byKind(kind)
+        local out = {}
+        for _, r in ipairs(rows()) do if r.step.kind == kind then out[#out + 1] = r end end
+        return out
+    end
+    expect("... three groups, the account's, no mode buttons and no skill to pick",
+        headTexts():find("^In bags and banks | ") and headTexts():find("Buy and disenchant")
+        and headTexts():find("Craft and disenchant") and not frame.list.modes[1].shown
+        and not frame.range.shown and strip(frame.subtitle.text):find("^Disenchant, your whole account: your" ..
+            " Enchanting 150 is the best of yours"))
+    -- Zug's: the bound green from its bags (a vendor at most), the shoulders from its bank
+    local bags = byKind("bag")
+    local zug, zugBank
+    for _, r in ipairs(bags) do
+        if r.step.who == "Zug" and r.step.item == bop then zug = r end
+        if r.step.who == "Zug" and r.step.item == shoulders then zugBank = r end
+    end
+    expect("... another character's bags and bank, whose and where in the row", zug and zugBank
+        and zug.step.bound and zug.step.sale.how == "vendor" and zugBank.step.count == 3
+        and strip(zug.sub.text):find("^Zug's bags %- ") and strip(zugBank.sub.text):find("^Zug's bank %- "))
+    -- the auction house: the sword, the most gained first
+    local buys = byKind("auction")
     local swordRow
     for _, r in ipairs(buys) do if r.step.item == sword then swordRow = r end end
-    local buyHead
-    for _, h in ipairs(headings()) do if strip(h.title.text) == "Buy and disenchant" then buyHead = h end end
-    expect("... Buy and disenchant: what the auction house lists for less than disenchanting brings, last, the most" ..
-        " gained first", buyHead and swordRow and tostring(buyHead.count.text) == tostring(#buys)
-        and strip(swordRow.sub.text):find("^buy .+, ~.+ disenchanted, pays %d+%% of the time$")
+    expect("... Buy and disenchant: what the auction house lists for less than disenchanting brings, the most" ..
+        " gained first", swordRow and strip(swordRow.sub.text):find("^buy .+, ~.+ disenchanted, pays %d+%% of the time$")
         and strip(swordRow.cost.text):find("^%+") and buys[1].step.gain >= buys[#buys].step.gain)
     swordRow.scripts.OnEnter(swordRow)
     mock.click(swordRow)
     expect("... its card: the average, how often it pays, what it breaks into, the listing; no Auctionator: no Search",
         lines():find("One disenchant brings more than it cost %d+%% of the time") and #items() >= 2
         and lines():find("The cheapest listing: .+ Auction house, .+ 3 listed") and not frame.detail.search:IsShown())
-    expect("... Disenchant: Ho's Tailoring, under \"Make and disenchant\", the best first, red at a loss",
-        deButton.active and made >= 2 and deRows[1].step.kind == "disenchant"
-        and strip(headings()[1].title.text) == "Make and disenchant" and loss.step.profit < 0
-        and strip(loss.cost.text):find("^%-") and deRows[1].step.profit >= loss.step.profit
-        and strip(deRows[1].sub.text):find("^Tailoring, disenchanted ~"))
+    -- what Ho can make: its Tailoring, the best first, red at a loss, and the Craft bar on its own rows
+    local deRows = byKind("disenchant")
+    local made = #deRows
+    local madeItems = {}
+    for _, r in ipairs(deRows) do madeItems[ns.TAILORING.recipes[r.step.recipe].makes] = true end
+    local loss = deRows[made]
+    expect("... Craft and disenchant: Ho's Tailoring, whose it is, the best first, red at a loss",
+        made >= 2 and loss.step.profit < 0 and strip(loss.cost.text):find("^%-")
+        and deRows[1].step.profit >= loss.step.profit and deRows[1].step.who == fx.name
+        and strip(deRows[1].sub.text):find("^" .. fx.name .. ", Tailoring, disenchanted ~")
+        and not madeItems[shoulders]) -- Zug's bank holds the shoulders: not among what to make
     loss.scripts.OnEnter(loss)
     mock.click(loss)
-    expect("... its card: what one disenchant gives, a batch, the Craft bar, one craft", frame.detail.craft:IsShown()
+    expect("... its card: what one disenchant gives, a batch, the Craft bar (your own character), one craft",
+        frame.detail.craft:IsShown()
         and lines():find("10 disenchanted: about .+, at least .+ 9 times out of 10") and #items() > 2
         and lines():find("Making it costs more than disenchanting brings"))
-    expect("... the footer", strip(frame.total.text):find("^In your bags 0 to disenchant, 0 to sell; %d+ worth making"))
-    -- the bags: Linen Cloth (nothing to disenchant), two Double-stitched Woolen Shoulders, a green sword no recipe
-    -- makes (what the game says of it): "In your bags" first, the shoulders no longer among what to make
-    local shoulders, locked = ns.TAILORING.recipes[3848].makes, false
+    expect("... the footer, with what it all brings", strip(frame.total.text):find(
+        "^Disenchant %d+ of yours, buy %d+, make %d+: about .+ in all"))
+    -- your own bags: Linen Cloth (nothing to disenchant), two Double-stitched Woolen Shoulders, a green sword no
+    -- recipe makes (what the game says of it); the shoulders no longer among what to make
+    local locked = false
     local bagItems = { 2589, shoulders, shoulders, sword }
     C_Container = { GetContainerNumSlots = function(bag) return bag == 0 and #bagItems or 0 end,
                     GetContainerItemInfo = function(_, slot)
@@ -1091,23 +1131,32 @@ do
     end
     fx.tailoring.owned[shoulders], fx.tailoring.owned[sword] = 2, 1 -- the game's count of them
     mock.fire("BAG_UPDATE_DELAYED"); mock.runTimers()
-    deRows = {}
-    for _, r in ipairs(rows()) do if r.step.kind ~= "auction" then deRows[#deRows + 1] = r end end
     local bagRows = {}
-    for _, r in ipairs(deRows) do if r.step.kind == "bag" then bagRows[r.step.item] = r end end
-    expect("... the bags first, under their own heading, the shoulders a row of 2, the sword too",
-        strip(headings()[1].title.text) == "In your bags" and deRows[1].step.kind == "bag" and #deRows == made + 1
-        and bagRows[shoulders] and bagRows[shoulders].step.count == 2 and bagRows[sword] and not bagRows[2589]
-        and strip(bagRows[shoulders].sub.text):find("^disenchant: ~"))
+    for _, r in ipairs(byKind("bag")) do
+        if r.step.who == fx.name then bagRows[r.step.item] = r end
+    end
+    expect("... your own bags from the game, the shoulders a row of 2, the sword too, no cloth",
+        bagRows[shoulders] and bagRows[shoulders].step.count == 2 and bagRows[sword] and not bagRows[2589]
+        and #byKind("disenchant") == made
+        and strip(bagRows[shoulders].sub.text):find("^" .. fx.name .. "'s bags %- disenchant: ~"))
     bagRows[shoulders].scripts.OnEnter(bagRows[shoulders])
     mock.click(bagRows[shoulders])
-    expect("... its card: yours disenchanted, or sold, no Craft bar", not frame.detail.craft:IsShown()
+    expect("... its card: yours disenchanted, or sold, no Craft bar", not frame.detail.craft.shown
         and lines():find("Your 2 disenchanted: about") and lines():find("each at a vendor"))
+    -- a group folds, and stays folded for the account
+    local buyHead
+    for _, h in ipairs(headings()) do if strip(h.title.text) == "Buy and disenchant" then buyHead = h end end
+    mock.click(buyHead)
+    expect("... a group folds, saved for the account", #byKind("auction") == 0
+        and CraftLadderDB.disenchantFolded["Buy and disenchant"] and #byKind("bag") > 0)
+    mock.click(buyHead)
+    expect("... and opens again", #byKind("auction") > 0 and not CraftLadderDB.disenchantFolded["Buy and disenchant"])
     mock.output = {}
-    SlashCmdList.CRAFTLADDER("chat enchanting")
-    expect("... and in chat", said("In your bags:") and said("Make and disenchant:") and said("Buy and disenchant:")
-        and said("in your bags %d+ to disenchant, %d+ to sell; worth more disenchanted than sold: " .. (made - 1)
-            .. " to make"))
+    SlashCmdList.CRAFTLADDER("chat disenchant")
+    expect("... and in chat, with every group, what it brings and whose each row is",
+        said("In bags and banks %(%d+") and said("Buy and disenchant %(%d+, about ")
+        and said("Craft and disenchant %(%d+, about ") and said("Disenchant, your account")
+        and said("%(Zug, bags%)"))
     -- a disenchant: the item the game locked while casting, what the loot window gave
     GetTime = function() return 1000 end
     locked = true
@@ -1124,8 +1173,11 @@ do
         and CraftLadderDB.disenchantLog[1]:find(("^%d %%d+ 10940:3 10998:1$"):format(shoulders)))
     C_Container, GetNumLootItems, GetLootSlotLink, GetLootSlotInfo, C_Item.GetItemInfo = nil, nil, nil, nil, nil
     fx.tailoring.owned[shoulders], fx.tailoring.owned[sword] = nil, nil
+    CraftLadderDB.chars["Player-ALT"], CraftLadderDB.disenchantFolded = nil, nil
     hoDisenchant(false)
     mock.click(tab("firstaid"))
+    expect("a profession picked again: the ladder back, Disenchant no longer the view",
+        ns.Player.Me().tab == "firstaid" and frame.list.shown)
 end
 mock.click(tab("firstaid"))
 
@@ -1593,16 +1645,8 @@ do
     ns.Calculate = calc
 end
 bsProf.mode = nil
--- Disenchant (Enchanting's): what to make, its ingredients; what you have isn't here (nothing to buy)
-hoDisenchant(true)
-char().ahProf = "enchanting"
-ns.AuctionTab.Refresh()
-local deSteps = mock.shownChildren(ahPanel.scroll.child, "entry")
-expect("... Disenchant: Enchanting's mode button, the Crafts box, a row per thing to make with what it buys",
-    ahPanel.modes[5]:IsShown() and ahPanel.modes[5].active and ahPanel.crafts:IsShown() and #deSteps >= 2
-    and strip(ahPanel.heading.text):find("^Enchanting: what's worth more disenchanted") and deSteps[1].entry.step.data
-    and strip(deSteps[1].sub.text):find("a craft, Tailoring, disenchanted$") and #deSteps[1].entry.rows > 0)
-hoDisenchant(false)
+-- the Disenchant view is the menu's, for the whole account: the auction house tab has no mode for it
+expect("... no Disenchant mode in the auction house tab", #ahPanel.modes == 4)
 char().ahProf = "blacksmithing"
 Auctionator = nil
 

@@ -14,7 +14,7 @@ ns.AuctionTab = AuctionTab
 local ROW_H = 34
 local INDENT = 22 -- a reagent's row, under its step
 local MODES = { { "skill", "Vendor sales", 80 }, { "sell", "AH sales", 62 }, { "gold", "Profit", 52 },
-                { "favor", "Favor", 52 }, { "disenchant", "Disenchant (beta)", 110 } }
+                { "favor", "Favor", 52 } }
 local FAVOR_TIP = "Merchant's Favor recipes, the supply camps' quartermasters sell them: what one craft of each buys" ..
     " here, what you have counted first (bars smelted from your ore when that's cheaper)."
 local panel, rowPool, stepPool, profButtons
@@ -273,7 +273,7 @@ local function fillStep(r, e, data, lookup, gold)
         r.sub:SetText(("at %d, raises your cap to %d"):format(s.from, s.rank.cap))
         return
     end
-    local rec = (s.data or data).recipes[s.recipe] -- Disenchant: another profession's recipe
+    local rec = data.recipes[s.recipe]
     r.icon:SetTexture(rec.makes and UI.ItemIcon(rec.makes) or rec.icon or data.icon)
     r.name:SetText(rec.name)
     UI.SetColor(r.name, s.color ~= "grey" and ns.Window.Shared.STEP_COLOR[s.color] or C.text)
@@ -282,8 +282,7 @@ local function fillStep(r, e, data, lookup, gold)
         r.sub:SetText(ns.Window.Shared.favorSub(s, rec, shown.ladder.state))
     elseif gold then
         r.sub:SetText(("%s%s|r a craft, %s"):format(s.profit >= 0 and (hex(C.good) .. "+") or (hex(C.bad) .. "-"),
-            ns.Money(math.abs(s.profit)), s.kind == "disenchant"
-            and ("%s, disenchanted"):format(s.data.name) or s.vendor and "sold to a vendor" or (s.listed .. " listed")))
+            ns.Money(math.abs(s.profit)), s.vendor and "sold to a vendor" or (s.listed .. " listed")))
     elseif s.to > s.from then
         r.sub:SetText(("%d - %d, ~%d %s"):format(s.from, s.to, math.ceil(s.crafts), data.craftWord or "crafts"))
     else
@@ -327,8 +326,7 @@ function AuctionTab.Refresh(cached)
     local tips = data and data.resale and ns.Window.Shared.MODE_TIPS.craft
     local lastMode
     for _, b in ipairs(panel.modes) do
-        b:SetShown(tips ~= nil and (b.mode ~= "favor" or ns.Favor.Count(data) > 0)
-            and (b.mode ~= "disenchant" or data.disenchant == true))
+        b:SetShown(tips ~= nil and (b.mode ~= "favor" or ns.Favor.Count(data) > 0))
         if b:IsShown() then -- next to the last one shown: no gap where Favor is hidden
             b:ClearAllPoints()
             b:SetPoint("TOPLEFT", lastMode or panel, lastMode and "TOPRIGHT" or "TOPLEFT", lastMode and 4 or 14,
@@ -347,12 +345,11 @@ function AuctionTab.Refresh(cached)
         return
     end
     local ladder = ladderFor(data, cached)
-    -- Gold and Disenchant: one craft of each, times the box's number
-    local gold = (ladder.mode == "gold" or ladder.mode == "disenchant") and not ladder.favor
+    -- Gold: one craft of each, times the box's number
+    local gold = ladder.mode == "gold" and not ladder.favor
     for _, b in ipairs(panel.modes) do
         b:SetActive(b.mode == shown.mode)
-        b.tooltip = tips and { b.name, tips[b.mode]
-            or (b.mode == "disenchant" and ns.Window.Shared.DISENCHANT_TIP or FAVOR_TIP) }
+        b.tooltip = tips and { b.name, tips[b.mode] or FAVOR_TIP }
     end
     panel.crafts:SetShown(gold)
     panel.craftsLabel:SetShown(gold)
@@ -369,7 +366,7 @@ function AuctionTab.Refresh(cached)
             last.step = step
             last.steps[#last.steps + 1] = s
             last.rows = needs(ladder, last.steps, gold and crafts or 1)
-        elseif s.buy then -- (Disenchant: a bag's item buys nothing)
+        elseif s.buy then
             entries[#entries + 1] = { step = s, steps = { s }, key = stepKey(s),
                                       rows = needs(ladder, { s }, gold and crafts or 1) }
         end
@@ -388,8 +385,6 @@ function AuctionTab.Refresh(cached)
     end
     panel.heading:SetText(#entries == 0 and ("%s: nothing to buy"):format(data.name)
         or ladder.favor and ("%s: Merchant's Favor recipes, what one craft of each buys"):format(data.name)
-        or ladder.mode == "disenchant" and ("%s: what's worth more disenchanted, the ingredients of %d %s"):format(
-            data.name, crafts, crafts == 1 and "craft" or "crafts")
         or gold and ("%s: what earns the most now, the ingredients of %d %s"):format(data.name, crafts,
             crafts == 1 and "craft" or "crafts")
         or ("%s: what each step buys at the auction house"):format(data.name))

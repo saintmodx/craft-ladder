@@ -1754,13 +1754,17 @@ do
                          skills = { cooking = { 40, 75 }, firstaid = { 10, 75 } }, bags = { [2672] = 5 },
                          bank = { [2672] = 4 } } }
     CraftLadderDB.chars["Player-ALT"] = alt
-    CraftLadderDB.chars["Player-FAR"] = { prof = {}, me = { name = "Far", realm = "Elsewhere", faction = me.faction,
+    -- another realm of Forever counts (one world, one auction house per side); the other side doesn't
+    CraftLadderDB.chars["Player-FAR"] = { prof = {}, me = { name = "Zzfar", realm = "Elsewhere", faction = me.faction,
         class = "MAGE", level = 1, seen = time(), skills = {}, specs = {}, quests = {}, bags = {} } }
+    CraftLadderDB.chars["Player-ALLY"] = { prof = {}, me = { name = "Ally", realm = "Test", class = "MAGE",
+        faction = me.faction == "H" and "A" or "H", level = 1, seen = time(), skills = {}, specs = {}, quests = {},
+        bags = {} } }
     ns.Window.Refresh(true)
     local buttons = mock.shownChildren(frame.chars, "guid")
-    expect("two buttons: you first, picked, then Zug; not another realm's", #buttons == 2
+    expect("three buttons: you first, picked, then Zug and another realm's; not the other side's", #buttons == 3
         and buttons[1].guid == "Player-TEST" and buttons[1].active and buttons[2].guid == "Player-ALT"
-        and not buttons[2].active)
+        and not buttons[2].active and buttons[3].guid == "Player-FAR")
     mock.click(buttons[2])
     expect("Zug's professions in the menu, from its snapshot; no Camp", ns.Player.viewing == "Player-ALT"
         and strip(tab("cooking").skill.text) == "40 / 75" and strip(tab("firstaid").skill.text) == "10 / 75"

@@ -1,4 +1,4 @@
--- Craft Ladder: the account's characters on this realm and side, a button each left of the main window (you first).
+-- Craft Ladder: the account's characters of your side, a button each left of the main window (you first).
 -- A click shows that character's professions and ladders as its last session left them (Player.Snapshot): to read,
 -- not to craft from, until you click yourself again. UI/Window.lua builds it and draws it again.
 local _, ns = ...

@@ -3,6 +3,14 @@
 What's new in Craft Ladder, newest first. The format follows [Keep a Changelog](https://keepachangelog.com), the
 version numbers [Semantic Versioning](https://semver.org).
 
+## Unreleased
+
+### Fixed
+
+- The buttons left of the window and the Disenchant view now hold every character of your account on your side,
+  whatever realm name it carries. Forever is one world: characters of its realms play, trade and use the same
+  auction house, so splitting them by realm name only hid your own alts.
+
 ## 1.6.0 - 2026-11-05
 
 ### Added

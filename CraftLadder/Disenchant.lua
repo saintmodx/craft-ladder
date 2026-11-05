@@ -163,7 +163,7 @@ function Disenchant.Chance(bucket, worth, price)
     return math.min(1, p) -- what the game gave may hold two materials in one disenchant
 end
 
--- Every character of the account with Enchanting (this realm and side): { { name, skill, live = yours } }, yours
+-- Every character of the account with Enchanting (your side): { { name, skill, live = yours } }, yours
 -- first and from the game (a snapshot is up to 2 s old), the others from their snapshots. A game call.
 function Disenchant.Enchanters(data)
     local list = {}

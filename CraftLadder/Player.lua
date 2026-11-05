@@ -396,14 +396,17 @@ snapFrame:SetScript("OnEvent", function(_, event)
     end)
 end)
 
--- The characters that can be shown: this account's on this realm and side with a snapshot, yourself first (a
--- snapshot taken now if none yet), then by name. Each: { guid, me = its snapshot }.
+-- The characters that can be shown: this account's of your side with a snapshot, yourself first (a snapshot taken
+-- now if none yet), then by name. Each: { guid, me = its snapshot }.
+-- Not by realm: Forever is one world whose realm names only say which server a character sits on (they play and
+-- trade together), and its auction house is the faction's - AuctionDB keys its houses by faction, with no realm
+-- anywhere in its saved data.
 function Player.Chars()
     if not Player.Me().me then Player.Snapshot() end
     local mine = Player.Me().me
     local list = {}
     for key, c in pairs(ns.db.chars) do
-        if c.me and key ~= guid() and c.me.realm == mine.realm and c.me.faction == mine.faction then
+        if c.me and key ~= guid() and c.me.faction == mine.faction then
             list[#list + 1] = { guid = key, me = c.me }
         end
     end

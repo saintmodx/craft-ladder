@@ -328,9 +328,35 @@ local function option(ctx, spell, rec, skill, limit)
 end
 
 -- Made from what the character has, with a recipe it knows (or has in its bags): first in its colour, whatever else
--- earns a point (the user's rule).
+-- earns a point (the user's rule), unless it would eat a reagent still worth making (eatsMade).
 local function fromWhatYouHave(o)
-    return o.fromBags and (o.learn.kind == "known" or o.learn.kind == "owned" or o.learn.kind == "start") or false
+    return o.fromBags and not o.eatsMade
+        and (o.learn.kind == "known" or o.learn.kind == "owned" or o.learn.kind == "start") or false
+end
+
+-- A reagent in the bags the plan can make again (Light Leather, bars, bolts) is free for this craft only: the
+-- steps after it buy or make it anew. So every option's score carries what having it again costs - without that,
+-- 48 Light Leather make Handstitched Leather Vests (3 each) look cheaper than Light Armor Kits (1 each) - and an
+-- option that eats one loses the head start "what you have is crafted first" gives it (eatsMade). A reagent
+-- nothing here makes (meat, fish, hides) stays free: that rule is the user's.
+local function markEaters(ctx, data, options)
+    local canMake = {}
+    for _, o in ipairs(options) do
+        local rec, again = data.recipes[o.recipe], 0
+        for item, n in pairs(rec.mats) do
+            local owned = ctx.owned[item] or 0
+            if owned > 0 and item ~= rec.makes then
+                if canMake[item] == nil then canMake[item] = maker(ctx, item) ~= nil end
+                if canMake[item] then
+                    again = again + (ctx.quote(item, min(owned, math.ceil(n * o.crafts)), 0) or 0)
+                end
+            end
+        end
+        if again > 0 and o.score then
+            o.eatsMade = true
+            o.score = o.score + again / (o.to - o.from)
+        end
+    end
 end
 
 local function better(a, b)
@@ -594,6 +620,7 @@ local function buildOnce(data, state, quote, opts, sunk)
                     if b then options[#options + 1] = b end
                 end
             end
+            markEaters(ctx, data, options)
             table.sort(options, better)
 
             local chosen = options[1]

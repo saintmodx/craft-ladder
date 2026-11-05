@@ -7,6 +7,11 @@ version numbers [Semantic Versioning](https://semver.org).
 
 ### Fixed
 
+- A reagent in your bags is free for one craft, not for the whole ladder: one your professions can make again
+  (Light Leather, bars, bolts of cloth) now counts at what having it again will cost when recipes are compared.
+  With 48 Light Leather, Leatherworking planned Handstitched Leather Vests, 3 leather a point, because the leather
+  looked free; it plans Light Armor Kits now, 1 a point, three times the skill out of the same bags. A reagent
+  nothing you have makes - meat, fish, hides - is still free, and what you have is still crafted first.
 - The buttons left of the window and the Disenchant view now hold every character of your account on your side,
   whatever realm name it carries. Forever is one world: characters of its realms play, trade and use the same
   auction house, so splitting them by realm name only hid your own alts.

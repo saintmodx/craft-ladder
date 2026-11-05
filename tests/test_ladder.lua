@@ -100,6 +100,31 @@ local l3 = Ladder.Build(data, { skill = 19, maxSkill = 75, target = 75, faction 
     owned = { [769] = 18 } }, q2, { choices = { { from = 19, to = 65, recipe = 2540, bags = false } } })
 assert(l3.steps[1].recipe == 2540 and not l3.steps[1].fromBags and l3.steps[1].to > 37, "a pick of the normal option")
 
+-- ... except where what you have would be eaten by a recipe whose reagent is still worth making: 9 Light Leather in
+-- the bags make 9 Light Armor Kits for a sure point each, but the plan then buys that leather back, so the bags'
+-- option loses its head start and Light Leather (orange only to 19, where the kit stays orange to 29) comes first
+do
+-- ... except where what you have would be eaten by a reagent the plan can make again: 9 Light Leather in the bags
+-- are free for one craft but bought back for the next, so they go into Light Armor Kits (1 leather each), not into
+-- Handstitched Leather Vests (3 each) just because the vest sells for more
+local lw = ns.LEATHERWORKING
+local qlw = ns.Prices.Make({ faction = "H", auctionDB = function() return { 0, 50, 50, 500 } end })
+local function lwFirst(skill, owned)
+    return Ladder.Build(lw, { skill = skill, maxSkill = 75, target = 75, faction = "H", level = 30, known = {},
+        owned = owned }, qlw, { vendorOnly = true }).steps[1]
+end
+local kit = lwFirst(1, { [2318] = 9 })
+assert(kit.recipe == 2152, "the bags' Light Leather goes into Light Armor Kits, not Handstitched Leather Vests")
+local marked = true
+for _, o in ipairs(kit.options) do marked = marked and o.eatsMade == true end
+assert(marked, "... every option here eats leather the plan buys back, and says so")
+-- with the scraps to make it, the leather itself comes first: at 25 it's yellow and the kit wins instead
+assert(lwFirst(1, { [2318] = 9, [2934] = 60 }).recipe == 2881, "Light Leather first while it's orange")
+assert(lwFirst(25, { [2318] = 48 }).recipe == 2152, "at 25 the leather is yellow: the kit, not the vest")
+-- a reagent nothing here makes stays free: 18 Chunk of Boar Meat are still cooked first (l2 above)
+assert(not l2.steps[1].eatsMade and l2.steps[1].fromBags, "raw meat isn't charged back")
+end
+
 -- what the character has, with a recipe it knows, is made first even when another recipe earns more a point (Skill,
 -- vendors only): Big Bear Steak from 8 Big Bear Meat at 110 before Lean Venison, which a vendor pays more for
 local q5 = ns.Prices.Make({ faction = "A", auctionDB = function() return { 0, 10, 10, 1000 } end })

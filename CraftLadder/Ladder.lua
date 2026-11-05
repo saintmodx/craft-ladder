@@ -194,7 +194,7 @@ local AH_CUT, AH_OVER_VENDOR = 0.95, 1.5
 -- What selling `made` of an item brings back: at the auction house (after its cut) when that pays at least 1.5 times
 -- what a vendor does and at least 5 are listed, for at most a quarter of what's listed (less what earlier steps put
 -- there: `sold`); the rest at a vendor. ctx.vendorOnly (the Vendor sales ladder): only vendors, whose money is sure.
--- Returns { ah, ahEach, vendor, vendorEach, total }.
+-- Returns { ah, ahEach, vendor, vendorEach, total, listed = how many the auction house has (only when some go there) }.
 local function resale(ctx, item, made, sold)
     local vendorEach, ahEach, ah = ctx.sell[item] or 0, 0, 0
     local _, e = ctx.quote(item, 1, 0, true)
@@ -204,7 +204,7 @@ local function resale(ctx, item, made, sold)
         ah = min(made, max(0, max(1, math.floor(e.qty / 4)) - (sold[item] or 0)))
     end
     return { ah = ah, ahEach = ahEach, vendor = made - ah, vendorEach = vendorEach,
-             total = ah * ahEach + (made - ah) * vendorEach }
+             total = ah * ahEach + (made - ah) * vendorEach, listed = ah > 0 and e.qty or nil }
 end
 
 -- A sale joins what a step already sells.
@@ -212,6 +212,7 @@ local function addSale(step, sale)
     local ls = step.sale
     if ls then
         ls.ah, ls.vendor, ls.total = ls.ah + sale.ah, ls.vendor + sale.vendor, ls.total + sale.total
+        ls.listed = ls.listed or sale.listed -- the same recipe's stretches sell the same item: the same count
     else
         step.sale = sale
     end

@@ -22,6 +22,8 @@ version numbers [Semantic Versioning](https://semver.org).
 
 ### Changed
 
+- AH sales rows say how many of what you make the auction house has listed, the way Profit's rows do, so you can see
+  at a glance whether your crafts will sell. It shows on the ladder and in the auction house tab.
 - Enchanting has no Disenchant mode of its own any more, in the window or in the auction house tab: the menu's
   Disenchant view does everything it did, for every character instead of one.
 - Your own disenchants of one item replace the usual table for it after 3, when they never gave its most likely

@@ -284,7 +284,8 @@ local function fillStep(r, e, data, lookup, gold)
         r.sub:SetText(("%s%s|r a craft, %s"):format(s.profit >= 0 and (hex(C.good) .. "+") or (hex(C.bad) .. "-"),
             ns.Money(math.abs(s.profit)), s.vendor and "sold to a vendor" or (s.listed .. " listed")))
     elseif s.to > s.from then
-        r.sub:SetText(("%d - %d, ~%d %s"):format(s.from, s.to, math.ceil(s.crafts), data.craftWord or "crafts"))
+        r.sub:SetText(("%d - %d, ~%d %s%s"):format(s.from, s.to, math.ceil(s.crafts), data.craftWord or "crafts",
+            s.sale and s.sale.listed and (", %d listed"):format(s.sale.listed) or ""))
     else
         r.sub:SetText(("at %d, make one and keep it"):format(s.from))
     end

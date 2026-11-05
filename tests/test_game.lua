@@ -906,6 +906,11 @@ expect("Engineering: Skill, Skill + Gold and Gold", frame.list.modes[1]:IsShown(
 expect("Engineering Skill: nothing sold at the auction house", not soldAtAH())
 mock.click(frame.list.modes[3])
 expect("Engineering Skill + Gold: the auction house buys some", frame.list.modes[3].active and soldAtAH())
+local listedRow
+for _, r in ipairs(rows()) do
+    if r.step.sale and r.step.sale.ah > 0 and strip(r.sub.text):find(", %d+ listed") then listedRow = r end
+end
+expect("... and its row says how many are listed, as Profit's rows do", listedRow ~= nil)
 -- Gold: what earns most now, the best first; at 300 the tab opens on it
 mock.click(frame.list.modes[2])
 local ahRow

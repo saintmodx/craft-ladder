@@ -428,11 +428,13 @@ local sale = Ladder.Resale(sellCtx, 999002, 19, {})
 check("selling: a quarter of the 40 listed at the auction house", sale.ah, 10)
 check("... after its cut", sale.ahEach, 9500)
 check("... the other 9 to a vendor", sale.total, 10 * 9500 + 9 * 2500)
+check("... how many the auction house has, for the AH sales rows", sale.listed, 40)
 check("... less what earlier steps put there", Ladder.Resale(sellCtx, 999002, 19, { [999002] = 8 }).ah, 2)
 check("the Skill ladder: only vendors buy", Ladder.Resale({ sell = sellCtx.sell, quote = sellCtx.quote, vendorOnly = true },
     999002, 19, {}).ah, 0)
 sellCtx.quote = function(_, _, _, ah) return ah and 3000, { min = 3000, qty = 40 } end
 check("the auction house paying less than 1.5x a vendor: all to a vendor", Ladder.Resale(sellCtx, 999002, 19, {}).ah, 0)
+assert(Ladder.Resale(sellCtx, 999002, 19, {}).listed == nil, "nothing goes to the auction house: no listed count")
 -- 10 Bronze Bars: 1s at the auction house, or smelted from 5c Copper Ore and 10c Tin Ore with Mining 119
 local smelt = { smelt = { skill = 119, recipes = ns.MINING.recipes } }
 local _, bronze = Ladder.Ingredients(bsCtx({}, smelt), { mats = { [2841] = 10 } }, 1)

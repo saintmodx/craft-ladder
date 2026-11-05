@@ -573,6 +573,8 @@ local function fillRow(row, step, index)
         if step.keep then extra = extra .. " - " .. hex(C.good) .. "keep them|r" end
         if step.chosenByYou then extra = extra .. " - " .. hex(C.gold) .. "your pick|r" end
         if ns.Describe.Unconfirmed(rec, step.learn) then extra = extra .. " - " .. hex(C.warn) .. "unconfirmed|r" end
+        -- AH sales: how many of it the auction house has, as Profit's rows show
+        if step.sale and step.sale.listed then extra = extra .. (", %d listed"):format(step.sale.listed) end
         if step.late then
             local _, _, what = toolUsers(step.tool)
             row.sub:SetText(("after %d%s, %sneeded for %s|r"):format(step.from, way, hex(C.warn), what))

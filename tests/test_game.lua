@@ -255,6 +255,24 @@ expect("Horde vendors listed with pins", #places() >= 1)
 mock.click(places()[1])
 expect("clicking a vendor sets a map pin", #mock.waypoints == 1 and mock.waypoints[1].map ~= nil)
 
+-- a recipe many vendors sell (Smoked Sagefish, 14 of them): the card lists 4, the rest behind a line that unfolds
+local function folds() return mock.shownChildren(frame.detail.scroll.child, "key") end
+local sage
+for spell, rec in pairs(ns.COOKING.recipes) do if rec.name == "Smoked Sagefish" then sage = spell end end
+local step = rows()[4].step
+local wasRecipe, wasLearn = step.recipe, step.learn
+step.recipe, step.learn = sage, { kind = "vendor", cost = 150 }
+mock.click(rows()[4])
+local vendors = #ns.Describe.Vendors(ns.COOKING, sage, "H", ns.db.favor)
+expect("a recipe many vendors sell: 4 of them, the rest folded away", vendors > 4 and #places() == 4
+    and #folds() == 1 and strip(folds()[1].text.text) == ("and %d more vendors"):format(vendors - 4))
+mock.click(folds()[1])
+expect("... unfolded by a click: every vendor", #places() == vendors
+    and strip(folds()[1].text.text) == ("all %d vendors"):format(vendors))
+mock.click(folds()[1])
+expect("... and folded again", #places() == 4)
+step.recipe, step.learn = wasRecipe, wasLearn
+
 -- pick another recipe for step 2, then go back
 mock.click(rows()[2])
 local other

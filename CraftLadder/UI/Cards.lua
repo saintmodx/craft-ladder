@@ -88,6 +88,27 @@ local function makeLine(parent)
     return f
 end
 
+-- The last line of a long list: unfolds the rest, folds it again
+local expanded = {} -- [a list's key] = showing all of it (until /reload)
+
+local function makeMore(parent)
+    local b = CreateFrame("Button", nil, parent)
+    b:SetSize(DETAIL_CW, 18)
+    b.fold = b:CreateTexture(nil, "ARTWORK")
+    b.fold:SetSize(12, 12)
+    b.fold:SetPoint("LEFT", 2, 0)
+    b.text = UI.Label(b, 11, C.muted)
+    b.text:SetPoint("LEFT", b.fold, "RIGHT", 6, 0)
+    b:SetScript("OnEnter", function(self) UI.SetColor(self.text, C.gold) end)
+    b:SetScript("OnLeave", function(self) UI.SetColor(self.text, C.muted) end)
+    b:SetScript("OnClick", function(self)
+        expanded[self.key] = not expanded[self.key] or nil
+        Window.Refresh(true)
+    end)
+    function b:Fit(cw) self:SetWidth(cw) end
+    return b
+end
+
 local function makePlace(parent)
     local b = CreateFrame("Button", nil, parent)
     b:SetSize(DETAIL_CW, 22)
@@ -260,6 +281,23 @@ local function placeRow(npc, right)
     f.npc, f.npcName, f.spot = npc, name, false -- false, not nil: a test frame reads a nil field as a method
     f.text:SetText(name .. (where and (hex(C.muted) .. "  " .. where .. "|r") or ""))
     f.right:SetText(right or "")
+    place(f, 2)
+end
+
+-- A list too long for a card: only its first `cap` rows, drawn by `row`, with a line that unfolds the rest. `key`
+-- tells one list from another, `what` is what they are ("vendors"). Folded again by /reload.
+local function foldedRows(key, list, cap, what, row)
+    local open = expanded[key]
+    for i, x in ipairs(list) do
+        if i > cap and not open then break end
+        row(x)
+    end
+    if #list <= cap then return end
+    local f = get("more")
+    f.key = key
+    f.fold:SetTexture(open and "Interface\\Buttons\\UI-MinusButton-Up" or "Interface\\Buttons\\UI-PlusButton-Up")
+    f.text:SetText(open and ("all %d %s"):format(#list, what) or ("and %d more %s"):format(#list - cap, what))
+    UI.SetColor(f.text, C.muted)
     place(f, 2)
 end
 
@@ -550,14 +588,10 @@ local function learnSection(step, rec)
         local vendors = ns.Describe.Vendors(prof, step.recipe, state.faction, ns.db.favor)
         local real = realPrice(rec.item)
         line(("Buy the recipe from %s:"):format(#vendors > 1 and "one of these vendors" or "this vendor"), C.text)
-        for i, v in ipairs(vendors) do
-            if i > 4 then
-                line(("and %d more vendors"):format(#vendors - 4), C.muted)
-                break
-            end
+        foldedRows("vendors:" .. step.recipe, vendors, 4, "vendors", function(v)
             placeRow(v.npc, v.favor and ((v.favor == true and "Merchant's" or v.favor) .. " Favor")
                 or ns.Describe.Price(real or v.cost, not real and v.costGuess))
-        end
+        end)
     elseif way.kind == "quest" then
         local name, q = ns.Describe.Quest(way.quest)
         line(("Quest reward: %s%s"):format(name, way.reqLevel and way.reqLevel > state.level and
@@ -565,15 +599,13 @@ local function learnSection(step, rec)
         if q and q.giver then placeRow(q.giver, "quest giver") end
     elseif way.kind == "trainer" and rec.trainers then
         line(("Only these trainers teach it, for %s:"):format(ns.Describe.Price(way.cost, way.guess)), C.text)
-        local theirs = 0
+        local theirs = {}
         for _, npc in ipairs(rec.trainers) do
             local n = prof.npcs[npc]
-            if n and n.faction:find(state.faction, 1, true) then
-                placeRow(npc, "trainer")
-                theirs = theirs + 1
-            end
+            if n and n.faction:find(state.faction, 1, true) then theirs[#theirs + 1] = npc end
         end
-        if theirs == 0 then line("None of them is of your faction.", C.bad) end
+        foldedRows("trainers:" .. step.recipe, theirs, 4, "trainers", function(npc) placeRow(npc, "trainer") end)
+        if #theirs == 0 then line("None of them is of your faction.", C.bad) end
     else
         line(ns.Describe.Learn(way, prof):gsub("^%l", string.upper) .. ".",
             way.kind == "known" and not way.earlier and C.good or C.text)
@@ -1616,6 +1648,7 @@ function Cards.Build(f)
     pools.section = UI.Pool(makeSection)
     pools.line = UI.Pool(makeLine)
     pools.place = UI.Pool(makePlace)
+    pools.more = UI.Pool(makeMore)
     pools.item = UI.Pool(makeItem)
     pools.option = UI.Pool(makeOption)
 end

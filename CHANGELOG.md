@@ -22,6 +22,8 @@ version numbers [Semantic Versioning](https://semver.org).
 
 ### Changed
 
+- A recipe sold by many vendors no longer ends in "and 16 more vendors" you can't see: the card lists four and the
+  line under them unfolds the rest, and folds them away again. The same for a recipe only certain trainers teach.
 - AH sales rows say how many of what you make the auction house has listed, the way Profit's rows do, so you can see
   at a glance whether your crafts will sell. It shows on the ladder and in the auction house tab.
 - Enchanting has no Disenchant mode of its own any more, in the window or in the auction house tab: the menu's

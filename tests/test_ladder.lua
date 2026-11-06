@@ -136,6 +136,31 @@ local bear = bearAt110({ [3397] = true })
 assert(bear.recipe == 3397 and bear.fromBags and bear.to == 118, "what you have first: Big Bear Steak 110-118")
 assert(bearAt110({}).recipe ~= 3397, "... not when its recipe has still to be bought")
 
+do
+-- Profit: the vendor group also holds what you can't make yet, after everything you can, marked with the skill it
+-- asks (and the level of the rank that would lift your cap to it). The auction house group stays what you can make.
+local prof = Ladder.Profits(data, { skill = 60, maxSkill = 150, faction = "H", level = 10, known = {}, owned = {} },
+    q, {})
+local now, soon, order, level = 0, 0, true, nil
+for i = 1, prof.vendorRows do
+    local r = prof.steps[i]
+    if r.needSkill then
+        soon = soon + 1
+        assert(r.needSkill > 60, "Profit: a row above your skill says which skill")
+        if r.needSkill > 150 then level = level or r.needLevel end
+    else
+        now = now + 1
+        order = order and soon == 0
+    end
+end
+assert(now > 0 and soon > 0, "Profit: the vendor group has both what you can make and what you can't yet")
+assert(order, "Profit: what you can make comes first")
+assert(level and level > 10, "Profit: a recipe above your cap says the level its rank asks")
+for i = prof.vendorRows + 1, #prof.steps do
+    assert(not prof.steps[i].needSkill, "Profit: the auction house group is only what you can make")
+end
+end
+
 -- camps: what a feature gives by level, as its tooltip says; the order a role wants them in, the other side's banner
 -- left out, rested experience only below 60
 local Camp = ns.Camp

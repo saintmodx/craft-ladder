@@ -277,9 +277,13 @@ local function printLadder(data)
         elseif s.kind == "profit" then
             if s.vendor and i == 1 then print("  |cffffd200Sell to a vendor:|r") end
             if i == ladder.vendorRows + 1 then print("  |cffffd200Sell at the auction house:|r") end
-            print(("  %s%s|r%s: one craft costs %s, sells for about %s - |cff40c040+%s|r (%s)%s"):format(
-                s.color ~= "grey" and COLORS[s.color] or "", data.recipes[s.recipe].name, s.made > 1 and (" x" .. s.made) or "", ns.Money(s.cost), ns.Money(s.back),
-                ns.Money(s.profit), s.vendor and "at a vendor" or (s.listed .. " listed"), s.payback and
+            print(("  %s%s|r%s: one craft costs %s, sells for about %s - |cff40c040+%s|r (%s)%s%s"):format(
+                s.needSkill and "|cffff4040" or s.color ~= "grey" and COLORS[s.color] or "",
+                data.recipes[s.recipe].name, s.made > 1 and (" x" .. s.made) or "", ns.Money(s.cost), ns.Money(s.back),
+                ns.Money(s.profit), s.vendor and "at a vendor" or (s.listed .. " listed"),
+                s.needSkill and (" |cffff4040needs %s %d%s|r"):format(data.name, s.needSkill,
+                    s.needLevel and (", level " .. s.needLevel) or "") or "",
+                s.payback and
                 (", learn it for %s: pays back after %d %s"):format(ns.Money(s.learn.cost), s.payback,
                     s.payback == 1 and "craft" or "crafts") or ""))
         elseif s.kind == "mine" then
@@ -312,8 +316,11 @@ local function printLadder(data)
         chat(("food for your class, %d dishes (grey: above your level)."):format(#ladder.steps))
         return
     elseif ladder.steps[1] and ladder.steps[1].kind == "profit" then
-        chat(("%d sell to a vendor for more than they cost, %d earn at the auction house (per craft, at today's" ..
-            " prices)."):format(ladder.vendorRows, #ladder.steps - ladder.vendorRows))
+        local soon = 0
+        for _, s in ipairs(ladder.steps) do if s.needSkill then soon = soon + 1 end end
+        chat(("%d sell to a vendor for more than they cost%s, %d earn at the auction house (per craft, at today's" ..
+            " prices)."):format(ladder.vendorRows, soon > 0 and (" (%d of them above your skill)"):format(soon) or "",
+            #ladder.steps - ladder.vendorRows))
         return
     elseif data.resale and ladder.mode == "gold" then
         chat("nothing you can make earns at today's prices.")

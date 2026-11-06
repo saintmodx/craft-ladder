@@ -761,19 +761,31 @@ end
 --     player decides how many to make.
 -- An item can be in both when the auction house pays more. Ingredients are bought or made, whichever costs less, and
 -- what the character owns counts at its price too: it could sell it instead. A recipe it doesn't know yet says after
--- how many crafts it pays back.
+-- how many crafts it pays back. The vendor group also holds what the character can't make yet, after what it can
+-- (needSkill, needLevel): a vendor buys any number, so those are what to level towards. The auction house group
+-- stays what it can make now.
 -- Returns { from, to, mode = "gold", steps = the vendor rows then the auction house rows, best first in each,
 -- vendorRows = how many of them are first }; a row: { kind = "profit", recipe, crafts = 1, canCook = crafts the bags
 -- allow, made, buy, matCost, learn,
 -- sale, profit, cost, back, listed, payback = crafts that pay the recipe back, cooldown, vendor = in the first group,
--- color = the recipe's colour at the character's skill (grey: no skill-up) }.
+-- color = the recipe's colour at the character's skill (grey: no skill-up), needSkill = the skill it asks when above
+-- the character's, needLevel = the level the rank that would raise the cap to it asks }.
 function Ladder.Profits(data, state, quote, opts)
     local ctx = newContext(data, state, quote, opts or {})
+    -- the level a recipe above the character's cap really asks: the rank that would raise the cap to it
+    local function levelFor(rec)
+        for _, rank in ipairs(data.ranks or {}) do
+            if rank.cap >= rec.learn then
+                return rank.charLevel and rank.cap > (state.maxSkill or 0) and rank.charLevel > (state.level or 60)
+                    and rank.charLevel or nil
+            end
+        end
+    end
     local owned = ctx.owned
     ctx.owned = {} -- priced as if bought
     ctx.skill = state.skill or 0
     local vendorRows, ahRows = {}, {}
-    local function add(list, spell, rec, way, made, matCost, buy, sale, listed)
+    local function add(list, spell, rec, way, made, matCost, buy, sale, listed, needSkill)
         local profit = sale.total - matCost
         local _, canCook = haveCrafts({ owned = owned, vendor = ctx.vendor, faction = ctx.faction }, rec) -- the bags'
         list[#list + 1] = { kind = "profit", recipe = spell, from = ctx.skill, to = ctx.skill, crafts = 1, made = made,
@@ -781,11 +793,15 @@ function Ladder.Profits(data, state, quote, opts)
                             buy = buy, matCost = matCost, learn = way, sale = sale, profit = profit, cost = matCost,
                             back = sale.total, listed = listed, cooldown = rec.cooldown, vendor = list == vendorRows or nil,
                             color = Ladder.Color(rec.colors, ctx.skill),
+                            needSkill = needSkill, needLevel = needSkill and levelFor(rec) or nil,
                             payback = way.cost > 0 and math.ceil(way.cost / profit) or nil }
     end
     for spell, rec in pairs(data.recipes) do
-        local way = rec.makes and rec.learn <= ctx.skill and not ctx.toolRecipes[spell] and hasTools(ctx, rec)
-            and learnWay(ctx, spell, rec, ctx.skill) -- an enchantment makes nothing to sell
+        -- above the character's skill: still listed, to level towards. learnWay is asked without the skill then, or
+        -- a trainer who teaches it only from a higher skill would drop the recipe altogether.
+        local soon = rec.learn > ctx.skill and rec.learn or nil
+        local way = rec.makes and not ctx.toolRecipes[spell] and hasTools(ctx, rec)
+            and learnWay(ctx, spell, rec, not soon and ctx.skill or nil) -- an enchantment makes nothing to sell
         if way and way.cost > 0 and rec.item and (owned[rec.item] or 0) > 0 then
             way = { kind = "owned", cost = 0, item = rec.item }
         end
@@ -796,15 +812,17 @@ function Ladder.Profits(data, state, quote, opts)
             local _, e = quote(rec.makes, 1, 0, true)
             if vendorEach * made > matCost then
                 add(vendorRows, spell, rec, way, made, matCost, buy,
-                    { ah = 0, ahEach = 0, vendor = made, vendorEach = vendorEach, total = vendorEach * made }, e and e.qty)
+                    { ah = 0, ahEach = 0, vendor = made, vendorEach = vendorEach, total = vendorEach * made },
+                    e and e.qty, soon)
             end
-            if e and e.qty and e.qty >= 5 then
+            if not soon and e and e.qty and e.qty >= 5 then
                 local sale = resale(ctx, rec.makes, made, {})
                 if sale.ah > 0 and sale.total > matCost then add(ahRows, spell, rec, way, made, matCost, buy, sale, e.qty) end
             end
         end
     end
     local function best(a, b)
+        if (a.needSkill ~= nil) ~= (b.needSkill ~= nil) then return b.needSkill ~= nil end -- what you can make first
         if a.profit ~= b.profit then return a.profit > b.profit end
         return a.recipe < b.recipe
     end

@@ -517,10 +517,13 @@ local function fillRow(row, step, index)
         local rec = prof.recipes[step.recipe]
         row.icon:SetTexture(UI.ItemIcon(rec.makes))
         row.name:SetText(rec.name)
-        UI.SetColor(row.name, step.color ~= "grey" and STEP_COLOR[step.color] or C.text) -- grey: no skill-up, white
-        row.sub:SetText(("%s%s, %s%s%s%s"):format(step.made > 1 and ("makes " .. step.made .. ", ") or "",
+        -- red for what your skill (or the level its rank asks) can't reach yet; else the skill-up colour, grey white
+        UI.SetColor(row.name, step.needSkill and C.bad or step.color ~= "grey" and STEP_COLOR[step.color] or C.text)
+        row.sub:SetText(("%s%s, %s%s%s%s%s"):format(step.made > 1 and ("makes " .. step.made .. ", ") or "",
             ns.Money(step.back / step.made) .. " each", step.vendor and "at a vendor" or (step.listed .. " listed"),
             learnIcon(step.learn), -- a recipe to learn first: its card says how
+            step.needSkill and (" - " .. hex(C.bad) .. "skill " .. step.needSkill
+                .. (step.needLevel and (", lvl " .. step.needLevel) or "") .. "|r") or "",
             step.cooldown and (" - " .. hex(C.warn) .. "once in " .. wait(step.cooldown) .. "|r") or "",
             ns.Describe.Unconfirmed(rec, step.learn) and (" - " .. hex(C.warn) .. "unconfirmed|r") or ""))
     elseif step.kind == "disenchant" then
@@ -952,8 +955,8 @@ local function renderFooter()
             gather().verb:lower(), ns.Money(ladder.earn), ns.Money(ladder.perHour or 0), math.ceil(ladder.nodes),
             gather().many)
     elseif #ladder.steps > 0 and ladder.steps[1].kind == "profit" then
-        local best = 0
-        for _, s in ipairs(ladder.steps) do best = math.max(best, s.profit) end
+        local best = 0 -- the best you can make now: what's still above your skill doesn't count here
+        for _, s in ipairs(ladder.steps) do if not s.needSkill then best = math.max(best, s.profit) end end
         text = ("%s%d at the auction house; the best +%s a craft"):format(ladder.vendorRows > 0
             and (ladder.vendorRows .. " sell to a vendor, ") or "", #ladder.steps - ladder.vendorRows, ns.Money(best))
     elseif #ladder.steps > 0 and ladder.nodes then

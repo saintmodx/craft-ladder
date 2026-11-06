@@ -5,6 +5,14 @@ version numbers [Semantic Versioning](https://semver.org).
 
 ## Unreleased
 
+### Changed
+
+- Profit's "Sell to a vendor" group now also holds what you can't make yet, after everything you can: in red, with
+  the skill it asks and the character level of the rank that would lift your cap to it. A vendor buys any number, so
+  those are what the profession is worth levelling towards, and at low skill the group was usually empty. The
+  auction house group is unchanged, only what you can make now, and the auction house tab's shopping list skips the
+  rows you can't craft.
+
 ### Fixed
 
 - A reagent in your bags is free for one craft, not for the whole ladder: one your professions can make again

@@ -800,12 +800,18 @@ end
 local function profitDetail(step)
     local rec = prof.recipes[step.recipe]
     local sale = step.sale
-    headline(UI.ItemIcon(rec.makes), rec.name, step.color ~= "grey" and STEP_COLOR[step.color] or C.text,
+    headline(UI.ItemIcon(rec.makes), rec.name, step.needSkill and C.bad
+            or step.color ~= "grey" and STEP_COLOR[step.color] or C.text,
         ("One craft%s costs about %s and sells for about %s: %s+%s|r"):format(
             step.made > 1 and (" (makes " .. step.made .. ")") or "", ns.Money(step.cost), ns.Money(sale.total),
             hex(C.good), ns.Money(step.profit)),
         step.vendor and "Sold to a vendor: vendors buy any number." or
             ("%d listed at the auction house now: sell a few at a time."):format(step.listed))
+    if step.needSkill then
+        line(("Making it needs %s %d, and yours is %d%s. It's here to level towards."):format(prof.name,
+            step.needSkill, ladder.state.skill, step.needLevel and (("; the rank that lifts your cap to it asks" ..
+                " level %d, and you're %d"):format(step.needLevel, ladder.state.level)) or ""), C.bad)
+    end
     craftBar(step, rec)
     learnSection(step, rec)
     if step.payback then line(("Learning it pays back after %d %s."):format(step.payback, step.payback == 1 and "craft" or "crafts"), C.good) end

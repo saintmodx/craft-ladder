@@ -367,7 +367,7 @@ function AuctionTab.Refresh(cached)
             last.step = step
             last.steps[#last.steps + 1] = s
             last.rows = needs(ladder, last.steps, gold and crafts or 1)
-        elseif s.buy then
+        elseif s.buy and not s.needSkill then -- nothing to shop for a recipe your skill can't make yet
             entries[#entries + 1] = { step = s, steps = { s }, key = stepKey(s),
                                       rows = needs(ladder, { s }, gold and crafts or 1) }
         end

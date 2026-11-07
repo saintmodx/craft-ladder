@@ -12,6 +12,9 @@ version numbers [Semantic Versioning](https://semver.org).
   those are what the profession is worth levelling towards, and at low skill the group was usually empty. The
   auction house group is unchanged, only what you can make now, and the auction house tab's shopping list skips the
   rows you can't craft.
+- Disenchant is in the menu even when no character of yours has Enchanting yet: every row then says what
+  Enchanting it needs and its card opens as usual, so you can see what learning it would be worth before you
+  learn it.
 - At 300 in a profession the Vendor sales and AH sales buttons are gone: there is nothing left to level with them,
   so Profit and Specialization take their place. A mode picked before 300 isn't kept either.
 

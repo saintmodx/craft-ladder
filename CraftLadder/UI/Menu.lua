@@ -97,14 +97,12 @@ function Menu.Render(frame, prof)
         end
         if not first then y = y - 8 end
     end
-    -- Disenchant, after the professions: the whole account's, so it shows while any character of yours enchants
-    local enchants = #ns.Disenchant.Enchanters(ns.ENCHANTING) > 0
-    menu.de:SetShown(enchants)
-    if enchants then
-        menu.de:SetPoint("TOPLEFT", 6, y)
-        menu.de.active = ns.Player.Saved().tab == "disenchant" and not me
-        paintEntry(menu.de)
-    end
+    -- Disenchant, after the professions: the whole account's, and there without an enchanter too - every row then
+    -- says what Enchanting it needs, which is what makes learning it worth it
+    menu.de:SetShown(true)
+    menu.de:SetPoint("TOPLEFT", 6, y)
+    menu.de.active = ns.Player.Saved().tab == "disenchant" and not me
+    paintEntry(menu.de)
     menu.camp.active = ns.Player.Saved().tab == "camp" and not me
     menu.camp:SetShown(not me) -- Camp reads your bags and level: not for another character
     paintEntry(menu.camp)

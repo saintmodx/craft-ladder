@@ -1208,6 +1208,16 @@ do
     mock.click(tab("firstaid"))
     expect("a profession picked again: the ladder back, Disenchant no longer the view",
         ns.Player.Me().tab == "firstaid" and frame.list.shown)
+    -- no Enchanting on the account: the view is there all the same, and its rows say what Enchanting they need
+    expect("... Disenchant stays in the menu without an enchanter", frame.menu.de:IsShown())
+    mock.click(frame.menu.de)
+    expect("... and its line says nobody of yours enchants yet", strip(frame.subtitle.text):find(
+        "^Disenchant, your whole account: no character of yours has Enchanting yet") ~= nil)
+    mock.click(rows()[1])
+    expect("... a row's card is its own, not \"No Enchanting yet\"",
+        strip(frame.detail.head.title.text) ~= "No Enchanting yet"
+        and strip(frame.detail.head.title.text) == ns.Describe.ItemName(rows()[1].step.item))
+    mock.click(tab("firstaid"))
 end
 mock.click(tab("firstaid"))
 

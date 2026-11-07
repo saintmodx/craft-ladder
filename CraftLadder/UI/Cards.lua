@@ -1593,7 +1593,9 @@ local function renderDetail()
         favorDetail(step)
     elseif selected == 0 and prof.doors then
         locksDetail()
-    elseif state.maxSkill == 0 and not prof.levelCaps then -- Lockpicking's ladder starts with learning Pick Lock
+    -- Lockpicking's ladder starts with learning Pick Lock; the account's Disenchant doesn't: its rows stand without
+    -- an Enchanting of your own, each saying what it would need
+    elseif state.maxSkill == 0 and not prof.levelCaps and not ladder.account then
         headline(prof.icon, "No " .. prof.name .. " yet", C.gold,
             ("Any %s trainer teaches Apprentice %s."):format(prof.name, prof.name), "")
     elseif not step and ladder.account then

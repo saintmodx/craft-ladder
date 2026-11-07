@@ -199,11 +199,15 @@ function M.install(fx, ns)
     M.class, M.race, M.lockpicking, M.poisons = "WARRIOR", "Orc", { skill = 0, maxSkill = 0 }, { skill = 0, maxSkill = 0 }
     UnitClass = function() return M.class, M.class end
     UnitRace = function() return M.race, M.race end
-    GetNumSkillLines = function() return 2 end
-    GetSkillLineInfo = function(i)
-        local name, s = unpack(i == 1 and { "Lockpicking", M.lockpicking } or { "Poisons", M.poisons })
-        return name, false, nil, s.skill, nil, nil, s.maxSkill
-    end
+    -- the Forever client's skill list (a header, then the two skills), what C_SkillInfo gives
+    C_SkillInfo = {
+        GetNumSkillLines = function() return 3 end,
+        GetSkillLineInfo = function(i)
+            if i == 1 then return { isHeader = true, isCollapsed = false, skillID = 0 } end
+            local s = i == 2 and M.lockpicking or M.poisons
+            return { isHeader = false, skillID = i == 2 and 633 or 40, rank = s.skill, maxRank = s.maxSkill }
+        end,
+    }
     UnitGUID = function() return "Player-TEST" end
     UnitName = function() return fx.name end
     GetRealmName = function() return "Test" end

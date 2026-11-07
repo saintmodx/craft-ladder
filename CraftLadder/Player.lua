@@ -51,11 +51,14 @@ function Player.Skill(data, live)
             end
         end
     end
-    if GetNumSkillLines and GetSkillLineInfo then
-        local name = localName(data)
-        for i = 1, GetNumSkillLines() do
-            local lineName, isHeader, _, rank, _, _, maxRank = GetSkillLineInfo(i)
-            if not isHeader and lineName == name then return rank or 0, maxRank or 0 end
+    -- Lockpicking and Poisons are no professions: the Skills window's lines have them, by their skill line id
+    local lines = C_SkillInfo
+    if lines and lines.GetNumSkillLines and lines.GetSkillLineInfo then
+        for i = 1, lines.GetNumSkillLines() or 0 do
+            local line = lines.GetSkillLineInfo(i)
+            if line and not line.isHeader and line.skillID == data.skillLine then
+                return line.rank or 0, line.maxRank or 0
+            end
         end
     end
     return 0, 0

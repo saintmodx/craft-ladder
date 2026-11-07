@@ -15,6 +15,9 @@ version numbers [Semantic Versioning](https://semver.org).
 
 ### Fixed
 
+- Lockpicking and Poisons now show the skill the game shows. The window read the skill list through an API
+  this client doesn't have, so a rogue's Lockpicking sat at 0 however much it was levelled, and its ladder
+  with it; Poisons the same.
 - A reagent in your bags is free for one craft, not for the whole ladder: one your professions can make again
   (Light Leather, bars, bolts of cloth) now counts at what having it again will cost when recipes are compared.
   With 48 Light Leather, Leatherworking planned Handstitched Leather Vests, 3 leather a point, because the leather

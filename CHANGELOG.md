@@ -3,6 +3,13 @@
 What's new in Craft Ladder, newest first. The format follows [Keep a Changelog](https://keepachangelog.com), the
 version numbers [Semantic Versioning](https://semver.org).
 
+## Unreleased
+
+### Added
+
+- Profit's rows say where the craft turns its next colour - "yellow 90" - and its card lists them all: orange from 1,
+  yellow 90, green 110, grey 130. Earning and levelling at once: now you can see how long a craft keeps giving points.
+
 ## 1.7.0 - 2026-11-07
 
 ### Changed

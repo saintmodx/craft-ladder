@@ -110,6 +110,18 @@ local function lastScan() return select(2, ns.Prices.Source()) end
 
 local function hex(c) return UI.Hex(c) end
 
+-- Where a recipe turns its next colour: " - yellow 90", nothing once it's grey. A colour the data has as 0 is
+-- skipped, the way Ladder's thresholds do. Profit's rows, whose own colour doesn't say how long it keeps giving points.
+local function turnsAt(colors, skill)
+    local names = { "yellow", "green", "grey" }
+    for i = 2, 4 do
+        if (colors[i] or 0) > 0 and skill < colors[i] then
+            return (" - %s%s %d|r"):format(hex(STEP_COLOR[names[i - 1]]), names[i - 1], colors[i])
+        end
+    end
+    return ""
+end
+
 -- What a step earns (green, "+") or costs (red, "-"); nothing either way: plain.
 local function signed(copper)
     local c = math.floor(copper + 0.5)
@@ -519,9 +531,10 @@ local function fillRow(row, step, index)
         row.name:SetText(rec.name)
         -- red for what your skill (or the level its rank asks) can't reach yet; else the skill-up colour, grey white
         UI.SetColor(row.name, step.needSkill and C.bad or step.color ~= "grey" and STEP_COLOR[step.color] or C.text)
-        row.sub:SetText(("%s%s, %s%s%s%s%s"):format(step.made > 1 and ("makes " .. step.made .. ", ") or "",
+        row.sub:SetText(("%s%s, %s%s%s%s%s%s"):format(step.made > 1 and ("makes " .. step.made .. ", ") or "",
             ns.Money(step.back / step.made) .. " each", step.vendor and "at a vendor" or (step.listed .. " listed"),
             learnIcon(step.learn), -- a recipe to learn first: its card says how
+            turnsAt(rec.colors, ladder.state.skill), -- when it stops giving points
             step.needSkill and (" - " .. hex(C.bad) .. "skill " .. step.needSkill
                 .. (step.needLevel and (", lvl " .. step.needLevel) or "") .. "|r") or "",
             step.cooldown and (" - " .. hex(C.warn) .. "once in " .. wait(step.cooldown) .. "|r") or "",

@@ -812,6 +812,7 @@ local function profitDetail(step)
             step.needSkill, ladder.state.skill, step.needLevel and (("; the rank that lifts your cap to it asks" ..
                 " level %d, and you're %d"):format(step.needLevel, ladder.state.level)) or ""), C.bad)
     end
+    line(colorsText(rec.colors), C.muted) -- where it turns yellow, green and grey
     craftBar(step, rec)
     learnSection(step, rec)
     if step.payback then line(("Learning it pays back after %d %s."):format(step.payback, step.payback == 1 and "craft" or "crafts"), C.good) end

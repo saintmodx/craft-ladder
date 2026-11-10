@@ -950,6 +950,20 @@ end
 expect("Engineering Gold: what earns at the auction house, the best first", ahRow and ahRow.step.kind == "profit"
     and strip(ahRow.cost.text):find("^%+") and ahRow.step.color)
 expect("... no ladder, no range", not frame.range:IsShown() and not frame.bar.rankHits[3]:IsShown())
+do -- every row says where its recipe turns its next colour; one already grey says nothing
+    local names, skill, seen, wrong = { "yellow", "green", "grey" }, fx.engineering.skill, 0, 0
+    for _, r in ipairs(rows()) do
+        local colors, at, name = ns.ENGINEERING.recipes[r.step.recipe].colors
+        for i = 2, 4 do
+            if not at and colors[i] > 0 and skill < colors[i] then at, name = colors[i], names[i - 1] end
+        end
+        local sub = strip(r.sub.text)
+        if at and not sub:find(" %- " .. name .. " " .. at) then wrong = wrong + 1
+        elseif at then seen = seen + 1
+        elseif sub:find(" %- grey %d") then wrong = wrong + 1 end
+    end
+    expect("... and where the recipe turns yellow, green or grey next", seen > 0 and wrong == 0)
+end
 local toLearn
 for _, r in ipairs(rows()) do if r.step.kind == "profit" and r.step.learn.cost > 0 then toLearn = toLearn or r end end
 expect("... a recipe still to learn: the icon of where, no words to cut off", toLearn

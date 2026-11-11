@@ -114,6 +114,18 @@ local function playerFaction()
     return UnitFactionGroup("player") == "Alliance" and "A" or "H"
 end
 
+-- Your faction's auction house at AuctionDB ("Horde", as its own calls name it) and when it last scanned there, or
+-- nil without AuctionDB. Its saved data is keyed by realm and ruleset in front of that name ("eu-forever-pvp Horde"),
+-- which only SavedHouse knows how to build: reading sv.houses by the bare name finds nothing.
+local function auctionDBHouse()
+    local adb = _G.AuctionDB
+    if not (adb and adb.LastPrice and adb.sv and adb.sv.houses) then return end
+    local house = adb.PlayerHouse and adb:PlayerHouse() or UnitFactionGroup("player")
+    local h = adb.SavedHouse and adb:SavedHouse(house) or adb.sv.houses[house]
+    local last = h and h.scans and h.scans[#h.scans]
+    return house, last and last[1]
+end
+
 -- AuctionDB: its own LastPrice for the item at your faction's auction house, and when its last full scan ran
 -- (an item missing from that scan wasn't listed any more).
 -- Read once per scan: an item's prices are the end of a long history string, and a ladder looks up hundreds.
@@ -121,12 +133,8 @@ end
 local seen, seenScan, seenHouse = {}, nil, nil
 local function fromAuctionDB(item)
     local adb = _G.AuctionDB
-    if not (adb and adb.LastPrice and adb.sv and adb.sv.houses) then return end
-    local house = adb.PlayerHouse and adb:PlayerHouse() or UnitFactionGroup("player")
-    local h = adb.sv.houses[house]
-    local scans = h and h.scans
-    local last = scans and scans[#scans]
-    local scan = last and last[1]
+    local house, scan = auctionDBHouse()
+    if not house then return end
     if scan ~= seenScan or house ~= seenHouse then seen, seenScan, seenHouse = {}, scan, house end
     local rec = seen[item]
     if rec == nil then
@@ -162,13 +170,8 @@ end
 
 -- Which auction house data is there: "AuctionDB", "Auctionator" or nil, and when it last scanned.
 function Prices.Source()
-    local adb = _G.AuctionDB
-    if adb and adb.LastPrice and adb.sv and adb.sv.houses then
-        local house = adb.PlayerHouse and adb:PlayerHouse() or UnitFactionGroup("player")
-        local h = adb.sv.houses[house]
-        local last = h and h.scans and h.scans[#h.scans]
-        return "AuctionDB", last and last[1]
-    end
+    local house, scan = auctionDBHouse()
+    if house then return "AuctionDB", scan end
     if Auctionator and Auctionator.API and Auctionator.API.v1 then
         -- Auctionator keeps the time of its last scan of either kind (the full one and the browse "summary" one)
         local st = Auctionator.SavedState

@@ -272,10 +272,13 @@ function M.install(fx, ns)
     for item, e in pairs(bs.ah) do items[item] = { e } end
     for item, e in pairs(fa.ah) do items[item] = { e } end
     for item, e in pairs(fx.ah) do items[item] = { e } end
+    -- as the real AuctionDB keys its saved houses: the realm and ruleset in front of the faction's name
+    local houseKey = "eu-forever-pvp " .. UnitFactionGroup()
     AuctionDB = {
-        sv = { houses = { [UnitFactionGroup()] = { items = items, scans = { { fx.scanTs, 0, 0 } } } } },
+        sv = { houses = { [houseKey] = { items = items, scans = { { fx.scanTs, 0, 0 } } } } },
+        SavedHouse = function(self, name) return self.sv.houses["eu-forever-pvp " .. name] end,
         LastPrice = function(self, item, house)
-            local h = self.sv.houses[house].items[item]
+            local h = self:SavedHouse(house).items[item]
             return h and h[#h]
         end,
         PlayerHouse = function() return UnitFactionGroup() end,

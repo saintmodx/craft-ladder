@@ -1070,7 +1070,7 @@ fx.alchemy.skill, fx.alchemy.maxSkill = 0, 0
 local function hoDisenchant(on)
     local hoT = dofile(root .. "tests/fixtures/ho_tailoring.lua")
     local hoE = dofile(root .. "tests/fixtures/ho_enchanting.lua")
-    local house = AuctionDB.sv.houses[UnitFactionGroup()]
+    local house = AuctionDB:SavedHouse(UnitFactionGroup())
     for _, ah in ipairs({ hoT.ah, hoE.ah }) do
         for item, e in pairs(ah) do
             if on and not house.items[item] then house.items[item] = { e, ho = true }
@@ -1087,7 +1087,7 @@ do
     hoDisenchant(true)
     -- a green sword (no recipe makes it) listed for 1s at Ho's last scan: worth buying to disenchant
     local sword = 15210
-    AuctionDB.sv.houses[UnitFactionGroup()].items[sword] = { { 1792000916, 100, 150, 3 }, ho = true }
+    AuctionDB:SavedHouse(UnitFactionGroup()).items[sword] = { { 1792000916, 100, 150, 3 }, ho = true }
     -- Zug, another character of the account: its snapshot's bags hold a green nobody crafts, bound when picked up
     local bop
     for item in pairs(ns.DISENCHANT.bop) do
@@ -1444,7 +1444,7 @@ ticker.fn()
 expect("the countdown ticks without a recalculation", strip(frame.nextScan.text):find("when you open"))
 -- the prices' age, on top: quiet while fresh, a nudge after 3 h, a warning after 12 h
 do
-    local realTime, scanTs = time, AuctionDB.sv.houses[UnitFactionGroup()].scans[1][1]
+    local realTime, scanTs = time, AuctionDB:SavedHouse(UnitFactionGroup()).scans[1][1]
     local function at(age) time = function() return scanTs + age end; ticker.fn(); return strip(frame.prices.text) end
     expect("prices on top, centred", frame.prices.point[1] == "TOP")
     expect("fresh prices: quiet", at(1800):find("^Prices: AuctionDB, scanned %d+:%d+ %(30m ago%)$"))
@@ -1456,7 +1456,7 @@ do
 end
 -- AuctionDB scans again while the window is open: the ladder calculated again with its prices, once
 do
-    local scans, calc, n = AuctionDB.sv.houses[UnitFactionGroup()].scans, ns.Calculate, 0
+    local scans, calc, n = AuctionDB:SavedHouse(UnitFactionGroup()).scans, ns.Calculate, 0
     ns.Calculate = function(...) n = n + 1; return calc(...) end
     ticker.fn()
     local before = n
@@ -1688,7 +1688,7 @@ expect("... and Skill: the window's ladder again", not bsProf.favorView and bsPr
     and not ahPanel.modes[4].active and mock.shownChildren(ahPanel.scroll.child, "entry")[1].entry.step.kind ~= "favor")
 -- AuctionDB scans again while the tab is open: its ladder calculated again with its prices, once
 do
-    local scans, calc, n = AuctionDB.sv.houses[UnitFactionGroup()].scans, ns.Calculate, 0
+    local scans, calc, n = AuctionDB:SavedHouse(UnitFactionGroup()).scans, ns.Calculate, 0
     ns.Calculate = function(...) n = n + 1; return calc(...) end
     ahPanel.ticker.fn()
     local before = n

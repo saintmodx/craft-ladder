@@ -90,8 +90,14 @@ local function learnWay(ctx, spell, rec, skill)
         end
     end
     if rec.item then
+        local other = best -- the cheapest way that isn't the auction house, kept as the card's second line
         local p = ctx.quote(rec.item, 1, 0, true)
-        if p then consider({ kind = "ah", cost = p, item = rec.item }) end
+        if p then
+            local ah = { kind = "ah", cost = p, item = rec.item }
+            consider(ah)
+            -- both are worth knowing: an auction may be gone by the time you fly there, a vendor may be far
+            if best == ah then best.alt = other else best.alt = ah end
+        end
     end
     return best
 end
@@ -392,8 +398,16 @@ local function rankStep(ctx, rank, skill)
         end
         step.vendor = best and best.npc
         local real = rank.item and ctx.real[rank.item]
-        step.cost = real or best and best.cost or rank.cost or 0
+        step.vendorCost = real or best and best.cost or rank.cost
+        step.cost = step.vendorCost or 0
         step.guess = not real and best and best.costGuess or nil
+        local ah = rank.item and ctx.quote(rank.item, 1, 0, true)
+        if ah then
+            step.ahCost = ah
+            if not step.vendorCost or ah < step.vendorCost then
+                step.cost, step.guess, step.fromAH = ah, nil, true
+            end
+        end
     elseif rank.how == "trainer" or rank.how == "quest" then
         step.cost = rank.cost or 0 -- a quest's cost: what's paid after it (Nat Pagle's fee for Artisan Fishing)
     end

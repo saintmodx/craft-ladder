@@ -3,6 +3,15 @@
 What's new in Craft Ladder, newest first. The format follows [Keep a Changelog](https://keepachangelog.com), the
 version numbers [Semantic Versioning](https://semver.org).
 
+## Unreleased
+
+### Added
+
+- A recipe or a profession book a vendor sells now also says what the auction house asks for it - "Or buy it at the
+  auction house: 1g 20s" - so you can skip the flight when someone listed one. The ladder still counts the cheaper
+  of the two, and a book nobody of your side sells is now priced from the auction house instead of counting as
+  free.
+
 ## 1.9.0 - 2026-11-11
 
 ### Added

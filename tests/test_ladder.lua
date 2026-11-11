@@ -208,7 +208,18 @@ local l5 = Ladder.Build(fa, { skill = 125, maxSkill = 150, target = 300, faction
     { realPrices = { [16084] = 9000 } })
 local expert
 for _, s in ipairs(l5.steps) do if s.kind == "rank" and s.rank.name == "Expert" then expert = s end end
-check("Expert First Aid: the price the vendor asked", expert and expert.cost or -1, 9000)
+check("Expert First Aid: the price the vendor asked", expert and expert.vendorCost or -1, 9000)
+-- the book is listed at the auction house for less here: the ladder counts that and the card says both
+check("... and the auction house when it lists the book cheaper", expert and expert.cost or -1, 50)
+assert(expert and expert.fromAH, "the step says the auction house is the cheaper way to the book")
+-- a recipe you can both buy from a vendor and find at the auction house keeps the other way for the card
+do
+    local twoWays
+    for _, s in ipairs(l5.steps) do if s.learn and s.learn.alt then twoWays = s break end end
+    assert(twoWays, "a recipe with both ways keeps the second one")
+    assert(twoWays.learn.kind ~= twoWays.learn.alt.kind, "the second way isn't the one the ladder counts")
+end
+
 assert(expert and not expert.guess, "a real price isn't a guess")
 
 -- Fishing: Classic's skill-up rule, fish that get away, and lures in the bags used first

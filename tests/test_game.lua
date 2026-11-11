@@ -206,6 +206,23 @@ expect("no 'open the Cooking window' note now", not frame.list.note:IsShown())
 expect("footer shows the total, and what selling the dishes brings back", strip(frame.total.text):find("^Spend")
     and strip(frame.total.text):find("back from sales"))
 expect("header shows the price source", strip(frame.prices.text):find("AuctionDB"))
+-- a recipe a vendor sells that the auction house lists too: the card offers both, whichever the ladder counts
+do
+    mock.click(tab("firstaid"))
+    local both
+    for _, r in ipairs(rows()) do
+        local s = r.step
+        if s and s.learn and s.learn.kind == "vendor" and s.learn.alt then both = r break end
+    end
+    expect("First Aid: a recipe sold by a vendor and listed at the auction house", both ~= nil)
+    mock.click(both)
+    local said
+    for _, f in ipairs(mock.shownChildren(frame.detail.scroll.child, "text")) do
+        if strip(f.text.text or ""):find("^Or buy it at the auction house: ") then said = true end
+    end
+    expect("... its card names the auction house beside the vendor", said)
+    mock.click(tab("cooking"))
+end
 
 -- a search at the auction house (yours, Auctionator's Shopping tab or the game's Buy tab): it sees every auction of
 -- that item, so its prices beat the last scan's until a scan passes them

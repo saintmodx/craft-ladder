@@ -610,6 +610,10 @@ local function learnSection(step, rec)
         line(ns.Describe.Learn(way, prof):gsub("^%l", string.upper) .. ".",
             way.kind == "known" and not way.earlier and C.good or C.text)
     end
+    if way.alt then -- the other way to get it: the ladder counts the cheaper one, you may prefer the other
+        line(way.alt.kind == "ah" and ("Or buy it at the auction house: %s."):format(ns.Money(way.alt.cost))
+            or ("Or " .. ns.Describe.Learn(way.alt, prof) .. "."), C.muted)
+    end
     for _, g in ipairs(rec.get) do -- a holiday's way, never the ladder's: where to get one then
         if g.event and way.kind ~= "known" then
             line(("During %s: %s."):format(g.event, ns.Describe.Learn(g, prof)), C.muted)
@@ -1035,6 +1039,14 @@ local function rankDetail(step)
         for _, v in ipairs(rank.vendors or {}) do
             if v.faction:find(ladder.state.faction, 1, true) then
                 placeRow(v.npc, ns.Describe.Price(real or v.cost, not real and v.costGuess))
+            end
+        end
+        if step.ahCost then
+            if not step.vendorCost then -- nobody on your side sells it: the auction house is the way
+                line(("At the auction house: %s."):format(ns.Money(step.ahCost)), C.text)
+            else
+                line(("Or buy it at the auction house: %s.%s"):format(ns.Money(step.ahCost),
+                    step.fromAH and " Cheaper than the vendor, so the ladder counts this one." or ""), C.muted)
             end
         end
     elseif rank.how == "quest" then

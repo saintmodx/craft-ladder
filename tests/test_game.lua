@@ -249,8 +249,8 @@ expect("hovering a recipe option shows its dish", hover(opt) == ns.COOKING.recip
 expect("hovering an ingredient shows it", hover(items()[1]) == items()[1].item)
 
 -- a vendor's recipe, with map pins
-mock.click(rows()[4])
-expect("click shows Crispy Lizard Tail", strip(frame.detail.head.title.text) == "Crispy Lizard Tail")
+mock.click(rows()[1])
+expect("click shows Strider Stew", strip(frame.detail.head.title.text) == "Strider Stew")
 expect("Horde vendors listed with pins", #places() >= 1)
 mock.click(places()[1])
 expect("clicking a vendor sets a map pin", #mock.waypoints == 1 and mock.waypoints[1].map ~= nil)
@@ -259,10 +259,10 @@ expect("clicking a vendor sets a map pin", #mock.waypoints == 1 and mock.waypoin
 local function folds() return mock.shownChildren(frame.detail.scroll.child, "key") end
 local sage
 for spell, rec in pairs(ns.COOKING.recipes) do if rec.name == "Smoked Sagefish" then sage = spell end end
-local step = rows()[4].step
+local step = rows()[1].step
 local wasRecipe, wasLearn = step.recipe, step.learn
 step.recipe, step.learn = sage, { kind = "vendor", cost = 150 }
-mock.click(rows()[4])
+mock.click(rows()[1])
 local vendors = #ns.Describe.Vendors(ns.COOKING, sage, "H", ns.db.favor)
 expect("a recipe many vendors sell: 4 of them, the rest folded away", vendors > 4 and #places() == 4
     and #folds() == 1 and strip(folds()[1].text.text) == ("and %d more vendors"):format(vendors - 4))
@@ -1199,7 +1199,7 @@ do
     SlashCmdList.CRAFTLADDER("chat disenchant")
     expect("... and in chat, with every group, what it brings and whose each row is",
         said("In bags and banks %(%d+") and said("Buy and disenchant %(%d+, about ")
-        and said("Craft and disenchant %(%d+, about ") and said("Disenchant, your account")
+        and said("Craft and disenchant %(%d+") and said("Disenchant, your account")
         and said("%(Zug, bags%)"))
     -- a disenchant: the item the game locked while casting, what the loot window gave
     GetTime = function() return 1000 end

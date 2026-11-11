@@ -16,14 +16,12 @@ function Prices.Vendor(itemID, faction, real)
     if p then return p, { source = "vendor" } end
 end
 
--- Total for the first n items bought. AuctionDB keeps the lowest price, the median (the middle price: half the items
--- listed cost less) and how many are listed, not every listing. So the list is taken as rising evenly from the
--- lowest price (the 1st item) to the median (the middle item): the more you buy, the more each one costs.
+-- Total for the first n items bought. AuctionDB keeps the lowest price, the median (half of what's listed costs less)
+-- and how many are listed, not every listing. Buying goes at the median, not at the lowest price: the lowest is one
+-- auction, often a single cheap one that someone bought minutes after the scan, while a cheap price with real stock
+-- behind it pulls the median down with it. (At the whole stock both come to the same money.)
 local function total(e, n)
-    if e.qty and e.qty > 0 and e.median > e.min then
-        return n * e.min + (e.median - e.min) * n * n / e.qty
-    end
-    return n * e.unit
+    return n * (e.median or e.unit)
 end
 
 -- A price lookup for one calculation. Every item is looked up once and remembered until the next calculation.
@@ -33,7 +31,8 @@ end
 -- Returns two functions:
 --   quote(item, n, already, ahOnly) -> copper for buying n more when `already` were bought earlier in the ladder
 --     (or nil: no price), and the price entry. ahOnly: only the auction house (for recipe items).
---   lookup(item, ahOnly) -> price entry { source, unit = lowest price per item, min, median, qty, ts, listed }
+--   lookup(item, ahOnly) -> price entry { source, unit = lowest price per item, min, median (what buying goes at),
+--     qty, ts, listed }
 function Prices.Make(src)
     local memo = {}
     local function lookup(item, ahOnly)
@@ -96,7 +95,9 @@ function Prices.Worth(data, quote, values, item)
         for inside, share in pairs(box.items) do v = v + share * Prices.Worth(data, quote, values, inside) end
         how = "contents"
     else
-        local price, e = quote(item, 1, 0, true)
+        -- selling goes at the lowest price listed, the one to undercut, not at the median buying pays
+        local _, e = quote(item, 1, 0, true)
+        local price = e and (e.min or e.unit)
         if price and (not e.qty or e.qty >= 5) then v, how = price * AH_CUT, "auction" end
         local sell = data.sell and data.sell[item] or 0
         if sell > v then v, how = sell, "vendor" end

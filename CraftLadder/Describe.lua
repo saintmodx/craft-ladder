@@ -108,15 +108,17 @@ function D.Vendors(data, spell, faction, favorOK)
     return list
 end
 
--- Where an ingredient's price came from: "vendor, 36c each" / "auction house, 9c-10c each, 1018 listed".
+-- Where an ingredient's price came from: "vendor, 36c each" / "auction house, 10c each (cheapest listed 9c),
+-- 1018 listed". The ladder pays the median, so that is the price named; the cheapest listing is one auction.
 function D.PriceSource(e)
     if not e then return "no price: not in your last auction house scan" end
     if e.source == "vendor" then
         return (e.real and "vendor (what you paid), " or "vendor, ") .. ns.Money(e.unit) .. " each"
     end
     if e.source == "auctionDB" then
-        local each = e.median > e.min and (ns.Money(e.min) .. " - " .. ns.Money(e.median)) or ns.Money(e.min)
-        return ("auction house, %s each, %d listed%s"):format(each, e.qty or 0, e.listed and "" or ", not in the last scan")
+        local each = ns.Money(e.median) .. " each"
+            .. (e.median > e.min and (" (cheapest listed " .. ns.Money(e.min) .. ")") or "")
+        return ("auction house, %s, %d listed%s"):format(each, e.qty or 0, e.listed and "" or ", not in the last scan")
     end
     if e.source == "auctionator" then return "auction house (Auctionator), " .. ns.Money(e.unit) .. " each" end
     return ""

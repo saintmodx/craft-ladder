@@ -196,6 +196,24 @@ function Prices.Source()
     return second()
 end
 
+-- How old Auctionator's prices are, in days (0: today), or nil. It keeps no time of day, only the day it last saw a
+-- price for an item, so the age is the freshest of a handful of goods every auction house lists. Asked at most once
+-- a minute: the header draws every second.
+local STAPLES = { 2589, 2770, 2318, 2447, 4306 } -- Linen Cloth, Copper Ore, Light Leather, Peacebloom, Silk Cloth
+local staleDays, askedAt = nil, nil
+function Prices.AuctionatorAge()
+    local api = Auctionator and Auctionator.API and Auctionator.API.v1
+    if not (api and api.GetAuctionAgeByItemID) then return end
+    local now = time()
+    if askedAt and now - askedAt < 60 then return staleDays end
+    askedAt, staleDays = now, nil
+    for _, item in ipairs(STAPLES) do
+        local ok, days = pcall(api.GetAuctionAgeByItemID, ADDON, item)
+        if ok and days and (not staleDays or days < staleDays) then staleDays = days end
+    end
+    return staleDays
+end
+
 -- AuctionDB's next full scan, as its own "AHDB Scan" button counts it: "scanning", or "wait" and the seconds until
 -- it may scan again (0: the next time you open the auction house). nil without AuctionDB.
 function Prices.NextScan()

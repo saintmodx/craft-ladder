@@ -941,9 +941,18 @@ local function renderPrices()
                 date("%H:%M", scanned), ns.Age(scanned)))
         end
     else
-        frame.prices:SetText(hex(C.muted) .. "Prices: " .. source .. "|r")
+        -- Auctionator without a scan of its own: it dates its prices by the day, not the hour
+        local days = source == "Auctionator" and ns.Prices.AuctionatorAge()
+        local when = days and (days == 0 and "today" or days == 1 and "yesterday"
+            or ("%d days ago"):format(days))
+        frame.prices:SetText(when
+            and (hex(days >= 2 and C.warn or C.muted)
+                .. ("Prices: Auctionator, newest prices from %s|r"):format(when))
+            or (hex(C.muted) .. "Prices: " .. source .. "|r"))
     end
-    local text, state = ns.Describe.NextScan()
+    -- AuctionDB's countdown belongs to AuctionDB's prices: nothing to wait for while Auctionator's are read
+    local text, state
+    if source == "AuctionDB" then text, state = ns.Describe.NextScan() end
     frame.nextScan:SetText(text and (hex(state == "wait" and C.muted or C.good) .. text .. "|r") or "")
 end
 

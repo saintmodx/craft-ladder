@@ -1892,7 +1892,17 @@ local _, lookupPicked = ns.Prices.ForGame()
 local pickedPrice = lookupPicked(999002, true)
 expect("... the Settings menu's Auctionator is read even with AuctionDB installed",
     (ns.Prices.Source()) == "Auctionator" and pickedPrice and pickedPrice.min == 500)
+-- Auctionator keeps no time of day, only the day it last saw a price: with no scan of its own the header dates its
+-- prices by the day, and AuctionDB's countdown goes (its prices aren't the ones read)
+Auctionator.SavedState = {}
+Auctionator.API.v1.GetAuctionAgeByItemID = function(_, item) return item == 2589 and 2 or nil end
+ticker.fn()
+expect("Auctionator with no scan of its own: the header dates its prices by the day",
+    strip(frame.prices.text) == "Prices: Auctionator, newest prices from 2 days ago")
+expect("... and AuctionDB's countdown is hidden while Auctionator is read", strip(frame.nextScan.text) == "")
 CraftLadderDB.prices = nil
+ticker.fn()
+expect("... back on AuctionDB: its countdown is there again", strip(frame.nextScan.text):find("^Next AuctionDB scan"))
 Auctionator = nil
 
 -- A shift-click links the item through ChatFrameUtil.InsertLink: the field other add-ons hook (Auctionator's

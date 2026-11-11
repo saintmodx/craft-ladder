@@ -3,6 +3,16 @@
 What's new in Craft Ladder, newest first. The format follows [Keep a Changelog](https://keepachangelog.com), the
 version numbers [Semantic Versioning](https://semver.org).
 
+## Unreleased
+
+### Fixed
+
+- With Auctionator picked, the header no longer shows AuctionDB's "Next AuctionDB scan in M:SS": that countdown
+  belongs to prices you aren't reading.
+- The header now dates Auctionator's prices even when Auctionator never scanned by itself - "Prices: Auctionator,
+  newest prices from today", or "from 3 days ago" in orange. It keeps no time of day, only the day it last saw a
+  price, so the line says the day; it said just "Prices: Auctionator" before.
+
 ## 1.8.0 - 2026-11-11
 
 ### Added

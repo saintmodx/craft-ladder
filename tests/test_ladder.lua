@@ -40,8 +40,13 @@ assert(Ladder.Color(coyote, 89) == "orange" and Ladder.Color(coyote, 90) == "yel
 -- Really 118c; the estimate from the three numbers AuctionDB keeps is 120c.
 local q = ns.Prices.Make({ faction = "H", auctionDB = function() return { 0, 10, 12, 10 } end })
 check("10 of 1x10c + 9x12c", q(999001, 10, 0), 120)
-check("the first one is the lowest price", q(999001, 1, 0), 10.2)
+check("one costs the median, not the one cheap listing", q(999001, 1, 0), 12)
 check("buying in two steps costs the same as at once", q(999001, 4, 0) + q(999001, 6, 4), 120)
+-- one auction far under the rest (someone's cheap lot, gone minutes after the scan) doesn't make the ladder cheap
+do
+    local odd = ns.Prices.Make({ faction = "H", auctionDB = function() return { 0, 10, 100, 1000 } end })
+    check("a lone cheap listing doesn't price the purchase", odd(999001, 5, 0), 500)
+end
 
 -- Food (Cooking): a warrior eats for Melee and Tank, each group only its stats; what it can eat now first, the highest
 -- level first, then the dishes for later by level
@@ -282,8 +287,8 @@ assert(risky, "Mining: zones above your level are shown as options")
 -- Gold: copper sells for more as bars (30c) than as ore (10c); every node you can mine counts, grey ones too
 local lg = mine({}, { mode = "sell" })
 local g1 = lg.steps[1]
-check("Gold: Copper Ore as ore, after the cut (the first one listed: 10.01c)", g1.sell[2770].ore, 10.01 * 0.95)
-check("Gold: ... and as Copper Bar (30.01c)", g1.sell[2770].bars, 30.01 * 0.95)
+check("Gold: Copper Ore as ore, after the cut (what it sells at: the lowest listed, 10c)", g1.sell[2770].ore, 10 * 0.95)
+check("Gold: ... and as Copper Bar (30c)", g1.sell[2770].bars, 30 * 0.95)
 assert(g1.perHour > 0 and g1.earn > 0 and lg.perHour > 0, "Gold: what you mine earns gold an hour")
 assert(lg.nodes > lm.nodes, "Gold: grey nodes are mined too, so it takes more nodes")
 -- Gold (the list): the zones by what an hour there earns at your skill now, where you're safe first; Copper Ore sells

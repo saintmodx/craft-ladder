@@ -3,6 +3,18 @@
 What's new in Craft Ladder, newest first. The format follows [Keep a Changelog](https://keepachangelog.com), the
 version numbers [Semantic Versioning](https://semver.org).
 
+## Unreleased
+
+### Fixed
+
+- Ingredients are priced at what half of what's listed costs, not at the single cheapest auction. That one lot is
+  usually bought within minutes of the scan, so the ladder was planning on a price no one could still get - an
+  ingredient could show up four times cheaper than the auction house really asked. Hovering a price still names the
+  cheapest listing, so you can see when it's worth the gamble. What you sell is still priced at the cheapest
+  listing, the one you undercut.
+- Buying more of an ingredient than the auction house has listed no longer makes it cost several times the price:
+  the ladder prices it the same and says the house is short.
+
 ## 1.7.1 - 2026-11-10
 
 ### Added

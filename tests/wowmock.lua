@@ -284,8 +284,25 @@ function M.install(fx, ns)
         PlayerHouse = function() return UnitFactionGroup() end,
         ScanCooldownLeft = function() return M.scanCooldown or 0 end,
     }
-    GetMerchantNumItems = function() return 1 end
-    GetMerchantItemID = function() return 2678 end                      -- Mild Spices
+    -- a search at the auction house: M.searchResults[item] = { { price each, how many }, ... }, as the game's own
+    -- search would answer; M.searchPartial: the whole list hadn't loaded
+    M.searchResults = {}
+    C_AuctionHouse = {
+        GetNumCommoditySearchResults = function(item) return #(M.searchResults[item] or {}) end,
+        GetCommoditySearchResultInfo = function(item, i)
+            local r = (M.searchResults[item] or {})[i]
+            return r and { unitPrice = r[1], quantity = r[2] }
+        end,
+        HasFullCommoditySearchResults = function() return not M.searchPartial end,
+        GetNumItemSearchResults = function(key) return #(M.searchResults[key.itemID] or {}) end,
+        GetItemSearchResultInfo = function(key, i)
+            local r = (M.searchResults[key.itemID] or {})[i]
+            return r and { buyoutAmount = r[1], quantity = r[2] }
+        end,
+        HasFullItemSearchResults = function() return not M.searchPartial end,
+    }
+    GetServerTime = time
+    GetMerchantNumItems = function() return 1 end    GetMerchantItemID = function() return 2678 end                      -- Mild Spices
     GetMerchantItemInfo = function() return "Mild Spices", 0, 10, 5 end -- 10c for 5
     GetNumTrainerServices = function() return #M.trainer end
     GetTrainerServiceInfo = function(i) return M.trainer[i].name, "", "available" end

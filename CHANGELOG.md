@@ -3,6 +3,16 @@
 What's new in Craft Ladder, newest first. The format follows [Keep a Changelog](https://keepachangelog.com), the
 version numbers [Semantic Versioning](https://semver.org).
 
+## Unreleased
+
+### Added
+
+- Searching an item at the auction house now prices it in the ladder: its own search sees every auction of that
+  item, so the ladder and the cards use what you just saw instead of the last scan's price, until a scan passes it.
+  It counts whoever did the search - the game's Buy tab, Auctionator's Shopping tab or a shift-click from a card -
+  and the card says "you searched it 4m ago". Only a search of one item counts, not the list of names a search by
+  text brings.
+
 ## 1.8.1 - 2026-11-11
 
 ### Fixed

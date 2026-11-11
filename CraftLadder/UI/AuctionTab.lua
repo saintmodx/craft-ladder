@@ -251,7 +251,7 @@ local function ladderFor(data, cached)
     if not same then opened = nil end -- another profession or mode: the step you're on
     if not (same and cached) then
         local ladder = ns.Window.Cached(data) or ns.Calculate(data)
-        shown = { data = data, mode = mode, scan = select(2, ns.Prices.Source()),
+        shown = { data = data, mode = mode, scan = select(2, ns.Prices.Source()), live = ns.Prices.LiveVersion(),
                   ladder = favor and ns.Favor.Ladder(ladder, ns.db.favorPrices or {}) or ladder }
     end
     return shown.ladder
@@ -472,7 +472,8 @@ local function build_panel(parent)
         AuctionTab.Refresh()
         -- once AuctionDB has scanned again, the ladder with its prices (once a scan; not in the middle of a purchase)
         panel.ticker = C_Timer.NewTicker(1, function()
-            if shown and not pending and select(2, ns.Prices.Source()) ~= shown.scan then AuctionTab.Refresh() end
+            if shown and not pending and (select(2, ns.Prices.Source()) ~= shown.scan
+                or ns.Prices.LiveVersion() ~= shown.live) then AuctionTab.Refresh() end
         end)
     end)
     panel.ticker = false

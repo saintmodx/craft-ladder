@@ -120,6 +120,12 @@ function D.PriceSource(e)
             .. (e.median > e.min and (" (cheapest listed " .. ns.Money(e.min) .. ")") or "")
         return ("auction house, %s, %d listed%s"):format(each, e.qty or 0, e.listed and "" or ", not in the last scan")
     end
+    if e.source == "search" then -- what you saw yourself, newer than the scan behind the other prices
+        local each = ns.Money(e.median) .. " each"
+            .. (e.median > e.min and (" (cheapest listed " .. ns.Money(e.min) .. ")") or "")
+        return ("auction house, %s, %d listed - you searched it %s%s"):format(each, e.qty or 0, ns.Age(e.ts),
+            e.partial and ", of the listings loaded" or "")
+    end
     if e.source == "auctionator" then return "auction house (Auctionator), " .. ns.Money(e.unit) .. " each" end
     return ""
 end

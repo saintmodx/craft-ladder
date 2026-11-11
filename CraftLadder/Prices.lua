@@ -28,6 +28,7 @@ end
 
 -- A price lookup for one calculation. Every item is looked up once and remembered until the next calculation.
 --   src = { faction, real = { [item] = vendor price paid },
+--           live = function(item) -> what your own search at the auction house saw, newer than the scan,
 --           auctionDB = function(item) -> { ts, min, median, qty }, last scan time,
 --           auctionator = function(item) -> price, details,
 --           how = "median" (the default) or "min": which listed price buying pays }
@@ -46,6 +47,14 @@ function Prices.Make(src)
         if not ahOnly then
             local p, d = Prices.Vendor(item, src.faction, src.real)
             if p then e = d; e.unit = p end
+        end
+        -- a search of your own sees every auction of that item: newer and exact, so it beats the last scan
+        if not e and src.live then
+            local l = src.live(item)
+            if l then
+                e = { source = "search", unit = l.min, min = l.min, median = src.how ~= "min" and l.median or l.min,
+                      qty = l.qty, ts = l.ts, listed = true, partial = l.partial }
+            end
         end
         if not e and src.auctionDB then
             local rec, lastScan = src.auctionDB(item)
@@ -230,12 +239,67 @@ function Prices.Real()
     return ns.db and ns.Player.Saved().vendorPrices
 end
 
+-- What your own searches at the auction house saw: ns.db.live[faction][item] = { ts, min, median, qty, partial }.
+-- Per faction, as the auction houses are. A search of one item sees every auction of it, so its numbers are better
+-- than the last scan's - until a scan passes them, when the row is dropped.
+local function liveStore()
+    if not ns.db then return end
+    ns.db.live = ns.db.live or {}
+    local f = playerFaction()
+    ns.db.live[f] = ns.db.live[f] or {}
+    return ns.db.live[f]
+end
+
+-- The lowest price, the median and how many are listed, from a search's rows { price each, how many }. The median is
+-- the middle item, not the middle listing: a big cheap lot counts for more than a small one, as AuctionDB counts it.
+local function searchStats(units)
+    table.sort(units, function(a, b) return a[1] < b[1] end)
+    local qty = 0
+    for _, u in ipairs(units) do qty = qty + u[2] end
+    if qty == 0 then return end
+    local seen, median = 0, nil
+    for _, u in ipairs(units) do
+        seen = seen + u[2]
+        if not median and seen >= qty / 2 then median = u[1] end
+    end
+    return units[1][1], median or units[1][1], qty
+end
+
+local liveVersion = 0
+
+-- Counts the searches recorded: what reads live prices (the auction house tab) redraws when it changes.
+function Prices.LiveVersion() return liveVersion end
+
+-- Records what a search showed for one item. units = { { price each, how many }, ... }, empty: nothing listed.
+-- partial: the auction house hadn't loaded the whole list, so the median is of what it had.
+function Prices.Searched(item, units, partial)
+    local store = liveStore()
+    if not store then return end
+    local min, median, qty = searchStats(units)
+    local now = GetServerTime and GetServerTime() or time()
+    local was = store[item]
+    store[item] = min and { ts = now, min = min, median = median, qty = qty, partial = partial or nil } or nil
+    local scan = select(2, Prices.Source()) -- rows a scan has passed are dead weight
+    for id, e in pairs(store) do if scan and e.ts <= scan then store[id] = nil end end
+    -- the same search answers more than once while its pages load: nothing to calculate again when the numbers hold
+    if was and min and was.min == min and was.median == median and was.qty == qty then return end
+    liveVersion = liveVersion + 1
+    if ns.Window then
+        if ns.Window.IsShown() then ns.Window.Refresh() else ns.Window.Invalidate() end
+    end
+end
+
 function Prices.ForGame()
-    local source = Prices.Source() -- the addon the Settings menu picked, or the one installed
+    local source, scan = Prices.Source() -- the addon the Settings menu picked, or the one installed
     auctionatorQty = source ~= "AuctionDB"
+    local store = liveStore()
     return Prices.Make({
         faction = playerFaction(),
         real = Prices.Real(),
+        live = store and function(item)
+            local e = store[item]
+            if e and (not scan or e.ts > scan) then return e end
+        end or nil,
         auctionDB = source == "AuctionDB" and fromAuctionDB or nil,
         auctionator = source == "Auctionator" and fromAuctionator or nil,
         how = ns.db and ns.db.prices and ns.db.prices.how or nil,
@@ -251,6 +315,42 @@ local function worthRemembering()
         for _, rank in ipairs(data.ranks) do if rank.item then items[rank.item] = true end end
     end
     return items
+end
+
+-- A search at the auction house, yours or another addon's (Auctionator's Shopping tab, the game's own Buy tab):
+-- it sees every auction of that item, so its prices are recorded. Only a search of one item, never the browse list
+-- of names, which would fill the table with everything ever typed. Nothing is asked of the auction house here: only
+-- what a search already brought is read, so there is no throttling to worry about.
+local searches = CreateFrame and CreateFrame("Frame")
+if searches then
+    for _, e in ipairs({ "COMMODITY_SEARCH_RESULTS_UPDATED", "ITEM_SEARCH_RESULTS_UPDATED" }) do
+        pcall(searches.RegisterEvent, searches, e) -- pcall: an event this client lacks
+    end
+    searches:SetScript("OnEvent", function(_, event, arg)
+        local ah = C_AuctionHouse
+        if not ah then return end
+        local units = {}
+        if event == "COMMODITY_SEARCH_RESULTS_UPDATED" then
+            if type(arg) ~= "number" or not ah.GetNumCommoditySearchResults then return end
+            for i = 1, ah.GetNumCommoditySearchResults(arg) do
+                local r = ah.GetCommoditySearchResultInfo(arg, i)
+                if r and (r.unitPrice or 0) > 0 then units[#units + 1] = { r.unitPrice, math.max(r.quantity or 1, 1) } end
+            end
+            local full = not ah.HasFullCommoditySearchResults or ah.HasFullCommoditySearchResults(arg)
+            Prices.Searched(arg, units, not full)
+        else
+            local item = type(arg) == "table" and arg.itemID
+            if not item or not ah.GetNumItemSearchResults then return end
+            -- rows group auctions of the same price and size here: quantity is how many of them, buyoutAmount what
+            -- one asks; an auction without a buyout says no price
+            for i = 1, ah.GetNumItemSearchResults(arg) do
+                local r = ah.GetItemSearchResultInfo(arg, i)
+                if r and (r.buyoutAmount or 0) > 0 then units[#units + 1] = { r.buyoutAmount, math.max(r.quantity or 1, 1) } end
+            end
+            local full = not ah.HasFullItemSearchResults or ah.HasFullItemSearchResults(arg)
+            Prices.Searched(item, units, not full)
+        end
+    end)
 end
 
 -- Remember what merchants really charge for them (reputation discounts included).

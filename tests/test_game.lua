@@ -207,6 +207,43 @@ expect("footer shows the total, and what selling the dishes brings back", strip(
     and strip(frame.total.text):find("back from sales"))
 expect("header shows the price source", strip(frame.prices.text):find("AuctionDB"))
 
+-- a search at the auction house (yours, Auctionator's Shopping tab or the game's Buy tab): it sees every auction of
+-- that item, so its prices beat the last scan's until a scan passes them
+do
+    mock.click(tab("blacksmithing"))
+    for _, r in ipairs(rows()) do
+        if r.step and r.step.kind == "craft" then mock.click(r) break end
+    end
+    local function reagent(item)
+        for _, f in ipairs(items()) do
+            if f.item == item then return strip(f.cost.text), strip(f.source or "") end
+        end
+    end
+    local bronze = 2841
+    local scanned = reagent(bronze)
+    mock.searchResults[bronze] = { { 120, 20 }, { 100, 5 } } -- 25 listed: cheapest 1s, the middle item 1s 20c
+    mock.fire("COMMODITY_SEARCH_RESULTS_UPDATED", bronze)
+    local saved = CraftLadderDB.live.H[bronze]
+    expect("a search is recorded: the cheapest, the middle item's price and how many are listed",
+        saved and saved.min == 100 and saved.median == 120 and saved.qty == 25)
+    local searched, source = reagent(bronze)
+    expect("... the card prices the reagent at the search, not at the scan", searched ~= scanned)
+    expect("... and says you searched it, with the cheapest listing",
+        source:find("^auction house, 1s 20c each %(cheapest listed 1s 0c%), 25 listed %- you searched it"))
+    -- a scan that ran after the search: its prices lead again, and the row goes at the next search
+    local scans = AuctionDB:SavedHouse(UnitFactionGroup()).scans
+    scans[#scans + 1] = { time() + 1, 0, 0 }
+    ns.Window.Refresh()
+    expect("... a newer scan takes the lead back", reagent(bronze) == scanned)
+    mock.searchResults[2319] = { { 50, 10 } }
+    mock.fire("COMMODITY_SEARCH_RESULTS_UPDATED", 2319)
+    expect("... and searches a scan has passed are dropped", next(CraftLadderDB.live.H) == nil)
+    scans[#scans] = nil
+    mock.searchResults = {}
+    CraftLadderDB.live = nil
+    mock.click(tab("cooking"))
+end
+
 -- the header's Settings button: the menu in the card's place, a pick saved for the account and the ladders calculated
 -- again (its ticks are a choice: the picked one can't be unticked)
 mock.click(frame.settingsButton)

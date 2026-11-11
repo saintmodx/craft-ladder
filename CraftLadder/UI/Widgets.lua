@@ -164,10 +164,14 @@ end
 
 -- Shift-click: the item's link into the chat box.
 function UI.LinkItem(item)
-    if not (item and ChatEdit_InsertLink) then return end
+    -- ChatFrameUtil.InsertLink first: on this client it is the same function as the old global, but add-ons hook the
+    -- table's field (Auctionator's Shopping tab searches what it gets there and fills its search box), and a hook on
+    -- a field never sees a call through the global name.
+    local insert = (ChatFrameUtil and ChatFrameUtil.InsertLink) or ChatEdit_InsertLink
+    if not (item and insert) then return end
     local getInfo = (C_Item and C_Item.GetItemInfo) or GetItemInfo
     local link = getInfo and select(2, getInfo(item))
-    if link then ChatEdit_InsertLink(link) end
+    if link then insert(link) end
 end
 
 ---------------------------------------------------------------------------------------------------------------

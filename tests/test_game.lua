@@ -1853,6 +1853,23 @@ local pricedBoth = lookupBoth(999002, true)
 expect("... with AuctionDB there, Auctionator's database is left alone", pricedBoth and pricedBoth.qty == nil)
 Auctionator = nil
 
+-- A shift-click links the item through ChatFrameUtil.InsertLink: the field other add-ons hook (Auctionator's
+-- Shopping tab searches what it gets there), not the global name, which they never see.
+do
+    local link, field, global = "|Hitem:2589|h[Linen Cloth]|h", nil, nil
+    local realInfo = C_Item.GetItemInfo
+    C_Item.GetItemInfo = function(item) return "Linen Cloth", item == 2589 and link or nil end
+    ChatEdit_InsertLink = function(l) global = l end
+    ChatFrameUtil = { InsertLink = function(l) field = l end }
+    ns.UI.LinkItem(2589)
+    expect("shift-click links through ChatFrameUtil.InsertLink", field == link and global == nil)
+    ChatFrameUtil = nil
+    ns.UI.LinkItem(2589)
+    expect("... and through the global on a client without it", global == link)
+    C_Item.GetItemInfo = realInfo
+    ChatEdit_InsertLink = nil
+end
+
 print(failed == 0 and "game smoke test OK" or (failed .. " checks FAILED"))
 io.write(failed == 0 and "game smoke test OK\n" or (failed .. " checks FAILED\n"))
 os.exit(failed == 0 and 0 or 1)

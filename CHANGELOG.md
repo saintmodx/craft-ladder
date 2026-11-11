@@ -3,6 +3,16 @@
 What's new in Craft Ladder, newest first. The format follows [Keep a Changelog](https://keepachangelog.com), the
 version numbers [Semantic Versioning](https://semver.org).
 
+## Unreleased
+
+### Fixed
+
+- Barbaric Bracers no longer sends you to a vendor for its pattern: in Forever it is a world drop, so the ladder
+  prices it at the auction house, and leaves the recipe out when nobody lists one.
+- Shift-clicking an item in a card now fills Auctionator's Shopping tab too: its search box gets the name and the
+  search runs. Only Blizzard's own auction house box was filled before, because Craft Ladder handed the link to the
+  older of the game's two names for it, the one add-ons don't listen on.
+
 ## 1.7.1 - 2026-11-10
 
 ### Added

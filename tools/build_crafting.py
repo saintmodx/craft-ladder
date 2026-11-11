@@ -83,6 +83,9 @@ PROFESSIONS = {
                   "ranks": [3908, 3909, 3910, 12180]},
     "leatherworking": {"name": "Leatherworking", "table": "LEATHERWORKING", "skillLine": 165, "plan": "pattern",
                        "ranks": [2108, 3104, 3811, 10662],
+                       # Pattern: Barbaric Bracers is a world drop in Forever: Saenorion and Joseph Moore don't sell it
+                       # any more (seen in game), though AllTheThings still lists them
+                       "worldDrop": {18949},
                        # Dragonscale (10656), Elemental (10658) and Tribal (10660) trainers: Peter Galen, Thorkaf
                        # Dragoneye; Sarah Tanner, Brumn Winterhoof; Caryssia Moonhunter, Se'Jib
                        "specTrainers": {7866: 10656, 7867: 10656, 7868: 10658, 7869: 10658, 7870: 10660, 7871: 10660},
@@ -317,7 +320,8 @@ def main():
         a = {} if any(d.get(k) for k in (2, 3, 6, 14)) else att_ways["items"].get(plan, {})
         cost = prices.get(plan, (0, 0))[0] or None
         seen_favor = favor_seen.get(plan, {})
-        sellers = list(d.get(14) or a.get("vendor", ()))
+        # a plan Forever made a world drop: no one sells it, whatever AllTheThings and QuestieDB say
+        sellers = [] if plan in P.get("worldDrop", ()) else list(d.get(14) or a.get("vendor", ()))
         if seen_favor.get("npc") and seen_favor["npc"] not in sellers:  # the game beats QuestieDB's lists
             sellers.append(seen_favor["npc"])
         favor = seen_favor.get("cost") or att_favor.get(plan)  # seen in game, else AllTheThings' price

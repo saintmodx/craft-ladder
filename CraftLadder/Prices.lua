@@ -138,6 +138,8 @@ end
 
 -- Auctionator's API says what an item costs, not how many are listed. Its own database keeps that too ("available",
 -- the most seen that day), so read it where AuctionDB isn't there to say: with AuctionDB the prices stay its own.
+-- Only the count is taken from that day: its prices are the lowest price each of the day's scans saw, so the lowest
+-- of them may be hours old (and the highest is no median), while the API gives the last scan's.
 -- Set by ForGame, so it isn't looked up for every item of a ladder.
 local auctionatorQty = false
 
@@ -152,14 +154,12 @@ local function fromAuctionator(item)
     if db and db.GetPriceHistory then
         local okDays, days = pcall(db.GetPriceHistory, db, tostring(item))
         local day = okDays and days and days[1]
-        if day and (day.available or 0) > 0 then
-            e.min, e.median, e.qty = day.minSeen or p, day.maxSeen or day.minSeen or p, day.available
-        end
+        if day and (day.available or 0) > 0 then e.min, e.median, e.qty = p, p, day.available end
     end
     return p, e
 end
 
--- Which auction house data is there: "AuctionDB", "Auctionator" or nil, and when AuctionDB last scanned.
+-- Which auction house data is there: "AuctionDB", "Auctionator" or nil, and when it last scanned.
 function Prices.Source()
     local adb = _G.AuctionDB
     if adb and adb.LastPrice and adb.sv and adb.sv.houses then
@@ -168,7 +168,12 @@ function Prices.Source()
         local last = h and h.scans and h.scans[#h.scans]
         return "AuctionDB", last and last[1]
     end
-    if Auctionator and Auctionator.API and Auctionator.API.v1 then return "Auctionator" end
+    if Auctionator and Auctionator.API and Auctionator.API.v1 then
+        -- Auctionator keeps the time of its last scan of either kind (the full one and the browse "summary" one)
+        local st = Auctionator.SavedState
+        local scan = st and math.max(st.TimeOfLastReplicateScan or 0, st.TimeOfLastBrowseScan or 0, 0)
+        return "Auctionator", scan and scan > 0 and scan or nil
+    end
 end
 
 -- AuctionDB's next full scan, as its own "AHDB Scan" button counts it: "scanning", or "wait" and the seconds until

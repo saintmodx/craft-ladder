@@ -7,6 +7,10 @@ version numbers [Semantic Versioning](https://semver.org).
 
 ### Fixed
 
+- Without AuctionDB, ingredients are no longer priced too low: what Auctionator gives is now the price of its last
+  scan, not the cheapest price seen at any time that day. A ladder could plan on a price that was hours gone.
+- The header now says when Auctionator last scanned and warns when that was long ago, as it already did for
+  AuctionDB.
 - Barbaric Bracers no longer sends you to a vendor for its pattern: in Forever it is a world drop, so the ladder
   prices it at the auction house, and leaves the recipe out when nobody lists one.
 - Shift-clicking an item in a card now fills Auctionator's Shopping tab too: its search box gets the name and the

@@ -1839,14 +1839,18 @@ ns.Player.Prof(ns.COOKING).known[3397] = nil
 local savedADB = AuctionDB
 Auctionator = { API = { v1 = { GetAuctionPriceByItemID = function(_, item) return item == 999002 and 500 or nil end,
                                GetAuctionAgeByItemID = function() return 1 end } },
+                SavedState = { TimeOfLastBrowseScan = 1700000000 },
                 Database = { GetPriceHistory = function(_, key)
                     return key == "999002" and { { minSeen = 480, maxSeen = 520, available = 99 } } or {}
                 end } }
 AuctionDB = nil
-local _, lookupAuctionator = ns.Prices.ForGame()
+local quoteAuctionator, lookupAuctionator = ns.Prices.ForGame()
 local priced = lookupAuctionator(999002, true)
-expect("Auctionator alone: how many are listed comes from its database", priced and priced.qty == 99
-    and priced.min == 480 and priced.median == 520)
+expect("Auctionator alone: how many are listed comes from its database, the price from its last scan",
+    priced and priced.qty == 99 and priced.min == 500 and priced.median == 500)
+expect("... three cost three times that, not three times the day's lowest",
+    quoteAuctionator(999002, 3, 0, true) == 1500)
+expect("... and the header gets the time of its last scan", select(2, ns.Prices.Source()) == 1700000000)
 AuctionDB = savedADB
 local _, lookupBoth = ns.Prices.ForGame()
 local pricedBoth = lookupBoth(999002, true)

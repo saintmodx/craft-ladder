@@ -49,5 +49,6 @@ UI\Menu.lua
 UI\Chars.lua
 UI\CampPanel.lua
 UI\SpecPanel.lua
+UI\Settings.lua
 UI\AuctionTab.lua
 UI\Minimap.lua

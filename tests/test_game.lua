@@ -207,6 +207,38 @@ expect("footer shows the total, and what selling the dishes brings back", strip(
     and strip(frame.total.text):find("back from sales"))
 expect("header shows the price source", strip(frame.prices.text):find("AuctionDB"))
 
+-- the header's Settings button: the menu in the card's place, a pick saved for the account and the ladders calculated
+-- again (its ticks are a choice: the picked one can't be unticked)
+mock.click(frame.settingsButton)
+expect("Settings: the menu instead of the card", frame.settings:IsShown() and not frame.detail:IsShown())
+local sourceChecks, howChecks = {}, {}
+for _, c in ipairs(frame.settings.checks) do
+    (c.key == "source" and sourceChecks or howChecks)[c.value] = c
+end
+expect("... AuctionDB and the median are ticked by default", sourceChecks.auctionDB.checked
+    and howChecks.median.checked and not sourceChecks.auctionator.checked and not howChecks.min.checked)
+mock.click(howChecks.min)
+expect("... the cheapest listing picked: saved for the account, the tick moved",
+    CraftLadderDB.prices.how == "min" and howChecks.min.checked and not howChecks.median.checked)
+mock.click(howChecks.min)
+expect("... clicking it again leaves it picked", CraftLadderDB.prices.how == "min" and howChecks.min.checked)
+mock.click(howChecks.median)
+expect("... back to the median: the default is saved as nothing", CraftLadderDB.prices.how == nil)
+mock.click(sourceChecks.auctionator)
+expect("... Auctionator picked, and the menu says it isn't installed",
+    CraftLadderDB.prices.source == "auctionator"
+    and strip(frame.settings.missing.text) == "Auctionator isn't installed: AuctionDB is read.")
+mock.click(sourceChecks.auctionDB)
+expect("... back to AuctionDB: nothing saved, no warning",
+    CraftLadderDB.prices.source == nil and strip(frame.settings.missing.text) == "")
+mock.click(frame.settingsButton)
+expect("... clicked again: the card is back", frame.detail:IsShown() and not frame.settings:IsShown())
+mock.click(frame.settingsButton)
+mock.click(rows()[2])
+expect("... a step picked while it's open: the menu goes, that step's card is drawn",
+    frame.detail:IsShown() and not frame.settings:IsShown() and not frame.settingsButton.active
+    and frame.detail.head.step == rows()[2].step)
+
 -- a bigger window: the details get wider; Ctrl + wheel scales it; right-click on the corner resets both
 frame:SetSize(1100, 760)
 frame.grip.scripts.OnMouseDown(frame.grip, "LeftButton")
@@ -1835,7 +1867,8 @@ expect("a recipe just learned is known before the window is opened", not wasKnow
 ns.Player.Prof(ns.COOKING).known[3397] = nil
 
 -- Auctionator alone (Classic Era has no AuctionDB to read): how many are listed comes from Auctionator's own
--- database, which its API doesn't give; with AuctionDB there, nothing of its is read
+-- database, which its API doesn't give; with AuctionDB there, only AuctionDB is read, unless the Settings menu
+-- picks Auctionator
 local savedADB = AuctionDB
 Auctionator = { API = { v1 = { GetAuctionPriceByItemID = function(_, item) return item == 999002 and 500 or nil end,
                                GetAuctionAgeByItemID = function() return 1 end } },
@@ -1853,8 +1886,13 @@ expect("... three cost three times that, not three times the day's lowest",
 expect("... and the header gets the time of its last scan", select(2, ns.Prices.Source()) == 1700000000)
 AuctionDB = savedADB
 local _, lookupBoth = ns.Prices.ForGame()
-local pricedBoth = lookupBoth(999002, true)
-expect("... with AuctionDB there, Auctionator's database is left alone", pricedBoth and pricedBoth.qty == nil)
+expect("... with AuctionDB there, Auctionator isn't read", lookupBoth(999002, true) == nil)
+CraftLadderDB.prices = { source = "auctionator" }
+local _, lookupPicked = ns.Prices.ForGame()
+local pickedPrice = lookupPicked(999002, true)
+expect("... the Settings menu's Auctionator is read even with AuctionDB installed",
+    (ns.Prices.Source()) == "Auctionator" and pickedPrice and pickedPrice.min == 500)
+CraftLadderDB.prices = nil
 Auctionator = nil
 
 -- A shift-click links the item through ChatFrameUtil.InsertLink: the field other add-ons hook (Auctionator's

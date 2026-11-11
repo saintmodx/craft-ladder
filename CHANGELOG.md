@@ -5,13 +5,31 @@ version numbers [Semantic Versioning](https://semver.org).
 
 ## Unreleased
 
-### Fixed
+### Added
+
+- A Settings button in the header: its menu takes the card's place and holds how prices are read. Pick the auction
+  house addon the prices come from - AuctionDB or Auctionator - and what an ingredient costs: the median listed
+  price or the cheapest listing. The settings are the account's: every character and profession plans the same way.
+  Picking a step in the ladder closes the menu and brings that step's card back.
+
+### Changed
 
 - Ingredients are priced at what half of what's listed costs, not at the single cheapest auction. That one lot is
   usually bought within minutes of the scan, so the ladder was planning on a price no one could still get - an
   ingredient could show up four times cheaper than the auction house really asked. Hovering a price still names the
-  cheapest listing, so you can see when it's worth the gamble. What you sell is still priced at the cheapest
-  listing, the one you undercut.
+  cheapest listing, so you can see when it's worth the gamble, and Settings has the old way back. What you sell is
+  still priced at the cheapest listing, the one you undercut.
+- Prices now come from one auction house addon, the one Settings picked, instead of AuctionDB with Auctionator
+  filling its gaps: two addons' prices are two scan times, and the older one made costs look wrong.
+
+### Fixed
+
+- The header says when AuctionDB last scanned again - "Prices: AuctionDB, scanned 13:42 (30m ago)" - and warns when
+  that scan is hours old. Craft Ladder was looking for AuctionDB's data under the wrong name and never found the
+  time.
+- A fresh AuctionDB scan reaches the ladder without a /reload: the prices it had read were kept for the whole
+  session, because they were only ever dropped when the scan time changed, and that time was the one it could not
+  find.
 - Buying more of an ingredient than the auction house has listed no longer makes it cost several times the price:
   the ladder prices it the same and says the house is short.
 

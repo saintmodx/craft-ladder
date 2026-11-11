@@ -103,6 +103,7 @@ local shownProf -- the profession the list showed last (nil: the window was just
 -- scan its prices come from.
 local cache = {}
 local version, bagsVersion = 0, 0
+local settingsOpen = false -- the header's Settings button: its menu instead of the card, until it's clicked again
 local drawnScan -- the scan the ladder drawn was priced with
 
 -- When AuctionDB last scanned, or nil.
@@ -413,6 +414,11 @@ local function makeRow(parent)
         end
         selected = self.index
         ns.Player.Prof(prof).row = stepKey(self.index)
+        if settingsOpen then -- a step picked: its card takes the Settings menu's place again
+            settingsOpen = false
+            Window.Refresh(true)
+            return
+        end
         for _, r in ipairs(rowPool.used) do paintRow(r) end
         renderDetail()
     end)
@@ -1229,6 +1235,14 @@ local function build()
     local close = UI.IconButton(frame, "close", 20, C.muted, function() frame:Hide() end)
     close:SetPoint("TOPRIGHT", -12, -14)
     close.tooltip = { "Close", "Escape closes it too." }
+    local settings = UI.Button(frame, "Settings", 70, 20, function()
+        settingsOpen = not settingsOpen
+        Window.Refresh(true) -- the ladder is the same: only the card's place changes
+    end)
+    settings:SetPoint("TOPRIGHT", close, "TOPLEFT", -10, 0)
+    settings.tooltip = { "Settings", "Which auction house addon the prices are read from, and which of its listed" ..
+        " prices an ingredient costs." }
+    frame.settingsButton = settings
     ns.Menu.Build(frame) -- the menu (left)
     ns.Chars.Build(frame) -- the account's characters (left of the window)
     -- a character with no profession at all: this instead of the ladder
@@ -1379,6 +1393,7 @@ local function build()
     detail.craft = craft
     frame.detail = detail
     ns.Cards.Build(frame)
+    ns.Settings.Build(frame) -- the Settings menu, in the card's place
 
     -- footer
     frame.total = UI.Label(frame, 12, C.text)
@@ -1513,7 +1528,7 @@ function Window.Refresh(cached)
     frame.camp:SetShown(camp)
     if camp then
         for _, f in ipairs({ frame.bar, frame.list, frame.detail, frame.total, frame.prices, frame.nextScan, frame.idle,
-                             frame.favor, frame.range }) do
+                             frame.favor, frame.range, frame.settings, frame.settingsButton }) do
             f:Hide()
         end
         ns.Menu.Render(frame, nil)
@@ -1572,6 +1587,8 @@ function Window.Refresh(cached)
         frame.subtitle:SetText("No profession yet")
         frame.favor:Hide()
         frame.range:Hide()
+        frame.settings:Hide()
+        frame.settingsButton:Hide()
         return
     end
     renderHeader()
@@ -1579,6 +1596,15 @@ function Window.Refresh(cached)
     renderRange(spec) -- before the bar: its ranks' names plan to their end only while the range shows
     renderBar()
     widenList(spec)
+    -- the Settings menu instead of the step's card (the Specialization view has no card: no button there either)
+    local settings = settingsOpen and not spec
+    frame.settingsButton:SetShown(not spec)
+    frame.settingsButton:SetActive(settings)
+    frame.settings:SetShown(settings)
+    if settings then
+        frame.detail:Hide()
+        ns.Settings.Render()
+    end
     if spec then
         renderFooter()
         frame.total:SetText(ns.SpecPanel.Render(ladder, prof))
@@ -1586,7 +1612,7 @@ function Window.Refresh(cached)
         return
     end
     renderList()
-    renderDetail()
+    if not settings then renderDetail() end
     renderFooter()
 end
 

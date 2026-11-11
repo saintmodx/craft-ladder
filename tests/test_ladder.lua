@@ -47,6 +47,13 @@ do
     local odd = ns.Prices.Make({ faction = "H", auctionDB = function() return { 0, 10, 100, 1000 } end })
     check("a lone cheap listing doesn't price the purchase", odd(999001, 5, 0), 500)
 end
+-- the Settings menu's "cheapest listing" instead: the lowest price of the scan, what the ladder cost before
+do
+    local cheap = ns.Prices.Make({ faction = "H", how = "min", auctionDB = function() return { 0, 10, 100, 1000 } end })
+    local _, e = cheap(999001, 1, 0)
+    check("the cheapest listing picked: that is what buying pays", cheap(999001, 5, 0), 50)
+    assert(e.min == 10 and e.median == 10, "the entry's median is the cheapest listing too")
+end
 
 -- Food (Cooking): a warrior eats for Melee and Tank, each group only its stats; what it can eat now first, the highest
 -- level first, then the dishes for later by level

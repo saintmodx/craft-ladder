@@ -1,6 +1,7 @@
 -- Craft Ladder: prices. Craft Ladder doesn't scan the auction house itself; it reads what other addons saved.
--- Order: a vendor of your faction (the price a merchant really asked you beats the built-in one), then AuctionDB's
--- last full scan of your faction's auction house, then Auctionator.
+-- Order: a vendor of your faction (the price a merchant really asked you beats the built-in one), then the auction
+-- house addon the Settings menu picked (ns.db.prices.source: AuctionDB's last full scan of your faction's auction
+-- house, or Auctionator), one of them, not both: two addons' prices are two scan times.
 local ADDON, ns = ...
 
 local Prices = {}
@@ -17,9 +18,10 @@ function Prices.Vendor(itemID, faction, real)
 end
 
 -- Total for the first n items bought. AuctionDB keeps the lowest price, the median (half of what's listed costs less)
--- and how many are listed, not every listing. Buying goes at the median, not at the lowest price: the lowest is one
--- auction, often a single cheap one that someone bought minutes after the scan, while a cheap price with real stock
--- behind it pulls the median down with it. (At the whole stock both come to the same money.)
+-- and how many are listed, not every listing. Buying goes at the median unless the Settings menu picked the cheapest
+-- listing (src.how = "min", which lookup then stores as the entry's median): the lowest is one auction, often a
+-- single cheap one that someone bought minutes after the scan, while a cheap price with real stock behind it pulls
+-- the median down with it. (At the whole stock both come to the same money.)
 local function total(e, n)
     return n * (e.median or e.unit)
 end
@@ -27,7 +29,8 @@ end
 -- A price lookup for one calculation. Every item is looked up once and remembered until the next calculation.
 --   src = { faction, real = { [item] = vendor price paid },
 --           auctionDB = function(item) -> { ts, min, median, qty }, last scan time,
---           auctionator = function(item) -> price, details }
+--           auctionator = function(item) -> price, details,
+--           how = "median" (the default) or "min": which listed price buying pays }
 -- Returns two functions:
 --   quote(item, n, already, ahOnly) -> copper for buying n more when `already` were bought earlier in the ladder
 --     (or nil: no price), and the price entry. ahOnly: only the auction house (for recipe items).
@@ -47,7 +50,8 @@ function Prices.Make(src)
         if not e and src.auctionDB then
             local rec, lastScan = src.auctionDB(item)
             if rec and rec[2] and rec[2] > 0 then
-                local median = rec[3] and rec[3] > rec[2] and rec[3] or rec[2]
+                local median = rec[2]
+                if src.how ~= "min" and rec[3] and rec[3] > rec[2] then median = rec[3] end
                 e = { source = "auctionDB", unit = rec[2], min = rec[2], median = median, qty = rec[4], ts = rec[1],
                       listed = not lastScan or rec[1] >= lastScan }
             end
@@ -168,16 +172,28 @@ local function fromAuctionator(item)
     return p, e
 end
 
--- Which auction house data is there: "AuctionDB", "Auctionator" or nil, and when it last scanned.
-function Prices.Source()
+local function auctionDBThere()
     local house, scan = auctionDBHouse()
-    if house then return "AuctionDB", scan end
-    if Auctionator and Auctionator.API and Auctionator.API.v1 then
-        -- Auctionator keeps the time of its last scan of either kind (the full one and the browse "summary" one)
-        local st = Auctionator.SavedState
-        local scan = st and math.max(st.TimeOfLastReplicateScan or 0, st.TimeOfLastBrowseScan or 0, 0)
-        return "Auctionator", scan and scan > 0 and scan or nil
-    end
+    if not house then return end
+    return "AuctionDB", scan
+end
+
+local function auctionatorThere()
+    if not (Auctionator and Auctionator.API and Auctionator.API.v1) then return end
+    -- Auctionator keeps the time of its last scan of either kind (the full one and the browse "summary" one)
+    local st = Auctionator.SavedState
+    local scan = st and math.max(st.TimeOfLastReplicateScan or 0, st.TimeOfLastBrowseScan or 0, 0)
+    return "Auctionator", scan and scan > 0 and scan or nil
+end
+
+-- Which auction house data is read: "AuctionDB", "Auctionator" or nil, and when it last scanned. The Settings menu
+-- picks one (ns.db.prices.source); the other is read when the picked one isn't installed.
+function Prices.Source()
+    local first, second = auctionDBThere, auctionatorThere
+    if ns.db and ns.db.prices and ns.db.prices.source == "auctionator" then first, second = second, first end
+    local name, scan = first()
+    if name then return name, scan end
+    return second()
 end
 
 -- AuctionDB's next full scan, as its own "AHDB Scan" button counts it: "scanning", or "wait" and the seconds until
@@ -197,12 +213,14 @@ function Prices.Real()
 end
 
 function Prices.ForGame()
-    auctionatorQty = Prices.Source() ~= "AuctionDB"
+    local source = Prices.Source() -- the addon the Settings menu picked, or the one installed
+    auctionatorQty = source ~= "AuctionDB"
     return Prices.Make({
         faction = playerFaction(),
         real = Prices.Real(),
-        auctionDB = fromAuctionDB,
-        auctionator = fromAuctionator,
+        auctionDB = source == "AuctionDB" and fromAuctionDB or nil,
+        auctionator = source == "Auctionator" and fromAuctionator or nil,
+        how = ns.db and ns.db.prices and ns.db.prices.how or nil,
     })
 end
 

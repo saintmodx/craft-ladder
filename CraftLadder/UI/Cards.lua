@@ -640,15 +640,41 @@ local function sellLines(rec, n, prefix)
     line(vendor and vendor > 0 and (prefix .. ns.Money(n * vendor) .. " at a vendor.") or "Vendors don't buy it.", C.muted)
 end
 
--- One craft, up top: each ingredient, how many it takes and what they cost at this step's prices (bought, made, or
--- what the ones you have would cost), and what one sells for at the auction house and at a vendor.
-local function oneCraft(step, rec)
+-- What one craft costs at today's prices with empty bags: every ingredient bought, or made when that's cheaper.
+-- A ladder step uses what you own first, so its own numbers say nothing about what the craft is worth (an ingredient
+-- all taken from the bags cost it nothing, and it never looked at making one). Gold prices every recipe this way
+-- (Ladder.Profits empties its context's bags); the ladder's cards ask for the same.
+local function marketBuy(rec)
+    if not (ladder.quote and ladder.state) then return nil end
+    local ctx = ns.Ladder.NewContext(prof, ladder.state, ladder.quote, ladder.opts or {})
+    ctx.owned = {} -- priced as if bought
+    local _, buy = ns.Ladder.Ingredients(ctx, rec, 1)
+    return buy
+end
+
+-- The ingredients of a recipe you already have, after the One craft prices: where the plan's cheaper number comes
+-- from. `text` takes them as its one %s.
+local function ownedNote(rec, text)
+    local items, have = {}, {}
+    for item in pairs(rec.mats) do items[#items + 1] = item end
+    table.sort(items)
+    for _, item in ipairs(items) do
+        local n = (ladder.state.owned or {})[item] or 0
+        if n > 0 then have[#have + 1] = ("%d %s"):format(n, ns.Describe.ItemName(item)) end
+    end
+    if #have > 0 then line(text:format(table.concat(have, ", ")), C.muted) end
+end
+
+-- One craft, up top: each ingredient, how many it takes and what they cost (bought, or made when that's cheaper),
+-- and what one sells for at the auction house and at a vendor. `buy` prices them instead of the step's own plan.
+local function oneCraft(step, rec, buy)
+    buy = buy or step.buy
     local items, total = {}, 0
     for item in pairs(rec.mats) do items[#items + 1] = item end
     table.sort(items)
     local rows = {}
     for _, item in ipairs(items) do
-        local b, e = step.buy[item], lookup(item)
+        local b, e = buy[item], lookup(item)
         local each = (b and b.buy > 0 and b.cost) and b.cost / b.buy or (e and e.unit)
         total = total and each and total + rec.mats[item] * each
         rows[#rows + 1] = { item = item, each = each, e = e, make = b and b.buy > 0 and b.make,
@@ -751,7 +777,8 @@ local function craftDetail(step)
         line(("A tool: %d %s recipes need it, and no vendor sells it. Make one and keep it in your bags%s."):format(
             n, prof.name, step.to > step.from and "" or " (it gives no skill point any more)"), C.good)
     end
-    oneCraft(step, rec)
+    oneCraft(step, rec, marketBuy(rec))
+    ownedNote(rec, "You have %s: the step takes them from your bags, so it pays less than that.")
 
     if step.keep then
         section("Keep for later") -- before buying: what not to sell
@@ -826,17 +853,7 @@ local function profitDetail(step)
     end
 
     oneCraft(step, rec)
-    local items, have = {}, {}
-    for item in pairs(rec.mats) do items[#items + 1] = item end
-    table.sort(items)
-    for _, item in ipairs(items) do
-        local n = ladder.state.owned[item] or 0
-        if n > 0 then have[#have + 1] = ("%d %s"):format(n, ns.Describe.ItemName(item)) end
-    end
-    if #have > 0 then
-        line(("You have %s: counted at their price too, since you could sell them."):format(table.concat(have, ", ")),
-            C.muted)
-    end
+    ownedNote(rec, "You have %s: counted at their price too, since you could sell them.")
     line(step.vendor and "Profit: what a vendor pays, less the ingredients at today's prices. How many you can make," ..
         " the auction house's ingredients decide." or "Profit: at the lowest listing after the auction house's cut," ..
         " with 5 or more listed; it counts only when it pays 1.5 times what a vendor does. How many sell, the auction" ..
@@ -987,7 +1004,8 @@ local function foodDetail(step)
     if step.needSkill then
         line(("Learned at %s %d; you have %d."):format(prof.name, step.needSkill, state.skill), C.bad)
     end
-    oneCraft(step, rec)
+    oneCraft(step, rec, marketBuy(rec))
+    ownedNote(rec, "You have %s: cooking it takes them from your bags, so it costs you less than that.")
     section("Or buy it")
     line(step.ah and ("One at the auction house: %s."):format(ns.Money(step.ah))
         or "None listed at the auction house now.", C.text)

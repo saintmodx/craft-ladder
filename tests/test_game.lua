@@ -159,6 +159,25 @@ expect("first step lists its options", #options() >= 2)
 expect("first step's ingredients are listed, for one craft and for the step", #items() == 4
     and strip(items()[1].sub.text):find(" each"))
 expect("Cooking: the crafting card (Learn it, One craft, Batch)", craftCard())
+-- One craft is what the craft costs at today's prices: an ingredient the step takes from the bags still shows its
+-- price (it cost the step nothing, which is what the note and the Batch below say)
+local ownedStep
+for _, r in ipairs(rows()) do
+    if r.step.kind == "craft" and r.step.buy then
+        for _, b in pairs(r.step.buy) do if (b.have or 0) > 0 and b.buy == 0 then ownedStep = ownedStep or r end end
+    end
+end
+if ownedStep then mock.click(ownedStep) end
+local mats, priced = 0, true
+local ownedRec = ownedStep and ns.COOKING.recipes[ownedStep.step.recipe]
+for _ in pairs(ownedRec and ownedRec.mats or {}) do mats = mats + 1 end
+for i = 1, mats do
+    local f = items()[i]
+    if not f or strip(f.cost.text) == "0c" then priced = false end
+end
+expect("a step that cooks what's in your bags still prices one craft at today's prices",
+    ownedStep ~= nil and priced and lines():find("takes them from your bags") ~= nil)
+clickFirstCraft()
 -- the Craft bar: the button crafts the count, opening the profession window first when it's closed
 local bar = frame.detail.craft
 expect("Craft bar on a crafting step: a count no more than the step needs", bar:IsShown()

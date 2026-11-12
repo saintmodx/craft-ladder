@@ -3,6 +3,15 @@
 What's new in Craft Ladder, newest first. The format follows [Keep a Changelog](https://keepachangelog.com), the
 version numbers [Semantic Versioning](https://semver.org).
 
+## Unreleased
+
+### Fixed
+
+- A card's "One craft" now always says what the craft costs at today's prices: every ingredient at its price, or at
+  what making it yourself costs when that's cheaper. It used to show what the step happens to pay, so an ingredient
+  already in your bags cost "0" and the same recipe could be dearer in Vendor sales or AH sales than in Gold. What
+  you have is now a line of its own under the ingredients - the step still spends nothing on it.
+
 ## 1.9.1 - 2026-11-11
 
 ### Added

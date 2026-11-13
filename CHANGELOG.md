@@ -3,7 +3,7 @@
 What's new in Craft Ladder, newest first. The format follows [Keep a Changelog](https://keepachangelog.com), the
 version numbers [Semantic Versioning](https://semver.org).
 
-## Unreleased
+## 1.9.3 - 2026-11-13
 
 ### Fixed
 

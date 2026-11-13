@@ -26,9 +26,11 @@ def _key(version):
 
 
 def latest_build():
-    """The newest WoW Forever build wago.tools lists (Forever builds are the 1.6x ones of wow_classic_beta)."""
-    builds = json.loads(_get(BUILDS))["wow_classic_beta"]
-    return max((b["version"] for b in builds if b["version"].startswith("1.6")), key=_key)
+    """The newest WoW Forever build wago.tools lists (the 1.6x ones; live Forever is the "wowf" branch, the beta
+    builds were under wow_classic_beta)."""
+    builds = json.loads(_get(BUILDS))
+    return max((b["version"] for branch in ("wowf", "wow_classic_beta") for b in builds.get(branch, [])
+                if b["version"].startswith("1.6")), key=_key)
 
 
 def table(name, build, refresh=False):

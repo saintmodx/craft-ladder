@@ -3,6 +3,15 @@
 What's new in Craft Ladder, newest first. The format follows [Keep a Changelog](https://keepachangelog.com), the
 version numbers [Semantic Versioning](https://semver.org).
 
+## Unreleased
+
+### Fixed
+
+- All the data is rebuilt from the live Forever client (build 1.60.1.70938): the recipes, their ingredients, the
+  trainers, the vendors and the prices are the ones the game shows now. Up to now they came from the last beta
+  build, so a few recipes asked for the wrong amount - the Green and the Red Woolen Bag take 5 Bolts of Woolen
+  Cloth, not 4.
+
 ## 1.9.2 - 2026-11-12
 
 ### Fixed

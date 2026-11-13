@@ -961,6 +961,10 @@ local function spellNamed(name)
 end
 local war, warRec = spellNamed("Shining Mithril Helm")
 local hammer, hammerRec = spellNamed("Arcanite Blacksmith Hammer")
+-- the data knows where both come from now: make them guesses again, so the test holds through data rebuilds
+for _, rec in ipairs({ warRec, hammerRec }) do
+    rec.guess, rec.get = true, { { kind = "trainer", cost = 10000, costGuess = true } }
+end
 expect("two guessed recipes", warRec.guess and hammerRec.guess)
 -- a specialization's trainer lists only its own recipes: it says nothing of the guessed ones below them
 mock.trainer = { { name = "Dark Iron Pulverizer", skillName = "Blacksmithing", skill = 265, cost = 50000 } }

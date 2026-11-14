@@ -5,7 +5,35 @@ version numbers [Semantic Versioning](https://semver.org).
 
 ## Unreleased
 
+### Added
+
+- The Craft Ladder tab at the auction house has a Full Rescan button: it searches the auction house itself for
+  everything the list buys and sells, then puts those prices in the list and in the ladder. Until now the prices
+  were whatever your last AuctionDB or Auctionator scan saw, and only what you searched by hand was fresh. The line
+  under the list counts how far it has got ("Scanning the auction house: 12 of 57 items"), the button turns into
+  Stop while it runs, and an item searched in the last two minutes is left alone. It goes one item at a time, as
+  the server allows, so a long list takes a while.
+
+- A Scan button of its own on every row: on a step it asks about what the step makes and everything it takes, on an
+  ingredient about that one item. These ask whatever the price's age - you clicked for them.
+
+### Changed
+
+- In Profit, the auction house tab now lists every ingredient a craft takes, not only the ones you still have to
+  buy: an ingredient already in your bags or bank is there in grey, saying how many you need and how many you have.
+  Its box and Buy are there too, so you can buy more of something you already have. The other modes stay a plain
+  shopping list. Ingredients a vendor sells (thread, dye) are still left out everywhere: the tab is for the
+  auction house.
+
+- The auction house tab has no line over the list saying what it shows: the profession and the mode above it say
+  that already. An empty list still says why.
+
 ### Fixed
+
+- Searching the auction house for something your ladder makes now changes what the step says it sells for, as a
+  searched reagent already changed what it costs. Until now a search of the finished item was thrown away unless at
+  least 5 of them were listed, so the price you had just seen with your own eyes was ignored and the step still
+  counted on a vendor. A thin market still sells one at the auction house and the rest to a vendor.
 
 - All the data is rebuilt from the live Forever client (build 1.60.1.70938): the recipes, their ingredients, the
   trainers, the vendors and the prices are the ones the game shows now. Up to now they came from the last beta

@@ -856,8 +856,9 @@ local function profitDetail(step)
     ownedNote(rec, "You have %s: counted at their price too, since you could sell them.")
     line(step.vendor and "Profit: what a vendor pays, less the ingredients at today's prices. How many you can make," ..
         " the auction house's ingredients decide." or "Profit: at the lowest listing after the auction house's cut," ..
-        " with 5 or more listed; it counts only when it pays 1.5 times what a vendor does. How many sell, the auction" ..
-        " house doesn't say. Prices change: look again before buying.", C.muted)
+        " with 5 or more listed, or however few when you searched it yourself; it counts only when it pays 1.5 times" ..
+        " what a vendor does. How many sell, the auction house doesn't say. Prices change: look again before buying.",
+        C.muted)
 end
 
 -- What disenchanting gives (Disenchant mode, a bag's item or a recipe's): one disenchant's outcomes, what n bring, and
@@ -943,7 +944,8 @@ local function bagDetail(step)
         " (after its cut%s)."):format(ns.Money(ah * ns.Prices.AH_CUT), e.qty and (", " .. e.qty .. " listed") or "")
         or "Not on the auction house.", C.muted)
     line(vendor and vendor > 0 and (ns.Money(vendor) .. " each at a vendor.") or "Vendors don't buy it.", C.muted)
-    line("The auction house counts with 5 or more listed. What made it doesn't count: it's made.", C.muted)
+    line("The auction house counts with 5 or more listed, or however few when you searched it yourself." ..
+        " What made it doesn't count: it's made.", C.muted)
 end
 
 -- Disenchant: an item the auction house lists for less than disenchanting it brings: what buying one gains on average

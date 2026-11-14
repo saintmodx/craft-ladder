@@ -205,7 +205,10 @@ local function resale(ctx, item, made, sold)
     local vendorEach, ahEach, ah = ctx.sell[item] or 0, 0, 0
     local _, e = ctx.quote(item, 1, 0, true)
     local each = e and (e.min or e.unit)
-    if not ctx.vendorOnly and each and e.qty and e.qty >= 5 and each * AH_CUT >= AH_OVER_VENDOR * vendorEach then
+    -- your own search saw every auction of the item, so what it found is the price however few are listed; a scan's
+    -- single odd listing says nothing, so that one takes 5 before it counts (only a quarter of the stock sells here)
+    local enough = e and (e.source == "search" or (e.qty and e.qty >= 5))
+    if not ctx.vendorOnly and each and enough and each * AH_CUT >= AH_OVER_VENDOR * vendorEach then
         ahEach = each * AH_CUT
         ah = min(made, max(0, max(1, math.floor(e.qty / 4)) - (sold[item] or 0)))
     end

@@ -287,7 +287,17 @@ function M.install(fx, ns)
     -- a search at the auction house: M.searchResults[item] = { { price each, how many }, ... }, as the game's own
     -- search would answer; M.searchPartial: the whole list hadn't loaded
     M.searchResults = {}
+    -- a rescan asking the auction house: M.sent and M.refreshed are the items it asked about (an item in
+    -- M.hasResults has to be refreshed, not searched again), M.throttleReady = false: the server is busy
+    M.sent, M.refreshed, M.hasResults = {}, {}, {}
     C_AuctionHouse = {
+        MakeItemKey = function(item) return { itemID = item } end,
+        HasSearchResults = function(key) return M.hasResults[key.itemID] or false end,
+        GetItemKeyInfo = function(key) return { isCommodity = not M.notCommodity } end,
+        IsThrottledMessageSystemReady = function() return M.throttleReady ~= false end,
+        SendSearchQuery = function(key) M.sent[#M.sent + 1] = key.itemID end,
+        RefreshCommoditySearchResults = function(item) M.refreshed[#M.refreshed + 1] = item end,
+        RefreshItemSearchResults = function(key) M.refreshed[#M.refreshed + 1] = key.itemID end,
         GetNumCommoditySearchResults = function(item) return #(M.searchResults[item] or {}) end,
         GetCommoditySearchResultInfo = function(item, i)
             local r = (M.searchResults[item] or {})[i]

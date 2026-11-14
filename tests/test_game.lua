@@ -1697,6 +1697,12 @@ local before = #mock.shownChildren(ahPanel.scroll.child, "item")
 expect("... a row per step, none for the whole ladder; a + / - and a Search button on one with something to buy",
     #ahSteps > 1 and ahSteps[1].entry.step and #ahStep.entry.rows > 0 and ahStep.fold:IsShown()
     and ahStep.search:IsShown())
+do -- a step's row shows what it makes, a reagent's row that item; the window's rows do the same
+    local makes = ns.ProfessionByKey.blacksmithing.recipes[ahStep.entry.step.recipe].makes
+    local reagent = mock.shownChildren(ahPanel.scroll.child, "item")[1]
+    expect("... hovering a step shows what it makes, hovering a reagent shows the reagent",
+        makes and hover(ahStep) == makes and reagent and hover(reagent) == reagent.item)
+end
 mock.click(ahStep)
 local after = #mock.shownChildren(ahPanel.scroll.child, "item")
 expect("... a click on a step unfolds or folds its reagents, and searches nothing", not searched
@@ -1859,6 +1865,24 @@ expect("... Favor: the window's Merchant's Favor recipes too, a row per recipe, 
     ahPanel.modes[4]:IsShown() and ahPanel.modes[4].active and not ahPanel.modes[3].active and bsProf.favorView
     and #favorSteps == ns.Favor.Count(ns.ProfessionByKey.blacksmithing) and not ahPanel.crafts:IsShown()
     and gloves and strip(gloves.sub.text):find("skill 80") and #gloves.entry.rows > 0)
+do -- Favor says what a craft takes, the ingredients you have enough of too
+    local mat = gloves.entry.rows[1].item
+    fx.blacksmithing.owned[mat] = 999
+    mock.fire("BAG_UPDATE_DELAYED")
+    ns.Window.Invalidate()
+    ns.AuctionTab.Refresh()
+    local have
+    for _, r in ipairs(mock.shownChildren(ahPanel.scroll.child, "entry")) do
+        if r.entry.step.recipe == 1252260 then
+            for _, e in ipairs(r.entry.rows) do if e.item == mat then have = e end end
+        end
+    end
+    expect("... Favor: an ingredient you have enough of is still listed, with 0 to buy", have and have.buy == 0)
+    fx.blacksmithing.owned[mat] = nil
+    mock.fire("BAG_UPDATE_DELAYED")
+    ns.Window.Invalidate()
+    ns.AuctionTab.Refresh()
+end
 mock.click(ahPanel.modes[1])
 expect("... and Skill: the window's ladder again", not bsProf.favorView and bsProf.mode == "skill"
     and not ahPanel.modes[4].active and mock.shownChildren(ahPanel.scroll.child, "entry")[1].entry.step.kind ~= "favor")

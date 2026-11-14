@@ -58,15 +58,17 @@ end
 
 -- What a buy list takes from the auction house, for `times` crafts: made intermediates followed into what they're
 -- made of (and the ones of them bought, when a step makes some and buys the rest), vendors' goods left out. Adds to
--- acc = { [item] = { buy, need, have } }.
-local function shopping(acc, buy, faction, times)
+-- acc = { [item] = { buy, need, have } }. `all` keeps what the craft takes but you already have, as a row that
+-- buys nothing.
+local function shopping(acc, buy, faction, times, all)
     for item, b in pairs(buy or {}) do
         local made = b.make and b.make.made or 0
-        if made > 0 then shopping(acc, b.make.parts, faction, times) end
+        if made > 0 then shopping(acc, b.make.parts, faction, times, all) end
         local bought = b.buy - made
-        if bought > 1e-9 and not ns.Prices.Vendor(item, faction, ns.Prices.Real()) then
+        if (bought > 1e-9 or (all and made == 0)) and not ns.Prices.Vendor(item, faction, ns.Prices.Real()) then
             local e = acc[item] or { buy = 0, need = 0, have = 0 }
-            e.buy, e.need, e.have = e.buy + bought * times, e.need + (b.need - made) * times, math.max(e.have, b.have)
+            e.buy = e.buy + math.max(bought, 0) * times
+            e.need, e.have = e.need + (b.need - made) * times, math.max(e.have, b.have)
             acc[item] = e
         end
     end
@@ -76,21 +78,21 @@ end
 -- Gold prices its rows as if nothing were owned: what the bags have is taken off here.
 -- shortcut: Gold takes off only what's bought (ore), not a made intermediate in the bags (bars); upgrade if it misleads.
 local function needs(ladder, steps, times)
+    local all = ladder.favor or ladder.mode == "gold"
     local acc = {}
     for _, s in ipairs(steps) do
         if s.buy then
-            shopping(acc, s.buy, ladder.state.faction, times)
+            shopping(acc, s.buy, ladder.state.faction, times, all)
             if s.learn and s.learn.kind == "ah" then acc[s.learn.item] = { buy = 1, need = 1, have = 0 } end
         end
     end
-    local gold = ladder.mode == "gold" and not ladder.favor
-    local owned = gold and ladder.state.owned or {}
+    local owned = not ladder.favor and ladder.mode == "gold" and ladder.state.owned or {}
     local rows = {}
     for item, e in pairs(acc) do
         local buy = math.ceil(e.buy - (owned[item] or 0))
-        -- Profit says what a craft takes, the ones already in your bags and bank too; the other modes are a
-        -- shopping list, so they keep only what's still to buy
-        if buy > 0 or gold then
+        -- Profit and Favor say what a craft takes, the ones already in your bags and bank too; the other modes are
+        -- a shopping list, so they keep only what's still to buy
+        if buy > 0 or all then
             rows[#rows + 1] = { item = item, buy = math.max(buy, 0), need = e.need, have = owned[item] or e.have }
         end
     end
@@ -280,8 +282,8 @@ local function paintStep(r)
     r:SetPanelColors((on or r:IsMouseOver()) and C.hover or C.panel2, on and C.selected or C.panel2)
 end
 
--- A step's row: a click (or its + / -) unfolds or folds its reagents; its Search button searches them all with
--- Auctionator.
+-- A step's row: a click (or its + / -) unfolds or folds its reagents; hovering it shows what it makes, as the
+-- window's rows do; its Search button searches them all with Auctionator.
 local function makeStep(parent)
     local r = CreateFrame("Button", nil, parent)
     r:SetHeight(ROW_H - 2)
@@ -306,8 +308,12 @@ local function makeStep(parent)
     r.search.tooltip = { "Search", "Auctionator's Shopping tab with what this step buys, and how many." }
     r.cost = UI.Label(r, 11, C.text, nil, "RIGHT")
     r.cost:SetPoint("RIGHT", r.search, "LEFT", -10, 0)
-    r:SetScript("OnEnter", paintStep)
-    r:SetScript("OnLeave", paintStep)
+    r:SetScript("OnEnter", function(self)
+        paintStep(self)
+        local spell = self.entry.step.recipe
+        if self.makes or spell then UI.ItemTooltip(self, self.makes, spell) end
+    end)
+    r:SetScript("OnLeave", function(self) paintStep(self); UI.HideTooltip() end)
     r:SetScript("OnClick", function(self)
         if #self.entry.rows == 0 then return end
         opened[self.entry.key] = not opened[self.entry.key] or nil
@@ -345,12 +351,14 @@ local function fillStep(r, e, data, lookup, gold)
     if s.kind == "rank" then -- a rank whose quest asks for items (Expert Cooking's)
         r.icon:SetTexture(s.rank.item and UI.ItemIcon(s.rank.item) or ns.Window.Shared.RANK_ICON[s.rank.how]
             or data.icon)
+        r.makes = s.rank.item
         r.name:SetText("Learn " .. s.rank.name)
         UI.SetColor(r.name, C.gold)
         r.sub:SetText(("at %d, raises your cap to %d"):format(s.from, s.rank.cap))
         return
     end
     local rec = data.recipes[s.recipe]
+    r.makes = rec.makes
     r.icon:SetTexture(rec.makes and UI.ItemIcon(rec.makes) or rec.icon or data.icon)
     r.name:SetText(rec.name)
     UI.SetColor(r.name, s.color ~= "grey" and ns.Window.Shared.STEP_COLOR[s.color] or C.text)

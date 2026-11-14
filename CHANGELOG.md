@@ -19,9 +19,9 @@ version numbers [Semantic Versioning](https://semver.org).
 
 ### Changed
 
-- In Profit, the auction house tab now lists every ingredient a craft takes, not only the ones you still have to
-  buy: an ingredient already in your bags or bank is there in grey, saying how many you need and how many you have.
-  Its box and Buy are there too, so you can buy more of something you already have. The other modes stay a plain
+- In Profit and in Favor, the auction house tab now lists every ingredient a craft takes, not only the ones you
+  still have to buy: an ingredient already in your bags or bank is there, saying how many you need and how many you
+  have. Its box and Buy are there too, so you can buy more of something you already have. The other modes stay a plain
   shopping list. Ingredients a vendor sells (thread, dye) are still left out everywhere: the tab is for the
   auction house.
 
@@ -29,6 +29,9 @@ version numbers [Semantic Versioning](https://semver.org).
   that already. An empty list still says why.
 
 ### Fixed
+
+- Hovering a step on the auction house tab now shows what it makes, the game's own tooltip, as hovering an
+  ingredient shows the ingredient.
 
 - Searching the auction house for something your ladder makes now changes what the step says it sells for, as a
   searched reagent already changed what it costs. Until now a search of the finished item was thrown away unless at

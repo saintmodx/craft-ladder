@@ -15,7 +15,7 @@ import urllib.request
 from collections import defaultdict
 from pathlib import Path
 
-COMMIT = "10164719738bdc1e7baa23dd854bef4c7184a6ac"  # ATTWoWAddon/AllTheThings, 2026-10-16
+COMMIT = "95bb427d1fec65ae8e20a2543f32b97372ca5b01"  # ATTWoWAddon/AllTheThings, 2026-11-15
 DB = ".contrib/.db/forever/"
 RAW = "https://raw.githubusercontent.com/ATTWoWAddon/AllTheThings/%s/%s"
 TREE = "https://api.github.com/repos/ATTWoWAddon/AllTheThings/git/trees/%s?recursive=1"

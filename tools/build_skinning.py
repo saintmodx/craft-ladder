@@ -111,6 +111,10 @@ def main():
             left["can't be attacked"] += 1
             continue
         where, lo, hi, name = spawns_of(entry)
+        # QuestieDB now and then gives a creature the whole game as its level range (Echeyakee: 16-60, a level 16
+        # rare), and that skill would send you to the wrong zone: CMaNGOS's Classic levels win when it looks so wrong
+        if lo and hi and hi - lo > 15 and int(c["MaxLevel"] or 0):
+            lo, hi = int(c["MinLevel"] or lo), int(c["MaxLevel"] or hi)
         if not where or not lo:
             left["no spawns in a known zone"] += 1
             continue

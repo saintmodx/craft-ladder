@@ -3,6 +3,20 @@
 What's new in Craft Ladder, newest first. The format follows [Keep a Changelog](https://keepachangelog.com), the
 version numbers [Semantic Versioning](https://semver.org).
 
+## Unreleased
+
+### Changed
+
+- The data is rebuilt from today's AllTheThings and QuestieDB: 366 recipes now say where their plan comes from - a
+  vendor, a quest or a drop - instead of only "buy it at the auction house", and four recipes were added (Draught of
+  Tongues, Revealing Draught, Gurubashi Mojo Madness, Goblin Mortar). The Steam Tonk Controller's schematic is sold
+  at the Darkmoon Faire, not from a quest.
+
+### Fixed
+
+- Skinning no longer sends you after a creature far above your skill because its level was read wrong (Echeyakee, a
+  level 16 rare, counted as needing skill 190).
+
 ## 1.10.0 - 2026-11-15
 
 ### Added

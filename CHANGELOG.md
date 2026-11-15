@@ -3,7 +3,7 @@
 What's new in Craft Ladder, newest first. The format follows [Keep a Changelog](https://keepachangelog.com), the
 version numbers [Semantic Versioning](https://semver.org).
 
-## 1.9.3 - 2026-11-13
+## 1.10.0 - 2026-11-15
 
 ### Added
 
@@ -37,6 +37,10 @@ version numbers [Semantic Versioning](https://semver.org).
   searched reagent already changed what it costs. Until now a search of the finished item was thrown away unless at
   least 5 of them were listed, so the price you had just seen with your own eyes was ignored and the step still
   counted on a vendor. A thin market still sells one at the auction house and the rest to a vendor.
+
+## 1.9.3 - 2026-11-13
+
+### Fixed
 
 - All the data is rebuilt from the live Forever client (build 1.60.1.70938): the recipes, their ingredients, the
   trainers, the vendors and the prices are the ones the game shows now. Up to now they came from the last beta

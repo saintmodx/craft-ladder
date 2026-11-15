@@ -738,8 +738,8 @@ local function renderList()
         end
         if vendorRows > 0 then -- only the auction house's: the plain list, no heading to tell them apart
             heading("Sell at the auction house", #ladder.steps - vendorRows, { "Sell at the auction house", "These" ..
-                " earn more at the auction house: 5 or more listed, and it pays 1.5 times what a vendor does. How many" ..
-                " sell, the auction house doesn't say." })
+                " earn more at the auction house: 5 or more listed (or however few when you searched it yourself)," ..
+                " and it pays 1.5 times what a vendor does. How many sell, the auction house doesn't say." })
         end
         if #ladder.steps == vendorRows then heading("nothing at today's prices", nil, nothing) end
         rows(vendorRows + 1, #ladder.steps)

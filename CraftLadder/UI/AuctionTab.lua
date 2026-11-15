@@ -20,6 +20,9 @@ local FAVOR_TIP = "Merchant's Favor recipes, the supply camps' quartermasters se
 local panel, rowPool, stepPool, profButtons
 local pending -- the purchase waiting for its price or its confirmation: { item, qty, row, total }
 local shown -- the ladder drawn: { data, mode, ladder, scan }; drawn again while nothing it depends on changed
+local lastEntries -- the steps drawn, with their rows: what Full Rescan asks the auction house about
+local rescanning -- a scan was running at the last tick: its end says what it brought
+local scanWhat -- what the scan running is about, for its line ("the auction house", an item, a recipe)
 local opened -- the keys of the steps whose reagents are shown; nil: the step you're on
 local crafts = 1 -- Gold: how many crafts to buy for
 
@@ -55,15 +58,17 @@ end
 
 -- What a buy list takes from the auction house, for `times` crafts: made intermediates followed into what they're
 -- made of (and the ones of them bought, when a step makes some and buys the rest), vendors' goods left out. Adds to
--- acc = { [item] = { buy, need, have } }.
-local function shopping(acc, buy, faction, times)
+-- acc = { [item] = { buy, need, have } }. `all` keeps what the craft takes but you already have, as a row that
+-- buys nothing.
+local function shopping(acc, buy, faction, times, all)
     for item, b in pairs(buy or {}) do
         local made = b.make and b.make.made or 0
-        if made > 0 then shopping(acc, b.make.parts, faction, times) end
+        if made > 0 then shopping(acc, b.make.parts, faction, times, all) end
         local bought = b.buy - made
-        if bought > 1e-9 and not ns.Prices.Vendor(item, faction, ns.Prices.Real()) then
+        if (bought > 1e-9 or (all and made == 0)) and not ns.Prices.Vendor(item, faction, ns.Prices.Real()) then
             local e = acc[item] or { buy = 0, need = 0, have = 0 }
-            e.buy, e.need, e.have = e.buy + bought * times, e.need + (b.need - made) * times, math.max(e.have, b.have)
+            e.buy = e.buy + math.max(bought, 0) * times
+            e.need, e.have = e.need + (b.need - made) * times, math.max(e.have, b.have)
             acc[item] = e
         end
     end
@@ -73,18 +78,23 @@ end
 -- Gold prices its rows as if nothing were owned: what the bags have is taken off here.
 -- shortcut: Gold takes off only what's bought (ore), not a made intermediate in the bags (bars); upgrade if it misleads.
 local function needs(ladder, steps, times)
+    local all = ladder.favor or ladder.mode == "gold"
     local acc = {}
     for _, s in ipairs(steps) do
         if s.buy then
-            shopping(acc, s.buy, ladder.state.faction, times)
+            shopping(acc, s.buy, ladder.state.faction, times, all)
             if s.learn and s.learn.kind == "ah" then acc[s.learn.item] = { buy = 1, need = 1, have = 0 } end
         end
     end
-    local owned = ladder.mode == "gold" and not ladder.favor and ladder.state.owned or {}
+    local owned = not ladder.favor and ladder.mode == "gold" and ladder.state.owned or {}
     local rows = {}
     for item, e in pairs(acc) do
         local buy = math.ceil(e.buy - (owned[item] or 0))
-        if buy > 0 then rows[#rows + 1] = { item = item, buy = buy, need = e.need, have = owned[item] or e.have } end
+        -- Profit and Favor say what a craft takes, the ones already in your bags and bank too; the other modes are
+        -- a shopping list, so they keep only what's still to buy
+        if buy > 0 or all then
+            rows[#rows + 1] = { item = item, buy = math.max(buy, 0), need = e.need, have = owned[item] or e.have }
+        end
     end
     table.sort(rows, function(a, b) return a.item < b.item end)
     return rows
@@ -94,8 +104,10 @@ end
 local function cost(rows, lookup)
     local total, unpriced = 0, false
     for _, e in ipairs(rows) do
-        local p = lookup(e.item, true)
-        if p then total = total + p.unit * e.buy else unpriced = true end
+        if e.buy > 0 then -- a row only there to say what the craft takes costs nothing here
+            local p = lookup(e.item, true)
+            if p then total = total + p.unit * e.buy else unpriced = true end
+        end
     end
     return total, unpriced
 end
@@ -115,15 +127,71 @@ local function search(rows)
     if not api or #rows == 0 then return end
     local terms = {}
     for _, e in ipairs(rows) do
-        local name = gameName(e.item)
-        if not name then
-            status("The items' names are still loading: click again.", C.warn)
-            return
+        if e.buy > 0 then -- Profit lists what you already have too: nothing to shop for there
+            local name = gameName(e.item)
+            if not name then
+                status("The items' names are still loading: click again.", C.warn)
+                return
+            end
+            terms[#terms + 1] = { searchString = name, isExact = true, quantity = e.buy }
         end
-        terms[#terms + 1] = { searchString = name, isExact = true, quantity = e.buy }
     end
+    if #terms == 0 then return end
     local ok, err = pcall(api.MultiSearchAdvanced, "CraftLadder", terms)
     if not ok then status("Auctionator: " .. tostring(err), C.bad) end
+end
+
+-- Every item the whole list buys and every item its steps make: what a rescan asks the auction house about.
+local function rescanItems(data, entries)
+    local items, seen = {}, {}
+    local function add(item)
+        if item and not seen[item] then
+            seen[item] = true
+            items[#items + 1] = item
+        end
+    end
+    for _, e in ipairs(entries or {}) do
+        for _, row in ipairs(e.rows) do add(row.item) end
+        local rec = e.step.recipe and data.recipes[e.step.recipe]
+        add(rec and rec.makes) -- what the step sells: Profit is priced on it
+    end
+    return items
+end
+
+-- How far the scan has got, in the status line, and the Full Rescan button as the way to stop it.
+local function rescanStatus()
+    local running, done, total = ns.Prices.RescanState()
+    panel.rescan.label:SetText(running and "Stop" or "Full Rescan")
+    if running then
+        status(("Scanning %s: %d of %d items."):format(scanWhat or "the auction house", done, total))
+    elseif rescanning then
+        status(("Scan done: %d of %d items searched."):format(done, total), C.good)
+    end
+    rescanning = running
+end
+
+-- One item's or one step's Scan button: those prices now, however fresh they are - you asked for them.
+local function scan(items, what)
+    if ns.Prices.RescanState() then
+        status("A scan is already running: stop it first.", C.warn)
+        return
+    end
+    scanWhat = what
+    local asked = #items > 0 and ns.Prices.Rescan(items, true) or 0
+    rescanning = asked > 0
+    if asked == 0 then
+        status("Nothing to scan here.", C.muted)
+    else
+        status(("Scanning %s: 0 of %d items."):format(what, asked))
+    end
+    rescanStatus()
+end
+
+-- One step's Scan: what it makes and everything it takes.
+local function scanStep(entry)
+    local data = picked(professions())
+    local rec = data and entry.step.recipe and data.recipes[entry.step.recipe]
+    scan(data and rescanItems(data, { entry }) or {}, rec and rec.name or "this step")
 end
 
 local function paintRow(r)
@@ -191,12 +259,16 @@ local function makeRow(parent)
     r.name:SetPoint("TOPLEFT", r.icon, "TOPRIGHT", 8, 1)
     r.sub = UI.Label(r, 10, C.muted)
     r.sub:SetPoint("BOTTOMLEFT", r.icon, "BOTTOMRIGHT", 8, -1)
-    r.button = UI.Button(r, "Buy", 130, 22, function() buyClick(r) end)
+    r.button = UI.Button(r, "Buy", 80, 22, function() buyClick(r) end)
     r.button:SetPoint("RIGHT", -6, 0)
     r.count = numberBox(r)
     r.count:SetPoint("RIGHT", r.button, "LEFT", -6, 0)
+    r.scan = UI.Button(r, "Scan", 54, 22, function() scan({ r.item }, ns.Describe.ItemName(r.item)) end)
+    r.scan:SetPoint("RIGHT", r.count, "LEFT", -6, 0)
+    r.scan.tooltip = { "Scan", "Asks the auction house what this one goes for now, and puts that price in the" ..
+        " ladder. However fresh the price already is." }
     r.price = UI.Label(r, 11, C.text, nil, "RIGHT")
-    r.price:SetPoint("RIGHT", r.count, "LEFT", -10, 0)
+    r.price:SetPoint("RIGHT", r.scan, "LEFT", -10, 0)
     r:SetScript("OnEnter", function(self) UI.ItemTooltip(self, self.item) end)
     r:SetScript("OnLeave", UI.HideTooltip)
     r:SetScript("OnClick", function(self)
@@ -210,8 +282,8 @@ local function paintStep(r)
     r:SetPanelColors((on or r:IsMouseOver()) and C.hover or C.panel2, on and C.selected or C.panel2)
 end
 
--- A step's row: a click (or its + / -) unfolds or folds its reagents; its Search button searches them all with
--- Auctionator.
+-- A step's row: a click (or its + / -) unfolds or folds its reagents; hovering it shows what it makes, as the
+-- window's rows do; its Search button searches them all with Auctionator.
 local function makeStep(parent)
     local r = CreateFrame("Button", nil, parent)
     r:SetHeight(ROW_H - 2)
@@ -227,13 +299,21 @@ local function makeStep(parent)
     r.name:SetPoint("TOPLEFT", r.icon, "TOPRIGHT", 8, 1)
     r.sub = UI.Label(r, 10, C.muted)
     r.sub:SetPoint("BOTTOMLEFT", r.icon, "BOTTOMRIGHT", 8, -1)
+    r.scan = UI.Button(r, "Scan", 54, 22, function() scanStep(r.entry) end)
+    r.scan:SetPoint("RIGHT", -6, 0)
+    r.scan.tooltip = { "Scan", "Asks the auction house about what this step makes and everything it takes, then" ..
+        " puts those prices in the ladder." }
     r.search = UI.Button(r, "Search", 70, 22, function() search(r.entry.rows) end)
-    r.search:SetPoint("RIGHT", -6, 0)
+    r.search:SetPoint("RIGHT", r.scan, "LEFT", -6, 0)
     r.search.tooltip = { "Search", "Auctionator's Shopping tab with what this step buys, and how many." }
     r.cost = UI.Label(r, 11, C.text, nil, "RIGHT")
     r.cost:SetPoint("RIGHT", r.search, "LEFT", -10, 0)
-    r:SetScript("OnEnter", paintStep)
-    r:SetScript("OnLeave", paintStep)
+    r:SetScript("OnEnter", function(self)
+        paintStep(self)
+        local spell = self.entry.step.recipe
+        if self.makes or spell then UI.ItemTooltip(self, self.makes, spell) end
+    end)
+    r:SetScript("OnLeave", function(self) paintStep(self); UI.HideTooltip() end)
     r:SetScript("OnClick", function(self)
         if #self.entry.rows == 0 then return end
         opened[self.entry.key] = not opened[self.entry.key] or nil
@@ -264,16 +344,21 @@ local function fillStep(r, e, data, lookup, gold)
     r.fold:SetShown(#e.rows > 0)
     r.fold:SetTexture(opened[e.key] and "Interface\\Buttons\\UI-MinusButton-Up"
         or "Interface\\Buttons\\UI-PlusButton-Up")
-    r.search:SetShown(#e.rows > 0 and auctionator() ~= nil)
+    local toBuy = 0 -- Profit's rows say what a craft takes, so some of them have nothing to buy
+    for _, row in ipairs(e.rows) do toBuy = toBuy + row.buy end
+    r.search:SetShown(toBuy > 0 and auctionator() ~= nil)
+    r.scan:SetShown(#e.rows > 0 or s.recipe ~= nil) -- nothing to ask about a rank that buys nothing
     if s.kind == "rank" then -- a rank whose quest asks for items (Expert Cooking's)
         r.icon:SetTexture(s.rank.item and UI.ItemIcon(s.rank.item) or ns.Window.Shared.RANK_ICON[s.rank.how]
             or data.icon)
+        r.makes = s.rank.item
         r.name:SetText("Learn " .. s.rank.name)
         UI.SetColor(r.name, C.gold)
         r.sub:SetText(("at %d, raises your cap to %d"):format(s.from, s.rank.cap))
         return
     end
     local rec = data.recipes[s.recipe]
+    r.makes = rec.makes
     r.icon:SetTexture(rec.makes and UI.ItemIcon(rec.makes) or rec.icon or data.icon)
     r.name:SetText(rec.name)
     UI.SetColor(r.name, s.color ~= "grey" and ns.Window.Shared.STEP_COLOR[s.color] or C.text)
@@ -290,7 +375,7 @@ local function fillStep(r, e, data, lookup, gold)
         r.sub:SetText(("at %d, make one and keep it"):format(s.from))
     end
     local total, unpriced = cost(e.rows, lookup)
-    r.cost:SetText(#e.rows == 0 and (hex(C.good) .. "nothing to buy|r")
+    r.cost:SetText(toBuy == 0 and (hex(C.good) .. "nothing to buy|r")
         or ns.Money(total) .. (unpriced and (" " .. hex(C.bad) .. "+ ?|r") or ""))
 end
 
@@ -298,6 +383,8 @@ local function fillRow(r, e, lookup)
     r.item = e.item
     r.icon:SetTexture(UI.ItemIcon(e.item))
     r.name:SetText(ns.Describe.ItemName(e.item))
+    -- one you have enough of is shown for what the craft takes, in grey; its Buy still buys as many as you type
+    UI.SetColor(r.name, e.buy > 0 and C.text or C.muted)
     r.sub:SetText(("need %d, you have %d"):format(math.ceil(e.need), e.have))
     local p = lookup(e.item, true)
     r.price:SetText(p and (ns.Money(p.unit) .. " each") or (hex(C.bad) .. "not listed|r"))
@@ -340,9 +427,11 @@ function AuctionTab.Refresh(cached)
         lastMode and -2 or -42)
     panel.crafts:Hide()
     panel.craftsLabel:Hide()
+    panel.rescan:SetShown(data ~= nil)
     if not data then
         panel.heading:SetText("No crafting profession: nothing to buy for one.")
         panel.scroll:SetContentHeight(1)
+        lastEntries = nil
         return
     end
     local ladder = ladderFor(data, cached)
@@ -372,6 +461,7 @@ function AuctionTab.Refresh(cached)
                                       rows = needs(ladder, { s }, gold and crafts or 1) }
         end
     end
+    lastEntries = entries
     -- at first the step the window shows is open, or the first with something to buy
     if not opened then
         local wProf, wStep = ns.Window.Selected()
@@ -384,11 +474,9 @@ function AuctionTab.Refresh(cached)
         end
         opened = first and { [first] = true } or {}
     end
-    panel.heading:SetText(#entries == 0 and ("%s: nothing to buy"):format(data.name)
-        or ladder.favor and ("%s: Merchant's Favor recipes, what one craft of each buys"):format(data.name)
-        or gold and ("%s: what earns the most now, the ingredients of %d %s"):format(data.name, crafts,
-            crafts == 1 and "craft" or "crafts")
-        or ("%s: what each step buys at the auction house"):format(data.name))
+    -- no line over the list saying what it is: the professions and the modes above it say that. Only an empty
+    -- list needs words.
+    panel.heading:SetText(#entries == 0 and ("%s: nothing to buy"):format(data.name) or "")
     local _, lookup = ns.Prices.ForGame()
     local y = 0
     for _, e in ipairs(entries) do
@@ -444,6 +532,32 @@ local function build_panel(parent)
             i == 1 and 14 or 4, i == 1 and -40 or 0)
         panel.modes[i] = b
     end
+    -- Full Rescan: the prices here are the last scan's, so this asks the auction house about the whole list itself.
+    panel.rescan = UI.Button(panel, "Full Rescan", 90, 18, function()
+        if ns.Prices.RescanState() then
+            ns.Prices.RescanStop()
+            rescanning = false
+            status("Scan stopped: the prices it had got are in.", C.warn)
+            rescanStatus()
+            return
+        end
+        local data = picked(professions())
+        local items = data and rescanItems(data, lastEntries) or {}
+        scanWhat = "the auction house"
+        local asked = #items > 0 and ns.Prices.Rescan(items) or 0
+        rescanning = asked > 0
+        if asked == 0 then
+            status(#items == 0 and "Nothing here to rescan." or
+                "Every price here was searched in the last two minutes: nothing to ask again.", C.muted)
+        else
+            status(("Scanning the auction house: 0 of %d items."):format(asked))
+        end
+        rescanStatus()
+    end)
+    panel.rescan:SetPoint("TOPRIGHT", -14, -38)
+    panel.rescan.tooltip = { "Full Rescan", "Searches the auction house for everything this list buys and sells, then" ..
+        " puts the prices in the ladder. It goes one item at a time, as the server allows: watch the line below." ..
+        " An item searched in the last two minutes is left alone." }
     panel.crafts = numberBox(panel)
     panel.crafts:SetPoint("TOPRIGHT", -14, -10)
     local function setCrafts(self)
@@ -472,6 +586,9 @@ local function build_panel(parent)
         AuctionTab.Refresh()
         -- once AuctionDB has scanned again, the ladder with its prices (once a scan; not in the middle of a purchase)
         panel.ticker = C_Timer.NewTicker(1, function()
+            local running = ns.Prices.RescanState()
+            rescanStatus()
+            if running then return end -- a rescan draws once, when it's done, not on every price it brings
             if shown and not pending and (select(2, ns.Prices.Source()) ~= shown.scan
                 or ns.Prices.LiveVersion() ~= shown.live) then AuctionTab.Refresh() end
         end)

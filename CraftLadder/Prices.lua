@@ -270,6 +270,154 @@ local liveVersion = 0
 -- Counts the searches recorded: what reads live prices (the auction house tab) redraws when it changes.
 function Prices.LiveVersion() return liveVersion end
 
+-- Rescanning a list of items (the auction house tab's Rescan button). The server does throttle these: it takes
+-- about 100 searches a minute and silently throws away any sent while it is busy. So each one waits until
+-- IsThrottledMessageSystemReady says so, four are in flight at once, and one the server never answers is given up
+-- on after a couple of seconds. An item the auction house already holds results for - ours, or another add-on's
+-- search this session - has to be refreshed instead: a second search for it never answers until the house closes.
+local FRESH = 120 -- an item searched less than this ago is left alone
+local INFLIGHT = 4
+local TIMEOUT = 2
+local rescan = { queue = {}, flight = {}, tries = {}, total = 0, done = 0 }
+local rescanTicker, notReadySince
+
+-- Nothing goes out while the server says it is busy. It can also stay busy for good (a message it never answered),
+-- so after TIMEOUT one is sent anyway: the worst that happens is the server drops it, which is handled below.
+local function throttleReady()
+    local ah = C_AuctionHouse
+    if not (ah and ah.IsThrottledMessageSystemReady) then return true end
+    if ah.IsThrottledMessageSystemReady() then
+        notReadySince = nil
+        return true
+    end
+    local now = GetTime()
+    notReadySince = notReadySince or now
+    if now - notReadySince < TIMEOUT then return false end
+    notReadySince = now -- one through, then wait again
+    return true
+end
+
+local function rescanEnd()
+    wipe(rescan.queue)
+    wipe(rescan.flight)
+    wipe(rescan.tries)
+    rescan.running = false
+    if rescanTicker then
+        rescanTicker:Cancel()
+        rescanTicker = nil
+    end
+    -- the prices it brought, in the ladder and in the tab, once: each on its own would recalculate dozens of times
+    if ns.Window then
+        if ns.Window.IsShown() then ns.Window.Refresh() else ns.Window.Invalidate() end
+    end
+    if ns.AuctionTab then ns.AuctionTab.Refresh() end
+end
+
+-- Asks the auction house about one item. false: this client can't (nothing to wait for then).
+local function rescanSend(item)
+    local ah = C_AuctionHouse
+    local key = ah and ah.MakeItemKey and ah.MakeItemKey(item)
+    if not key then return false end
+    local ok, has = pcall(ah.HasSearchResults or function() return false end, key)
+    if ok and has then
+        local info = ah.GetItemKeyInfo and ah.GetItemKeyInfo(key)
+        if info and info.isCommodity then
+            if not ah.RefreshCommoditySearchResults then return false end
+            ah.RefreshCommoditySearchResults(item)
+        else
+            if not ah.RefreshItemSearchResults then return false end
+            ah.RefreshItemSearchResults(key)
+        end
+    else
+        if not ah.SendSearchQuery then return false end
+        ah.SendSearchQuery(key, {}, true) -- the sort doesn't matter: every listing is read
+    end
+    return true
+end
+
+local function rescanPump()
+    if not rescan.running then return end
+    local now, flying = GetTime(), 0
+    for item, sent in pairs(rescan.flight) do
+        if now - sent >= TIMEOUT then -- the server never answered: give up on this one
+            rescan.flight[item] = nil
+            rescan.done = rescan.done + 1
+        else
+            flying = flying + 1
+        end
+    end
+    while rescan.queue[1] and flying < INFLIGHT and throttleReady() do
+        local item = table.remove(rescan.queue, 1)
+        if rescanSend(item) then
+            rescan.flight[item] = GetTime()
+            flying = flying + 1
+        else
+            rescan.done = rescan.done + 1
+        end
+    end
+    if not rescan.queue[1] and not next(rescan.flight) then rescanEnd() end
+end
+
+-- An answer arrived (Prices.Searched has just recorded it): one less to wait for.
+local function rescanAnswered(item)
+    if not rescan.flight[item] then return end
+    rescan.flight[item] = nil
+    rescan.done = rescan.done + 1
+    rescanPump()
+end
+
+-- The server threw a message away without saying which. Only the search that just went out is sent again, twice at
+-- most: resending on every drop could go round for ever while the server is busy.
+local function rescanDropped()
+    if not rescan.running then return end
+    local newest, at
+    for item, sent in pairs(rescan.flight) do
+        if not at or sent > at then newest, at = item, sent end
+    end
+    if not newest or GetTime() - at >= TIMEOUT then return end
+    rescan.flight[newest] = nil
+    rescan.tries[newest] = (rescan.tries[newest] or 0) + 1
+    if rescan.tries[newest] > 2 then
+        rescan.done = rescan.done + 1
+    else
+        table.insert(rescan.queue, 1, newest)
+    end
+    rescanPump()
+end
+
+--- Searches the auction house for each of these items, one at a time, skipping the ones searched a moment ago
+-- (force: asks about them anyway - a button for one item is a deliberate click).
+-- Returns how many it will ask about. Any search's prices are recorded by themselves (Prices.Searched).
+function Prices.Rescan(items, force)
+    local store = liveStore()
+    local now = GetServerTime and GetServerTime() or time()
+    wipe(rescan.queue)
+    wipe(rescan.flight)
+    wipe(rescan.tries)
+    local queued = {}
+    for _, item in ipairs(items) do
+        local e = not force and store and store[item]
+        if not queued[item] and not (e and not e.partial and now - e.ts < FRESH) then
+            queued[item] = true
+            rescan.queue[#rescan.queue + 1] = item
+        end
+    end
+    rescan.total, rescan.done, rescan.running = #rescan.queue, 0, #rescan.queue > 0
+    notReadySince = nil
+    if not rescan.running then return 0 end
+    -- nothing else nudges a search the server dropped or never answered
+    rescanTicker = C_Timer.NewTicker(0.1, rescanPump)
+    rescanPump()
+    return rescan.total
+end
+
+function Prices.RescanStop()
+    if rescan.running then rescanEnd() end
+end
+
+--- How a rescan is going: whether one is running, how many of how many items it has asked about.
+function Prices.RescanState() return rescan.running or false, rescan.done, rescan.total end
+
 -- Records what a search showed for one item. units = { { price each, how many }, ... }, empty: nothing listed.
 -- partial: the auction house hadn't loaded the whole list, so the median is of what it had.
 function Prices.Searched(item, units, partial)
@@ -284,6 +432,7 @@ function Prices.Searched(item, units, partial)
     -- the same search answers more than once while its pages load: nothing to calculate again when the numbers hold
     if was and min and was.min == min and was.median == median and was.qty == qty then return end
     liveVersion = liveVersion + 1
+    if rescan.running then return end -- a rescan rebuilds once, at its end, not on every price it brings
     if ns.Window then
         if ns.Window.IsShown() then ns.Window.Refresh() else ns.Window.Invalidate() end
     end
@@ -319,16 +468,28 @@ end
 
 -- A search at the auction house, yours or another addon's (Auctionator's Shopping tab, the game's own Buy tab):
 -- it sees every auction of that item, so its prices are recorded. Only a search of one item, never the browse list
--- of names, which would fill the table with everything ever typed. Nothing is asked of the auction house here: only
--- what a search already brought is read, so there is no throttling to worry about.
+-- of names, which would fill the table with everything ever typed. Nothing but a rescan asks the auction house
+-- anything here: what another search already brought is only read, so there is no throttling to worry about.
 local searches = CreateFrame and CreateFrame("Frame")
 if searches then
-    for _, e in ipairs({ "COMMODITY_SEARCH_RESULTS_UPDATED", "ITEM_SEARCH_RESULTS_UPDATED" }) do
+    for _, e in ipairs({ "COMMODITY_SEARCH_RESULTS_UPDATED", "ITEM_SEARCH_RESULTS_UPDATED",
+                         "AUCTION_HOUSE_THROTTLED_SYSTEM_READY", "AUCTION_HOUSE_THROTTLED_MESSAGE_DROPPED",
+                         "AUCTION_HOUSE_CLOSED" }) do
         pcall(searches.RegisterEvent, searches, e) -- pcall: an event this client lacks
     end
     searches:SetScript("OnEvent", function(_, event, arg)
         local ah = C_AuctionHouse
         if not ah then return end
+        if event == "AUCTION_HOUSE_THROTTLED_SYSTEM_READY" then
+            notReadySince = nil
+            return rescanPump()
+        elseif event == "AUCTION_HOUSE_THROTTLED_MESSAGE_DROPPED" then
+            return rescanDropped()
+        elseif event == "AUCTION_HOUSE_CLOSED" then
+            -- the queue dies with the house: what it had asked for is never answered now
+            if rescan.running then rescanEnd() end
+            return
+        end
         local units = {}
         if event == "COMMODITY_SEARCH_RESULTS_UPDATED" then
             if type(arg) ~= "number" or not ah.GetNumCommoditySearchResults then return end
@@ -338,6 +499,7 @@ if searches then
             end
             local full = not ah.HasFullCommoditySearchResults or ah.HasFullCommoditySearchResults(arg)
             Prices.Searched(arg, units, not full)
+            rescanAnswered(arg)
         else
             local item = type(arg) == "table" and arg.itemID
             if not item or not ah.GetNumItemSearchResults then return end
@@ -349,6 +511,7 @@ if searches then
             end
             local full = not ah.HasFullItemSearchResults or ah.HasFullItemSearchResults(arg)
             Prices.Searched(item, units, not full)
+            rescanAnswered(item)
         end
     end)
 end

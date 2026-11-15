@@ -277,6 +277,28 @@ do
     scans[#scans] = nil
     mock.searchResults = {}
     CraftLadderDB.live = nil
+    -- what a step makes, searched: the price your own search found is what the step sells at, however few are
+    -- listed (a scan's one odd listing takes 5 before it counts)
+    local bs = ns.ProfessionByKey.blacksmithing
+    ns.Player.Prof(bs).mode = "sell" -- AH sales: Vendor sales counts no auction at all
+    ns.Window.Refresh()
+    local function sold(recipe)
+        for _, s in ipairs(ns.Window.Cached(bs).steps or {}) do if s.recipe == recipe and s.sale then return s.sale end end
+    end
+    local made
+    for _, s in ipairs(ns.Window.Cached(bs).steps) do
+        if s.sale and s.sale.ah >= 1 then made = s.recipe break end
+    end
+    expect("AH sales: a step sells what it makes at the auction house", made ~= nil)
+    mock.searchResults[bs.recipes[made].makes] = { { 50000, 3 } } -- 5g each, only 3 listed
+    mock.fire("COMMODITY_SEARCH_RESULTS_UPDATED", bs.recipes[made].makes)
+    local sale = sold(made)
+    expect("... a search of it sets what the step sells for, with only 3 listed",
+        sale and sale.ah >= 1 and math.floor(sale.ahEach + 0.5) == math.floor(50000 * ns.Prices.AH_CUT + 0.5))
+    expect("... and a quarter of what's listed is what goes there, the rest to a vendor", sale.vendor >= 1)
+    ns.Player.Prof(bs).mode = nil
+    mock.searchResults = {}
+    CraftLadderDB.live = nil
     mock.click(tab("cooking"))
 end
 
@@ -1644,16 +1666,16 @@ AuctionHouseFrame = CreateFrame("Frame")
 AuctionHouseFrame.Tabs = { CreateFrame("Button") }
 AuctionHouseFrame.SetDisplayMode = function() end
 local started, confirmed
-C_AuctionHouse = { IsThrottledMessageSystemReady = function() return true end,
-                   StartCommoditiesPurchase = function(item, n) started = { item, n } end,
-                   ConfirmCommoditiesPurchase = function(item, n) confirmed = { item, n } end }
+-- added to the mock's, not in its place: a rescan needs its searches too
+C_AuctionHouse.StartCommoditiesPurchase = function(item, n) started = { item, n } end
+C_AuctionHouse.ConfirmCommoditiesPurchase = function(item, n) confirmed = { item, n } end
 char().ahProf = "blacksmithing"
 mock.fire("AUCTION_HOUSE_SHOW")
 local ahPanel = ns.AuctionTab.panel
 mock.click(ahPanel.tab)
 local ahRows = mock.shownChildren(ahPanel.scroll.child, "item")
 expect("auction house tab: Blacksmithing's step, a row per reagent to buy with how many", ahPanel:IsShown()
-    and strip(ahPanel.heading.text):find("^Blacksmithing: ") and #ahRows > 0 and tonumber(ahRows[1].count.text) > 0)
+    and strip(ahPanel.heading.text) == "" and #ahRows > 0 and tonumber(ahRows[1].count.text) > 0)
 local ahRow = ahRows[1]
 ahRow.count:SetText("5")
 mock.click(ahRow.button)
@@ -1675,6 +1697,12 @@ local before = #mock.shownChildren(ahPanel.scroll.child, "item")
 expect("... a row per step, none for the whole ladder; a + / - and a Search button on one with something to buy",
     #ahSteps > 1 and ahSteps[1].entry.step and #ahStep.entry.rows > 0 and ahStep.fold:IsShown()
     and ahStep.search:IsShown())
+do -- a step's row shows what it makes, a reagent's row that item; the window's rows do the same
+    local makes = ns.ProfessionByKey.blacksmithing.recipes[ahStep.entry.step.recipe].makes
+    local reagent = mock.shownChildren(ahPanel.scroll.child, "item")[1]
+    expect("... hovering a step shows what it makes, hovering a reagent shows the reagent",
+        makes and hover(ahStep) == makes and reagent and hover(reagent) == reagent.item)
+end
 mock.click(ahStep)
 local after = #mock.shownChildren(ahPanel.scroll.child, "item")
 expect("... a click on a step unfolds or folds its reagents, and searches nothing", not searched
@@ -1772,7 +1800,7 @@ end
 mock.click(ahPanel.modes[3])
 local bsProf = ns.Player.Prof(ns.ProfessionByKey.blacksmithing)
 expect("... Gold: the window's mode switched too, the Crafts box shown", bsProf.mode == "gold"
-    and ahPanel.crafts:IsShown() and strip(ahPanel.heading.text):find("of 1 craft$"))
+    and ahPanel.crafts:IsShown() and strip(ahPanel.crafts.text) == "1")
 local goldStep = mock.shownChildren(ahPanel.scroll.child, "entry")[1]
 local oneCraft = goldStep and goldStep.entry.rows[1]
 ahPanel.crafts:SetText("3")
@@ -1781,8 +1809,54 @@ local threeCrafts
 for _, e in ipairs(mock.shownChildren(ahPanel.scroll.child, "entry")[1].entry.rows) do
     if oneCraft and e.item == oneCraft.item then threeCrafts = e end
 end
-expect("... Crafts 3: the ingredients of 3 crafts", strip(ahPanel.heading.text):find("of 3 crafts$")
-    and oneCraft and threeCrafts.buy > oneCraft.buy)
+expect("... Crafts 3: the ingredients of 3 crafts", oneCraft and threeCrafts.buy > oneCraft.buy)
+-- Profit says what a craft takes, the ingredients you have enough of too (the other modes stay a shopping list)
+do
+    local mat = oneCraft.item
+    local function rowFor()
+        for _, e in ipairs(mock.shownChildren(ahPanel.scroll.child, "entry")[1].entry.rows) do
+            if e.item == mat then return e end
+        end
+    end
+    local function widgetFor()
+        for _, f in ipairs(mock.shownChildren(ahPanel.scroll.child, "item")) do if f.item == mat then return f end end
+    end
+    fx.blacksmithing.owned[mat] = 999
+    mock.fire("BAG_UPDATE_DELAYED")
+    ns.Window.Invalidate()
+    ns.AuctionTab.Refresh()
+    local have, widget = rowFor(), widgetFor()
+    expect("... Profit: an ingredient you have enough of is still listed, with 0 to buy and Buy still there",
+        have and have.buy == 0 and widget and strip(widget.count.text) == "0" and widget.button:IsShown()
+        and widget.scan:IsShown())
+    mock.click(ahPanel.modes[1])
+    expect("... and in Vendor sales it drops out of the list: there it's what to buy", rowFor() == nil)
+    mock.click(ahPanel.modes[3])
+    fx.blacksmithing.owned[mat] = nil
+    mock.fire("BAG_UPDATE_DELAYED")
+    ns.Window.Invalidate()
+    ns.AuctionTab.Refresh()
+    expect("... back to buying it once the bags are empty again", (rowFor() or {}).buy > 0)
+end
+-- Scan: one reagent, or a whole step (what it makes and what it takes), whatever their prices' age
+do
+    local function firstRow() return mock.shownChildren(ahPanel.scroll.child, "item")[1] end
+    local function firstStep() return mock.shownChildren(ahPanel.scroll.child, "entry")[1] end
+    local item = firstRow().item
+    ns.Prices.Searched(item, { { 100, 20 } }) -- searched a moment ago: a Scan asks again all the same
+    mock.sent, mock.refreshed, mock.hasResults = {}, {}, {}
+    mock.click(firstRow().scan)
+    expect("Scan on a reagent: that one item, however fresh its price", #mock.sent == 1 and mock.sent[1] == item)
+    ns.Prices.RescanStop()
+    mock.sent = {}
+    local step = firstStep()
+    mock.click(step.scan)
+    local _, _, total = ns.Prices.RescanState() -- only four go out at once: the rest wait in the queue
+    expect("Scan on a step: what it makes and every ingredient it takes",
+        total == #step.entry.rows + 1 and #mock.sent > 0 and #mock.sent <= 4)
+    ns.Prices.RescanStop()
+    CraftLadderDB.live = nil
+end
 -- Favor: the window's Merchant's Favor recipes, a row per recipe with what one craft of it buys here
 mock.click(ahPanel.modes[4])
 local favorSteps, gloves = mock.shownChildren(ahPanel.scroll.child, "entry"), nil
@@ -1790,8 +1864,25 @@ for _, r in ipairs(favorSteps) do if r.entry.step.recipe == 1252260 then gloves 
 expect("... Favor: the window's Merchant's Favor recipes too, a row per recipe, its status, one craft, no Crafts box",
     ahPanel.modes[4]:IsShown() and ahPanel.modes[4].active and not ahPanel.modes[3].active and bsProf.favorView
     and #favorSteps == ns.Favor.Count(ns.ProfessionByKey.blacksmithing) and not ahPanel.crafts:IsShown()
-    and strip(ahPanel.heading.text):find("Merchant's Favor recipes, what one craft of each buys$")
     and gloves and strip(gloves.sub.text):find("skill 80") and #gloves.entry.rows > 0)
+do -- Favor says what a craft takes, the ingredients you have enough of too
+    local mat = gloves.entry.rows[1].item
+    fx.blacksmithing.owned[mat] = 999
+    mock.fire("BAG_UPDATE_DELAYED")
+    ns.Window.Invalidate()
+    ns.AuctionTab.Refresh()
+    local have
+    for _, r in ipairs(mock.shownChildren(ahPanel.scroll.child, "entry")) do
+        if r.entry.step.recipe == 1252260 then
+            for _, e in ipairs(r.entry.rows) do if e.item == mat then have = e end end
+        end
+    end
+    expect("... Favor: an ingredient you have enough of is still listed, with 0 to buy", have and have.buy == 0)
+    fx.blacksmithing.owned[mat] = nil
+    mock.fire("BAG_UPDATE_DELAYED")
+    ns.Window.Invalidate()
+    ns.AuctionTab.Refresh()
+end
 mock.click(ahPanel.modes[1])
 expect("... and Skill: the window's ladder again", not bsProf.favorView and bsProf.mode == "skill"
     and not ahPanel.modes[4].active and mock.shownChildren(ahPanel.scroll.child, "entry")[1].entry.step.kind ~= "favor")
@@ -1998,6 +2089,46 @@ do
     C_Item.GetItemInfo = realInfo
     ChatEdit_InsertLink = nil
 end
+
+-- The auction house tab's Rescan: a search for each item of the list, as the server's throttle allows.
+-- (In a function of its own: this file is at Lua's limit of 200 locals in one chunk.)
+;(function()
+    local linen, wool, silk = 2589, 2592, 4306
+    local clock = 1000 -- the throttle and the wait for an answer count in GetTime's seconds
+    GetTime = function() return clock end
+    CraftLadderDB.live = nil
+    ns.Prices.Searched(silk, { { 500, 10 } }) -- searched a moment ago: left alone
+    mock.sent, mock.refreshed, mock.hasResults = {}, {}, { [wool] = true } -- wool: searched this session already
+    local asked = ns.Prices.Rescan({ linen, wool, silk, linen })
+    local ticker = mock.tickers[#mock.tickers]
+    expect("Rescan: the item searched a moment ago and the one named twice are left out", asked == 2)
+    expect("... one search goes out, and the item the auction house already holds is refreshed instead",
+        #mock.sent == 1 and mock.sent[1] == linen and #mock.refreshed == 1 and mock.refreshed[1] == wool)
+    local running, done, total = ns.Prices.RescanState()
+    expect("... it is running, with nothing answered yet", running and done == 0 and total == 2)
+    mock.searchResults[linen] = { { 100, 20 } }
+    mock.fire("COMMODITY_SEARCH_RESULTS_UPDATED", linen)
+    local _, answered = ns.Prices.RescanState()
+    expect("... an answer counts, and its prices are recorded as any search's are",
+        answered == 1 and CraftLadderDB.live.H[linen].min == 100)
+    clock = clock + 3 -- the other one the server never answered
+    ticker.fn()
+    running, done, total = ns.Prices.RescanState()
+    expect("... one the server never answers is given up on, and the rescan is over then",
+        not running and done == 2 and total == 2 and ticker.cancelled)
+    -- the server busy: nothing goes out until it says it is ready again
+    CraftLadderDB.live = nil
+    mock.sent, mock.hasResults, mock.throttleReady = {}, {}, false
+    asked = ns.Prices.Rescan({ linen, wool })
+    expect("Rescan asks nothing while the server says it is busy", asked == 2 and #mock.sent == 0)
+    mock.throttleReady = true
+    mock.fire("AUCTION_HOUSE_THROTTLED_SYSTEM_READY")
+    expect("... and goes on the moment it is ready again", #mock.sent == 2)
+    mock.fire("AUCTION_HOUSE_CLOSED")
+    expect("... and a closed auction house ends it", not ns.Prices.RescanState())
+    mock.searchResults, CraftLadderDB.live = {}, nil
+    GetTime = function() return clock end
+end)()
 
 print(failed == 0 and "game smoke test OK" or (failed .. " checks FAILED"))
 io.write(failed == 0 and "game smoke test OK\n" or (failed .. " checks FAILED\n"))

@@ -925,6 +925,16 @@ local function renderRange(spec)
         r.find:Show()
         if not r.find:HasFocus() then r.find:SetText(findText or "") end
         for _, f in ipairs({ r.from, r.to, r.reset, r.fromLabel, r.toLabel }) do f:SetShown(ladder.buy) end
+        -- Profit has the row to itself: the box takes the whole width. The Buy or craft view shares it with the
+        -- skill boxes, so there it keeps to the right.
+        r.find:ClearAllPoints()
+        if ladder.buy then
+            r.find:SetWidth(118)
+            r.find:SetPoint("RIGHT", 0, 0)
+        else
+            r.find:SetPoint("LEFT", 0, 0)
+            r.find:SetPoint("RIGHT", 0, 0)
+        end
         if ladder.buy then
             r.from.shown, r.to.shown = saved.from or 0, saved.to or 300
             if not r.from:HasFocus() then r.from:SetText(r.from.shown) end

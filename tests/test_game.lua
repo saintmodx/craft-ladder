@@ -307,8 +307,9 @@ end
 mock.click(frame.settingsButton)
 expect("Settings: the menu instead of the card", frame.settings:IsShown() and not frame.detail:IsShown())
 local sourceChecks, howChecks = {}, {}
+local barChecks = {}
 for _, c in ipairs(frame.settings.checks) do
-    (c.key == "source" and sourceChecks or howChecks)[c.value] = c
+    if c.bar then barChecks[c.bar] = c else (c.key == "source" and sourceChecks or howChecks)[c.value] = c end
 end
 expect("... AuctionDB and the median are ticked by default", sourceChecks.auctionDB.checked
     and howChecks.median.checked and not sourceChecks.auctionator.checked and not howChecks.min.checked)
@@ -319,6 +320,18 @@ mock.click(howChecks.min)
 expect("... clicking it again leaves it picked", CraftLadderDB.prices.how == "min" and howChecks.min.checked)
 mock.click(howChecks.median)
 expect("... back to the median: the default is saved as nothing", CraftLadderDB.prices.how == nil)
+-- the bars over the list: a tick each, and a hidden bar's view goes with it
+expect("... the bars over the list are ticked by default", barChecks.buy.checked and barChecks.favor.checked)
+mock.click(barChecks.favor)
+expect("... unticking Favor hides its bar, not the other", CraftLadderDB.bars.favor == false
+    and not frame.list.favor:IsShown() and frame.list.buy:IsShown() and not barChecks.favor.checked)
+mock.click(barChecks.favor)
+expect("... and ticking it brings it back, saved as nothing", CraftLadderDB.bars.favor == nil
+    and frame.list.favor:IsShown())
+mock.click(barChecks.buy)
+expect("... and Buy or craft hides the same way", CraftLadderDB.bars.buy == false
+    and not frame.list.buy:IsShown() and frame.list.favor:IsShown())
+mock.click(barChecks.buy)
 mock.click(sourceChecks.auctionator)
 expect("... Auctionator picked, and the menu says it isn't installed",
     CraftLadderDB.prices.source == "auctionator"
@@ -712,6 +725,17 @@ expect("Mining: no Merchant's Favor box, nodes in the footer", not frame.favor:I
     and strip(frame.total.text):find("about %d+ nodes"))
 rows()[1].scripts.OnEnter(rows()[1]); rows()[1].scripts.OnLeave(rows()[1])
 expect("hovering a mining step works", true)
+-- Buy or craft here is smelt or buy: Mining's smelting recipes, nothing else
+do
+    mock.click(frame.list.buy)
+    local smelts = rows()
+    mock.click(smelts[1])
+    expect("Mining: Buy or craft is its smelting recipes, smelt against buy", #smelts > 0
+        and smelts[1].step.kind == "buycraft"
+        and strip(frame.detail.head.line2.text):find("^Make ") and not frame.detail.craft.shown)
+    mock.click(frame.list.buy)
+    expect("... and the bar brings the zones back", rows()[1].step.kind == "mine")
+end
 local mineOpt, smeltOpt
 for _, o in ipairs(options()) do
     if o.option.kind == "mine" and not o.chosen then mineOpt = mineOpt or o end
@@ -898,7 +922,7 @@ mock.click(frame.list.favor)
 local toFavor = calculations
 local favorRows = rows()
 expect("Favor bar: the quartermaster's recipes instead of the ladder", #favorRows > 0
-    and favorRows[1].step.kind == "favor" and strip(frame.list.favor.label.text) == "Back to your ladder"
+    and favorRows[1].step.kind == "favor" and strip(frame.list.favor.label.text) == "Back"
     and strip(frame.total.text):find("^%d+ Merchant's Favor recipes, %d+ you can learn now"))
 mock.click(favorRows[1])
 expect("... a recipe's card: its price (the data's, seen at a quartermaster, or to be seen), level and skill",
@@ -976,6 +1000,87 @@ expect("... the bar again: back to the ladder", rows()[1].step.kind ~= "favor")
 expect("... switching there and back didn't calculate the ladder again", toFavor == 0 and calculations == beforeBack)
 ns.Calculate = calculate
 CraftLadderDB.favor = false
+-- Buy or craft: the other bar lists every recipe of the profession, what one craft's ingredients cost against what
+-- buying the same thing costs, the ones you know first and the rest under them
+do
+    local mine = { 2660, 2661, 3115 } -- a few Blacksmithing recipes this character knows
+    for _, spell in ipairs(mine) do ns.Player.Prof(ns.BLACKSMITHING).known[spell] = true end
+    ns.Window.Refresh()
+    local calcs, inner = 0, ns.Calculate
+    ns.Calculate = function(...) calcs = calcs + 1; return inner(...) end
+    mock.click(frame.list.buy)
+    local all, heads = rows(), headings()
+    local known = 0
+    for _, r in ipairs(all) do if r.step.known then known = known + 1 end end
+    expect("Buy or craft: every recipe, in two groups, the ones you know first", #all > #mine
+        and all[1].step.kind == "buycraft" and strip(frame.list.buy.label.text) == "Back"
+        and #heads == 2 and strip(heads[1].title.text) == "Recipes you know"
+        and strip(heads[2].title.text) == "Not known yet" and known == #mine and all[#mine].step.known
+        and all[#mine + 1].step.known == nil
+        and strip(frame.total.text):find("^%d+ recipes here, %d+ cheaper to make than to buy"))
+    expect("... from the ladder already calculated, not a new one", calcs == 0)
+    ns.Calculate = inner
+    local priced, order, last, group = nil, true, -1, true
+    for _, r in ipairs(all) do
+        local k = r.step.known or false
+        if k ~= group then last, group = -1, k end -- the second group starts over
+        if r.step.diff then
+            if r.step.from < last then order = false end
+            last = r.step.from
+            priced = priced or r
+        end
+    end
+    expect("... by the skill they're learned at, lowest first", order and priced ~= nil)
+    local want = priced.step.diff < -0.5 and "Make" or priced.step.diff > 0.5 and "Buy" or "Same"
+    expect("... the verdict on the right, and what it saves under it", strip(priced.cost.text) == want
+        and (want == "Same" or strip(priced.ready.text):find("^saves ")))
+    mock.click(priced)
+    expect("... the card: which is cheaper, both prices, and what one craft takes",
+        strip(frame.detail.head.title.text) == ns.BLACKSMITHING.recipes[priced.step.recipe].name
+        and strip(frame.detail.head.line2.text):find("^Make ")
+        and strip(frame.detail.head.line1.text):find(want == "Make" and "^Cheaper to make"
+            or want == "Buy" and "^Cheaper to buy" or "^The same either way")
+        and #items() > 0)
+    -- the skill boxes filter the list, as From and To do on the ladder
+    frame.range.from:SetText("150")
+    frame.range.from.scripts.OnEditFocusLost(frame.range.from)
+    local low = false
+    for _, r in ipairs(rows()) do low = low or r.step.from < 150 end
+    expect("... the skill boxes leave only what's learned from 150", #rows() > 0 and #rows() < #all and not low
+        and char().prof.blacksmithing.buyRange.from == 150)
+    mock.click(frame.range.reset)
+    expect("... Reset brings them all back", #rows() == #all and char().prof.blacksmithing.buyRange == nil)
+    -- the search box: the name of what a recipe makes, or of an ingredient it takes
+    local rec = ns.BLACKSMITHING.recipes[priced.step.recipe]
+    local find = frame.range.find
+    find:SetText(rec.name)
+    find.scripts.OnTextChanged(find, true)
+    local byName = false
+    for _, r in ipairs(rows()) do byName = byName or r.step.recipe == priced.step.recipe end
+    expect("... the search box leaves what matches the name", byName and #rows() < #all)
+    local mat = ns.Describe.ItemName((next(rec.mats)))
+    find:SetText(mat)
+    find.scripts.OnTextChanged(find, true)
+    local byMat, named = false, false
+    for _, r in ipairs(rows()) do
+        byMat = byMat or r.step.recipe == priced.step.recipe
+        named = named or ns.BLACKSMITHING.recipes[r.step.recipe].name:lower():find(mat:lower(), 1, true) ~= nil
+    end
+    expect("... and nothing for an ingredient's name alone: it matches what a recipe makes, not what it takes",
+        not byMat and (#rows() == 0 or named))
+    find.scripts.OnEscapePressed(find)
+    expect("... Escape clears it", #rows() == #all)
+    mock.click(headings()[1])
+    expect("... a group folds, and stays folded", char().prof.blacksmithing.buyFolded["Recipes you know"]
+        and rows()[1].step.known == nil)
+    mock.click(headings()[1])
+    expect("... and opens again", not char().prof.blacksmithing.buyFolded["Recipes you know"])
+    mock.click(frame.list.buy)
+    expect("... the bar again: back to the ladder", rows()[1].step.kind ~= "buycraft"
+        and not char().prof.blacksmithing.buyView)
+    for _, spell in ipairs(mine) do ns.Player.Prof(ns.BLACKSMITHING).known[spell] = nil end
+    ns.Window.Refresh()
+end
 -- a Blacksmithing trainer: a guessed recipe it doesn't list (though it lists recipes that ask more) leaves the
 -- ladder; one past what it lists stays a guess; one it lists gets its real skill
 local function spellNamed(name)
@@ -1080,7 +1185,19 @@ do -- nothing a vendor pays more for: the auction house's rows alone, no heading
 end
 expect("Engineering Gold: what earns at the auction house, the best first", ahRow and ahRow.step.kind == "profit"
     and strip(ahRow.cost.text):find("^%+") and ahRow.step.color)
-expect("... no ladder, no range", not frame.range:IsShown() and not frame.bar.rankHits[3]:IsShown())
+expect("... no ladder to plan: the skill boxes go, the search box stays", not frame.range.from:IsShown()
+    and not frame.range.reset:IsShown() and frame.range.find:IsShown() and not frame.bar.rankHits[3]:IsShown())
+do -- Profit: the search box leaves the rows whose recipe or ingredients match, the groups counted anew
+    local all, spell = #rows(), rows()[1].step.recipe
+    local find = frame.range.find
+    find:SetText(ns.ENGINEERING.recipes[spell].name)
+    find.scripts.OnTextChanged(find, true)
+    local kept, mine = rows(), false
+    for _, r in ipairs(kept) do mine = mine or r.step.recipe == spell end
+    expect("Profit: the search box leaves what matches", #kept > 0 and #kept < all and mine)
+    find.scripts.OnEscapePressed(find)
+    expect("... and Escape brings them all back", #rows() == all)
+end
 do -- every row says where its recipe turns its next colour; one already grey says nothing
     local names, skill, seen, wrong = { "yellow", "green", "grey" }, fx.engineering.skill, 0, 0
     for _, r in ipairs(rows()) do

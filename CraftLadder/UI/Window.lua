@@ -95,6 +95,7 @@ end
 local frame
 local ladder, lookup
 local prof -- the profession shown (its data)
+local findText = "" -- the search box: the Buy or craft view's and Profit's
 local selected = 1
 local shownProf -- the profession the list showed last (nil: the window was just opened)
 -- The ladders calculated: [profession key .. ":" .. mode] = { ladder, lookup, version, bags, scan }. version counts the
@@ -239,7 +240,7 @@ end
 -- The game's tooltip of the dish (or book), with the step under it.
 local function stepTooltip(owner, step)
     if not step then return end
-    if step.kind == "favor" then
+    if step.kind == "favor" or step.kind == "buycraft" then
         UI.ItemTooltip(owner, prof.recipes[step.recipe].makes, step.recipe)
         return
     end
@@ -545,6 +546,14 @@ local function fillRow(row, step, index)
                 .. (step.needLevel and (", lvl " .. step.needLevel) or "") .. "|r") or "",
             step.cooldown and (" - " .. hex(C.warn) .. "once in " .. wait(step.cooldown) .. "|r") or "",
             ns.Describe.Unconfirmed(rec, step.learn) and (" - " .. hex(C.warn) .. "unconfirmed|r") or ""))
+    elseif step.kind == "buycraft" then
+        local rec = prof.recipes[step.recipe]
+        row.icon:SetTexture(UI.ItemIcon(rec.makes))
+        row.name:SetText(rec.name)
+        UI.SetColor(row.name, step.needSkill and C.bad or step.color ~= "grey" and STEP_COLOR[step.color] or C.text)
+        row.sub:SetText(("%d | make %s, buy %s%s%s"):format(step.from,
+            step.cost and ns.Money(step.cost) or "-", step.price and ns.Money(step.price) or "-",
+            step.made > 1 and (", makes " .. step.made) or "", learnIcon(step.learn)))
     elseif step.kind == "disenchant" then
         local rec = step.data.recipes[step.recipe]
         row.icon:SetTexture(UI.ItemIcon(rec.makes))
@@ -618,6 +627,12 @@ local function fillRow(row, step, index)
         row.cost:SetText(step.cost and ns.Money(step.cost) or (hex(C.bad) .. "no price|r"))
     elseif step.kind == "fish" and step.cost == 0 and not step.missing then
         row.cost:SetText("") -- no lures to buy
+    elseif step.kind == "buycraft" then -- which is cheaper, and by how much for one craft
+        row.cost:SetText(step.diff == nil and (hex(C.muted) .. "no price|r")
+            or step.diff < -0.5 and (hex(C.good) .. "Make|r")
+            or step.diff > 0.5 and (hex(C.bad) .. "Buy|r") or (hex(C.muted) .. "Same|r"))
+        row.ready:SetText(step.diff and math.abs(step.diff) >= 0.5 and ("saves " .. ns.Money(math.abs(step.diff))) or "")
+        UI.SetColor(row.ready, C.good)
     elseif step.kind == "bag" then -- disenchanting: what it gains over selling; selling: what it brings
         row.cost:SetText(step.disenchant and signed(step.gain) or ns.Money(step.sale.each * step.count))
     elseif step.kind == "auction" then
@@ -626,6 +641,26 @@ local function fillRow(row, step, index)
         row.cost:SetText(step.missing and (hex(C.bad) .. "no price|r") or signed((step.back or 0) - step.cost))
     end
     paintRow(row)
+end
+
+-- Profit under a search: only the rows whose item's name matches, with the vendor group's count moved with them.
+local function searchProfit(l)
+    local want = findText:lower()
+    local steps, vendorRows = {}, 0
+    for i, step in ipairs(l.steps) do
+        local rec = l.data.recipes[step.recipe]
+        if rec then
+            step.find = step.find or ns.Describe.Searchable(rec)
+            if step.find:find(want, 1, true) then
+                steps[#steps + 1] = step
+                if i <= (l.vendorRows or 0) then vendorRows = vendorRows + 1 end
+            end
+        end
+    end
+    local out = {}
+    for k, v in pairs(l) do out[k] = v end
+    out.steps, out.vendorRows, out.find = steps, l.vendorRows and vendorRows or nil, findText
+    return out
 end
 
 local function renderList()
@@ -645,11 +680,24 @@ local function renderList()
     list.note:SetShown(#notes > 0)
     -- the bar that switches to the Merchant's Favor recipes and back (a profession whose quartermaster sells some;
     -- not in the Disenchant view, which is no profession's ladder)
-    local favorCount = not ladder.account and ns.Favor.Count(prof) or 0
+    local favorCount = not ladder.account and ns.Settings.Bar("favor") and ns.Favor.Count(prof) or 0
+    local buyCount = not ladder.account and ns.Settings.Bar("buy") and ns.BuyCraft.Count(prof) or 0
+    -- the two bars share the line when a profession has both: Buy or craft left, Favor right
+    local both = favorCount > 0 and buyCount > 0
+    local barW = both and (LIST_W - 30) / 2 or LIST_W - 24
     list.favor:SetShown(favorCount > 0)
-    list.favor.label:SetText(ladder.favor and "Back to your ladder" or ("Merchant's Favor recipes (%d)"):format(favorCount))
+    list.favor:SetWidth(barW)
+    list.favor:ClearAllPoints()
+    list.favor:SetPoint("TOPLEFT", both and (12 + barW + 6) or 12, -30)
+    list.favor.label:SetText(ladder.favor and "Back" or ("Favor (%d)"):format(favorCount))
     list.favor:SetActive(ladder.favor or false)
-    local bar = favorCount > 0 and 26 or 0
+    list.buy:SetShown(buyCount > 0)
+    list.buy:SetWidth(barW)
+    list.buy:ClearAllPoints()
+    list.buy:SetPoint("TOPLEFT", 12, -30)
+    list.buy.label:SetText(ladder.buy and "Back" or ("Buy or craft (%d)"):format(buyCount))
+    list.buy:SetActive(ladder.buy or false)
+    local bar = (favorCount > 0 or buyCount > 0) and 26 or 0
     -- the range the ladder plans, right over its rows (renderRange shows it or not)
     frame.range:SetPoint("TOPLEFT", 12, -32 - bar)
     bar = bar + (frame.range:IsShown() and 28 or 0)
@@ -673,7 +721,8 @@ local function renderList()
     -- Food: a group per role, each folds; a class with one role (a rogue) gets the plain list. The Disenchant view's
     -- three groups fold the same way, but they're the account's, so what's folded is saved for the account.
     local roles = ladder.groups and #ladder.groups > 1 and ladder.groups
-    local shutRoles = (ladder.account and ns.db.disenchantFolded or ns.Player.Prof(prof).foodFolded) or {}
+    local foldKey = ladder.foldKey or "foodFolded"
+    local shutRoles = (ladder.account and ns.db.disenchantFolded or ns.Player.Prof(prof)[foldKey]) or {}
     for _, g in ipairs(roles or {}) do -- the picked row in a folded group gives way to the first one shown
         if selected >= g.from and selected <= g.to and shutRoles[g.name] then
             for _, o in ipairs(ladder.groups) do
@@ -706,15 +755,15 @@ local function renderList()
             local count = g.to - g.from + 1
             -- the Disenchant view: what the group brings in all, next to how many rows it has
             heading(g.name, group and g.gain > 0 and ("%d, +%s"):format(count, ns.Money(g.gain)) or count,
-                { g.name, group and group.tip or "Dishes for this role, by what" ..
+                { g.name, g.tip or group and group.tip or "Dishes for this role, by what" ..
                 " eating one raises. Click to fold or open." }, function()
                 if ladder.account then
                     ns.db.disenchantFolded = ns.db.disenchantFolded or {}
                     ns.db.disenchantFolded[g.name] = not ns.db.disenchantFolded[g.name] or nil
                 else
                     local saved = ns.Player.Prof(prof)
-                    saved.foodFolded = saved.foodFolded or {}
-                    saved.foodFolded[g.name] = not saved.foodFolded[g.name] or nil
+                    saved[foldKey] = saved[foldKey] or {}
+                    saved[foldKey][g.name] = not saved[foldKey][g.name] or nil
                 end
                 Window.Refresh(true) -- only the view changes
             end, shutRoles[g.name])
@@ -831,6 +880,18 @@ end
 -- level's); To is above it, at most 300. Calculated again only when it changed.
 local function saveRange()
     local skill, r = ladder.state.skill, frame.range
+    if ladder.buy then -- the Buy or craft view: they only hide rows, so they go as low as 0
+        local p = ns.Player.Prof(prof)
+        local from = math.max(0, math.min(300, tonumber(r.from:GetText()) or 0))
+        local to = math.max(from, math.min(300, tonumber(r.to:GetText()) or 300))
+        r.from:SetText(from)
+        r.to:SetText(to)
+        local old = p.buyRange or {}
+        if from == (old.from or 0) and to == (old.to or 300) then return end
+        p.buyRange = (from > 0 or to < 300) and { from = from, to = to } or nil
+        Window.Refresh(true) -- the rows are there: only which of them show changes
+        return
+    end
     local from = prof.levelCaps and skill or math.max(skill, math.min(299, tonumber(r.from:GetText()) or skill))
     local to = math.max(from + 1, math.min(300, tonumber(r.to:GetText()) or 300))
     r.from:SetText(from)
@@ -853,9 +914,27 @@ local function saveRangeSoon()
 end
 
 -- The range's boxes: with a ladder only (not Profit, Food, Disenchant, the Merchant's Favor recipes or a
--- specialization's steps), saying what the ladder plans; Reset only when it isn't the default.
+-- specialization's steps), saying what the ladder plans; Reset only when it isn't the default. The Buy or craft
+-- view filters by skill with the same boxes, and it and Profit have the search box next to them.
 local function renderRange(spec)
     local state, r = ladder.state, frame.range
+    local skills = not ladder.buy -- Profit: the search box alone, nothing to plan there
+    if ladder.buy or (ladder.mode == "gold" and prof.resale and not ladder.favor) then
+        local saved = ladder.buy and (ns.Player.Prof(prof).buyRange or {}) or {}
+        r:SetShown(not spec)
+        r.find:Show()
+        if not r.find:HasFocus() then r.find:SetText(findText or "") end
+        for _, f in ipairs({ r.from, r.to, r.reset, r.fromLabel, r.toLabel }) do f:SetShown(ladder.buy) end
+        if ladder.buy then
+            r.from.shown, r.to.shown = saved.from or 0, saved.to or 300
+            if not r.from:HasFocus() then r.from:SetText(r.from.shown) end
+            if not r.to:HasFocus() then r.to:SetText(r.to.shown) end
+            r.reset:SetEnabled(saved.from ~= nil or (findText or "") ~= "")
+        end
+        return
+    end
+    r.find:Hide()
+    for _, f in ipairs({ r.from, r.to, r.reset, r.fromLabel, r.toLabel }) do f:Show() end
     r:SetShown((ladder.mode == "skill" or ladder.mode == "sell") and not ladder.favor and not spec
         and state.skill < 300)
     r.from.shown, r.to.shown = state.from or state.skill, state.target
@@ -908,7 +987,8 @@ local function renderBar()
         local fs = bar.rankText[i]
         local current = state.skill >= r[1] and state.skill < r[2] or (r[2] == 300 and state.skill >= 300)
         UI.SetColor(fs, current and C.gold or C.dim)
-        bar.rankHits[i]:SetShown(frame.range:IsShown() and not prof.levelCaps and r[2] > state.skill)
+        -- the From / To boxes, not only the row they sit in: Profit shows that row for its search box alone
+        bar.rankHits[i]:SetShown(frame.range.to:IsShown() and not prof.levelCaps and r[2] > state.skill)
     end
     -- outside the range the ladder plans: darker
     local from, to = state.from or state.skill, state.target
@@ -963,6 +1043,10 @@ local function renderFooter()
         for _, s in ipairs(ladder.steps) do if s.status == "learn" then learn = learn + 1 end end
         text = ("%d Merchant's Favor recipes, %d you can learn now%s"):format(#ladder.steps, learn,
             have and ("; you have %d favor"):format(have) or "")
+    elseif ladder.buy then
+        local make, shown = 0, #ladder.steps
+        for _, s in ipairs(ladder.steps) do if s.diff and s.diff < -0.5 then make = make + 1 end end
+        text = ("%d recipes here, %d cheaper to make than to buy (one craft, at today's prices)"):format(shown, make)
     elseif ladder.mode == "food" then
         text = ("%d dishes for your class; the cost is one dish from bought ingredients"):format(#ladder.steps)
     elseif ladder.account then
@@ -1293,7 +1377,8 @@ local function build()
                          { "food", "Food", 48 } }) do
         local b = UI.Button(list, m[2], m[3], 18, function()
             ns.Player.Prof(prof).mode = m[1]
-            ns.Player.Prof(prof).favorView, ns.Player.Prof(prof).specView = nil, nil
+            local p = ns.Player.Prof(prof)
+            p.favorView, p.specView, p.buyView = nil, nil, nil
             Window.Refresh(true) -- back to a mode already calculated: drawn again
         end)
         b.mode, b.name = m[1], m[2]
@@ -1302,7 +1387,8 @@ local function build()
     -- the steps to a specialization (Blacksmithing, Engineering, Leatherworking): UI/SpecPanel.lua, instead of the
     -- ladder and its card
     list.spec = UI.Button(list, "Specialization", 96, 18, function()
-        ns.Player.Prof(prof).specView, ns.Player.Prof(prof).favorView = true, nil
+        local p = ns.Player.Prof(prof)
+        p.specView, p.favorView, p.buyView = true, nil, nil
         Window.Refresh(true)
     end)
     list.spec.tooltip = { "Specialization", "The steps to each of its specializations: the quests, what they ask" ..
@@ -1310,11 +1396,23 @@ local function build()
     list.favor = UI.Button(list, "", LIST_W - 24, 20, function()
         local p = ns.Player.Prof(prof)
         p.favorView = not p.favorView or nil
+        if p.favorView then p.buyView = nil end
         Window.Refresh(true) -- only the view changes: the ladder needn't be calculated again
     end)
     list.favor:SetPoint("TOPLEFT", 12, -30)
     list.favor.tooltip = { "Merchant's Favor recipes", "What the supply camps' quartermaster sells for Merchant's Favor:" ..
         " its price and level (seen at a quartermaster), your skill, what you know and can make." }
+    -- every recipe of the profession, what it costs to make against what it costs to buy
+    list.buy = UI.Button(list, "", LIST_W - 24, 20, function()
+        local p = ns.Player.Prof(prof)
+        p.buyView = not p.buyView or nil
+        if p.buyView then p.favorView, p.specView = nil, nil end
+        findText = ""
+        Window.Refresh(true) -- the rows are calculated once, from the ladder already there
+    end)
+    list.buy:SetPoint("TOPLEFT", 12, -30)
+    list.buy.tooltip = { "Buy or craft", "Every recipe of this profession: what one craft's ingredients cost at" ..
+        " today's prices against what buying the thing itself costs. The ones you know come first." }
     list.note = UI.Label(list, 11, C.warn)
     list.note:SetPoint("TOPLEFT", 12, -32)
     list.note:SetWidth(LIST_W - 24)
@@ -1448,21 +1546,58 @@ local function build()
     local fromLabel = UI.Label(range, 11, C.muted)
     fromLabel:SetText("From")
     fromLabel:SetPoint("LEFT")
+    range.fromLabel = fromLabel
     range.from = box({ "From", "The skill the ladder starts at: yours, or higher to plan ahead (as if you had reached" ..
         " it). Type it (Enter), or the mouse wheel (Shift: 10 at a time)." })
     range.from:SetPoint("LEFT", fromLabel, "RIGHT", 6, 0)
     local toLabel = UI.Label(range, 11, C.muted)
+    range.toLabel = toLabel
     toLabel:SetText("to")
     toLabel:SetPoint("LEFT", range.from, "RIGHT", 6, 0)
     range.to = box({ "To", "The skill the ladder plans to: 300, or lower to stop sooner. Type it (Enter), or the" ..
         " mouse wheel (Shift: 10 at a time). A rank's name under the bar plans to its end." })
     range.to:SetPoint("LEFT", toLabel, "RIGHT", 6, 0)
     range.reset = UI.Button(range, "Reset", 50, 20, function()
+        if ladder.buy then
+            ns.Player.Prof(prof).buyRange = nil
+            findText = ""
+            range.find:SetText("")
+            Window.Refresh(true)
+            return
+        end
         ns.Player.Prof(prof).range = nil
         Window.Refresh()
     end)
     range.reset:SetPoint("LEFT", range.to, "RIGHT", 10, 0)
     range.reset.tooltip = { "Reset", "The ladder from your skill to 300 again." }
+    range.find = CreateFrame("EditBox", nil, range)
+    range.find:SetSize(118, 20)
+    UI.Panel(range.find, C.panel2, C.edge, 5, -4)
+    range.find:SetFont(UI.FONT, 12, "")
+    range.find:SetTextColor(C.text[1], C.text[2], C.text[3])
+    range.find:SetMaxLetters(30)
+    range.find:SetAutoFocus(false)
+    range.find:SetTextInsets(6, 6, 0, 0)
+    range.find:SetPoint("RIGHT", 0, 0)
+    range.find.hint = UI.Label(range.find, 11, C.muted)
+    range.find.hint:SetPoint("LEFT", 7, 0)
+    range.find.hint:SetText("search")
+    range.find:SetScript("OnTextChanged", function(self, user)
+        self.hint:SetShown(self:GetText() == "")
+        if not user then return end -- the box filled from the saved text, not typed in
+        findText = self:GetText()
+        Window.Refresh(true)
+    end)
+    range.find:SetScript("OnEnterPressed", range.find.ClearFocus)
+    range.find:SetScript("OnEscapePressed", function(self)
+        self:SetText("")
+        findText = ""
+        self:ClearFocus()
+        Window.Refresh(true)
+    end)
+    range.find:SetScript("OnEnter", function(self) UI.Tooltip(self, { "Search",
+        "Type part of a name: the rows left are the ones that make something of that name. Escape clears it." }) end)
+    range.find:SetScript("OnLeave", UI.HideTooltip)
     frame.range = range
     buildGrip()
 
@@ -1562,7 +1697,8 @@ function Window.Refresh(cached)
     end
     drawnScan = cache[key].scan
     if not ns.Player.Prof(ladder.data).favorView then frame.favorRounds = 0 end
-    if not account and ns.Player.Prof(ladder.data).favorView and ns.Favor.Count(ladder.data) > 0 then
+    if not account and ns.Player.Prof(ladder.data).favorView and ns.Favor.Count(ladder.data) > 0
+        and ns.Settings.Bar("favor") then
         ladder = ns.Favor.Ladder(ladder, ns.db.favorPrices or {})
         -- the levels to wear what they make come from the game's item data: again once it has loaded them (5 times
         -- at most)
@@ -1577,6 +1713,16 @@ function Window.Refresh(cached)
                 end)
             end
         end
+    end
+    local buyProf = not account and ns.Player.Prof(ladder.data)
+    if shownProf ~= ladder.data then findText = "" end -- another profession: the search box starts empty
+    if buyProf and buyProf.buyView and ns.BuyCraft.Count(ladder.data) > 0 and ns.Settings.Bar("buy") then
+        cache[key].buy = cache[key].buy or ns.BuyCraft.Rows(ladder)
+        local r = buyProf.buyRange or {}
+        ladder = ns.BuyCraft.Ladder(ladder, cache[key].buy, { from = r.from, to = r.to, find = findText })
+    end
+    if ladder.mode == "gold" and ladder.data.resale and not ladder.buy and not ladder.favor and findText ~= "" then
+        ladder = searchProfit(ladder)
     end
     prof = ladder.data
     ns.lastCalcMs = ms or ns.lastCalcMs

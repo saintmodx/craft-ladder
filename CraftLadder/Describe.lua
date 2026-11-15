@@ -29,6 +29,12 @@ function D.ItemName(item)
         or ("item " .. tostring(item))
 end
 
+-- What a search box matches on a recipe's row: the name of what it makes, lower case. Not its ingredients: you
+-- type what you're looking for, not what it's made of.
+function D.Searchable(rec)
+    return rec.name:lower()
+end
+
 -- What a dish raises (Cooking's food): "+20 Strength, +10 Stamina", in this order.
 local BUFFS = { { "str", "Strength" }, { "agi", "Agility" }, { "sta", "Stamina" }, { "int", "Intellect" },
                 { "spi", "Spirit" }, { "ap", "attack power" }, { "rap", "ranged attack power" },

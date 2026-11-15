@@ -7,6 +7,21 @@ version numbers [Semantic Versioning](https://semver.org).
 
 ### Added
 
+- **Buy or craft**: a bar over the list, next to the Merchant's Favor one, shows every recipe of the profession with
+  what one craft's ingredients cost at today's prices against what buying the same thing costs, and says which is
+  cheaper and by how much. Meant for the materials you keep remaking: leather, bars, cloth, bolts, oils. The recipes
+  you know come first, the rest under them, each group folds, and both are by the skill they're learned at. The
+  boxes over the list leave only the skills you want, and the search box leaves the recipes whose item matches what
+  you type. A row's card compares both sides and lists what one craft takes. What's in your
+  bags doesn't make a craft free here: both sides are prices, so the answer doesn't change every time you buy
+  something.
+
+- Profit has the same search box over its list: type part of a name and only the recipes that make something of
+  that name stay.
+
+- Settings has a "Bars over the list" section: untick Buy or craft or Favor to hide that bar, and the view it opens
+  goes with it. Both are shown until you say otherwise, and the setting is the account's.
+
 - The Craft Ladder tab at the auction house has a Full Rescan button: it searches the auction house itself for
   everything the list buys and sells, then puts those prices in the list and in the ladder. Until now the prices
   were whatever your last AuctionDB or Auctionator scan saw, and only what you searched by hand was fresh. The line
@@ -18,6 +33,9 @@ version numbers [Semantic Versioning](https://semver.org).
   ingredient about that one item. These ask whatever the price's age - you clicked for them.
 
 ### Changed
+
+- The bar over the list is shorter: "Favor (81)" instead of "Merchant's Favor recipes (81)", and "Back" instead of
+  "Back to your ladder", so it shares the line with the Buy or craft bar.
 
 - In Profit and in Favor, the auction house tab now lists every ingredient a craft takes, not only the ones you
   still have to buy: an ingredient already in your bags or bank is there, saying how many you need and how many you

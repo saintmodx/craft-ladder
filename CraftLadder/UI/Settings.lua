@@ -1,7 +1,7 @@
 -- Craft Ladder: the Settings menu of the main window (the header's Settings button), shown instead of a step's card:
--- which auction house addon the prices are read from, and which of its listed prices buying pays. The settings are
--- the account's (ns.db.prices), the same for every character and profession; changing one calculates the ladders
--- again.
+-- which auction house addon the prices are read from, which of its listed prices buying pays, and which bars show
+-- over the list. The settings are the account's (ns.db.prices, ns.db.bars), the same for every character and
+-- profession; changing one calculates the ladders again.
 local _, ns = ...
 local UI = ns.UI
 local C = UI.C
@@ -17,6 +17,14 @@ local function saved()
     return ns.db.prices
 end
 
+-- The bars over the list: shown unless this says otherwise (nil = shown, as everywhere else here).
+local function bars()
+    ns.db.bars = ns.db.bars or {}
+    return ns.db.bars
+end
+
+function Settings.Bar(key) return bars()[key] ~= false end
+
 -- A group of ticks, one of them picked: the ticked one can't be unticked, clicking another moves the tick. key is
 -- the saved key, choices = { { value, label, help } }; the first value is the default (saved as nil).
 local function group(title, choices, key, y)
@@ -31,7 +39,7 @@ local function group(title, choices, key, y)
             Window.Refresh() -- the prices changed: every ladder is out of date
         end)
         check:SetPoint("TOPLEFT", 16, y)
-        check.value, check.key = c[1], key
+        check.value, check.key, check.bar = c[1], key, false -- bar = false: it isn't one of the bar ticks
         panel.checks[#panel.checks + 1] = check
         local help = UI.Label(panel, 11, C.muted)
         help:SetPoint("TOPLEFT", 36, y - 20)
@@ -66,6 +74,31 @@ function Settings.Build(frame)
         { "min", "The cheapest listing", "What the ladder cost before: the lowest price of the scan. Cheaper than" ..
             " what you will really pay, unless you are quick." },
     }, "how", y - 22)
+    -- the bars over the list, one tick each: a hidden one's view closes with it
+    local fs = UI.Label(panel, 12, C.gold)
+    fs:SetPoint("TOPLEFT", 14, y - 22)
+    fs:SetText("Bars over the list")
+    y = y - 44
+    for _, b in ipairs({ { "buy", "Buy or craft", "Every recipe of the profession: what making it costs against" ..
+                              " what buying it costs." },
+                         { "favor", "Favor", "The recipes the supply camps' quartermasters sell for Merchant's" ..
+                              " Favor." } }) do
+        local check = UI.Check(panel, b[2], function(checked)
+            if checked then bars()[b[1]] = nil else bars()[b[1]] = false end
+            Settings.Render()
+            Window.Refresh(true) -- only which bars show changes
+        end)
+        check:SetPoint("TOPLEFT", 16, y)
+        check.bar, check.key, check.value = b[1], false, false
+        panel.checks[#panel.checks + 1] = check
+        local help = UI.Label(panel, 11, C.muted)
+        help:SetPoint("TOPLEFT", 36, y - 20)
+        help:SetPoint("TOPRIGHT", panel, "TOPRIGHT", -14, y - 20)
+        help:SetWordWrap(true)
+        help:SetText(b[3])
+        y = y - 44
+    end
+    y = y - 8
     panel.foot = UI.Label(panel, 11, C.muted)
     panel.foot:SetPoint("TOPLEFT", 14, y)
     panel.foot:SetPoint("TOPRIGHT", panel, "TOPRIGHT", -14, y)
@@ -78,8 +111,12 @@ end
 function Settings.Render()
     local p = saved()
     for _, check in ipairs(panel.checks) do
-        local picked = p[check.key] or (check.key == "source" and "auctionDB" or "median")
-        check:SetChecked(check.value == picked)
+        if check.bar then
+            check:SetChecked(Settings.Bar(check.bar))
+        else
+            local picked = p[check.key] or (check.key == "source" and "auctionDB" or "median")
+            check:SetChecked(check.value == picked)
+        end
     end
     local source = ns.Prices.Source()
     local picked = p.source == "auctionator" and "Auctionator" or "AuctionDB"

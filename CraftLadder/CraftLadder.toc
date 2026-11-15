@@ -38,6 +38,7 @@ Mining.lua
 Prices.lua
 Disenchant.lua
 Favor.lua
+BuyCraft.lua
 Camp.lua
 Spec.lua
 Describe.lua

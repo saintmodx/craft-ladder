@@ -861,6 +861,53 @@ local function profitDetail(step)
         C.muted)
 end
 
+-- Buy or craft: one craft's ingredients at today's prices against what buying the same thing costs, and which is
+-- cheaper. Both sides are prices: what's in your bags is a note here, not a discount.
+local function buyDetail(step)
+    local rec = prof.recipes[step.recipe]
+    local each = step.each and math.abs(step.each)
+    local perItem = step.made > 1 and each and (", %s an item"):format(ns.Money(each)) or ""
+    local verdict, color
+    if step.diff == nil then
+        verdict, color = "No price for one of the two sides yet.", C.muted
+    elseif step.diff < -0.5 then
+        verdict, color = ("Cheaper to make: one craft saves %s%s."):format(ns.Money(-step.diff), perItem), C.good
+    elseif step.diff > 0.5 then
+        verdict, color = ("Cheaper to buy: making it costs %s more%s."):format(ns.Money(step.diff), perItem), C.bad
+    else
+        verdict, color = "The same either way at today's prices.", C.muted
+    end
+    headline(UI.ItemIcon(rec.makes), rec.name, step.needSkill and C.bad
+            or step.color ~= "grey" and STEP_COLOR[step.color] or C.text,
+        verdict,
+        ("Make %s, buy %s%s"):format(step.cost and ns.Money(step.cost) or "?",
+            step.price and ns.Money(step.price) or "?",
+            step.made > 1 and (" (one craft makes %d)"):format(step.made) or ""))
+    UI.SetColor(frame.detail.head.line1, color)
+    if step.missing then
+        line(("%s has no price: Craft Ladder can't say what a craft costs. Search the auction house for it, or scan" ..
+            " again."):format(ns.Describe.ItemName(step.missing)), C.warn)
+    elseif not step.price then
+        line(("Nothing says what %s costs to buy: nobody lists it, no vendor sells it, or it's soulbound (made" ..
+            " only, never bought)."):format(ns.Describe.ItemName(rec.makes)), C.warn)
+    elseif step.listed then
+        line(("%d listed at the auction house now."):format(step.listed), C.muted)
+    end
+    if step.needSkill then
+        line(("Making it needs %s %d, and yours is %d."):format(prof.name, step.needSkill, ladder.state.skill), C.bad)
+    end
+    line(colorsText(rec.colors), C.muted)
+    if step.known then
+        craftBar(step, rec)
+    else
+        learnSection(step, rec)
+    end
+    recipeNotes(rec, step.learn)
+    if step.cooldown then line(("Once in %s: the recipe has a cooldown."):format(wait(step.cooldown)), C.warn) end
+    oneCraft(step, rec)
+    ownedNote(rec, "You have %s: they're priced here all the same, since you could sell them instead.")
+end
+
 -- What disenchanting gives (Disenchant mode, a bag's item or a recipe's): one disenchant's outcomes, what n bring, and
 -- where the numbers come from.
 local function disenchanting(step, n, yours)
@@ -1636,6 +1683,9 @@ local function renderDetail()
             " and " .. (ladder.known == 0 and "none of the recipes they know makes something to disenchant: open a" ..
                 " crafting profession's window once so Craft Ladder knows its recipes." or "nothing they can make is" ..
                 " worth more disenchanted than sold at today's prices."), "")
+    elseif not step and ladder.find then -- Profit under a search that matches nothing
+        headline(prof.icon, "Nothing matches", C.gold,
+            ("Nothing here is called %s."):format(ladder.find), "")
     elseif not step and ladder.mode == "gold" and prof.resale then
         headline(prof.icon, "Nothing earns now", C.gold,
             "Nothing you can make sells for more than it costs at today's prices.", "")
@@ -1662,6 +1712,8 @@ local function renderDetail()
         foodDetail(step)
     elseif step.kind == "profit" then
         profitDetail(step)
+    elseif step.kind == "buycraft" then
+        buyDetail(step)
     elseif step.kind == "disenchant" then
         prof = step.data
         disenchantDetail(step)

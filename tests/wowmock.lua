@@ -81,7 +81,16 @@ function Methods:SetEnabled(on) self.disabled = not on end
 function Methods:SetText(t) self.text = t or "" end
 function Methods:GetText() return self.text end
 function Methods:GetStringHeight() return 14 end
-function Methods:GetStringWidth() return #self.text * 6 end
+function Methods:SetFont(_, size) self.fontSize = size end
+-- about what a proportional font draws: one unit a character, two for a wide one (Chinese, Korean)
+function Methods:GetStringWidth()
+    local n, text = 0, self.text or ""
+    for i = 1, #text do
+        local b = text:byte(i)
+        if b < 0x80 or b >= 0xC0 then n = n + (b >= 0xE0 and 2 or 1) end
+    end
+    return math.floor(n * 6 * (self.fontSize or 11) / 11)
+end
 function Methods:SetVerticalScroll(v) self.vscroll = v end
 function Methods:GetVerticalScroll() return self.vscroll end
 function Methods:SetScrollChild(c) self.scrollChild = c end
@@ -194,6 +203,7 @@ function M.install(fx, ns)
     IsShiftKeyDown = function() return false end
     IsControlKeyDown = function() return M.ctrl or false end
     UnitFactionGroup = function() return fx.faction == "A" and "Alliance" or "Horde" end
+    GetLocale = function() return M.locale or "enUS" end
     UnitLevel = function() return fx.level end
     -- a warrior by default; Lockpicking's tests make it a rogue (its skill is in the skill list, not a profession)
     M.class, M.race, M.lockpicking, M.poisons = "WARRIOR", "Orc", { skill = 0, maxSkill = 0 }, { skill = 0, maxSkill = 0 }

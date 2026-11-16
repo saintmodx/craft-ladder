@@ -5,6 +5,7 @@
 local _, ns = ...
 local UI = ns.UI
 local C = UI.C
+local L = ns.L
 local Window = ns.Window
 
 local Menu = {}
@@ -12,6 +13,7 @@ ns.Menu = Menu
 
 local MENU_W = Window.Shared.MENU_W
 
+-- the headings are translated where they are drawn: this table is built before the saved language is known
 local MENU_GROUPS = {
     { title = "PROFESSIONS", has = function(d) return not d.secondary and not d.class end },
     { title = "SECONDARY", has = function(d) return d.secondary end },
@@ -51,7 +53,7 @@ local function makeMenuEntry(parent, data)
     e.skill = UI.Label(e, 10, C.muted)
     e.skill:SetPoint("LEFT", e.bar, "RIGHT", 5, 0)
     e.data = data
-    e.tooltip = { data.name, ("Show the %s ladder."):format(data.name) }
+    e.tooltip = { data.name, L["Show the %s ladder."]:format(data.name) }
     e:SetScript("OnEnter", function(self)
         paintEntry(self)
         UI.Tooltip(self, self.tooltip)
@@ -81,13 +83,14 @@ function Menu.Render(frame, prof)
             local skill, maxSkill = ns.Player.Skill(e.data)
             if group.has(e.data) and (maxSkill > 0 or e.data.class ~= nil and e.data.class == class) then
                 if first then
+                    menu.heads[g]:SetText(L[group.title]) -- here, not at build: the language can change
                     menu.heads[g]:SetPoint("TOPLEFT", 12, y)
                     menu.heads[g]:Show()
                     y, first = y - 16, false
                 end
                 e:SetPoint("TOPLEFT", 6, y)
                 e:Show()
-                e.skill:SetText(maxSkill > 0 and ("%d / %d"):format(skill, maxSkill) or "not learned")
+                e.skill:SetText(maxSkill > 0 and ("%d / %d"):format(skill, maxSkill) or L["not learned"])
                 e.fill:SetWidth(math.max(1, ENTRY_BAR * math.min(skill, 300) / 300))
                 e.fill:SetShown(skill > 0)
                 e.active = e.data == prof
@@ -99,6 +102,8 @@ function Menu.Render(frame, prof)
     end
     -- Disenchant, after the professions: the whole account's, and there without an enchanter too - every row then
     -- says what Enchanting it needs, which is what makes learning it worth it
+    menu.de.name:SetText(L["Disenchant"])
+    menu.camp.name:SetText(L["Camp"])
     menu.de:SetShown(true)
     menu.de:SetPoint("TOPLEFT", 6, y)
     menu.de.active = ns.Player.Saved().tab == "disenchant" and not me
@@ -118,9 +123,8 @@ function Menu.Build(frame)
     UI.Panel(menu, C.panel, C.edge, 8)
     menu.entries, menu.heads = {}, {}
     for i, data in ipairs(ns.Professions) do menu.entries[i] = makeMenuEntry(menu, data) end
-    for i, group in ipairs(MENU_GROUPS) do
-        menu.heads[i] = UI.Label(menu, 10, C.muted)
-        menu.heads[i]:SetText(group.title)
+    for i in ipairs(MENU_GROUPS) do
+        menu.heads[i] = UI.Label(menu, 10, C.muted) -- Menu.Render puts the words in: the language can change
     end
     -- Disenchant, after the last profession (Menu.Render places it): no skill of its own, the account's view
     local de = makeMenuEntry(menu, { name = "Disenchant", icon = "Interface\\Icons\\INV_Enchant_Disenchant" })
@@ -129,9 +133,9 @@ function Menu.Build(frame)
     de.skill:SetText("")
     de.name:ClearAllPoints()
     de.name:SetPoint("LEFT", de.icon, "RIGHT", 8, 0)
-    de.tooltip = { "Disenchant", "What's worth disenchanting on your whole account: what every character's bags and" ..
-        " bank hold, what the auction house lists for less than disenchanting it brings, and what your crafting" ..
-        " professions make that's worth more disenchanted than sold." }
+    de.tooltip = { L["Disenchant"], L["What's worth disenchanting on your whole account: what every character's" ..
+        " bags and bank hold, what the auction house lists for less than disenchanting it brings, and what your" ..
+        " crafting professions make that's worth more disenchanted than sold."] }
     de:SetScript("OnClick", function()
         ns.Player.viewing = nil -- the account's view: yourself again
         ns.Player.Me().tab = "disenchant"
@@ -146,8 +150,8 @@ function Menu.Build(frame)
     camp.skill:SetText("")
     camp.name:ClearAllPoints()
     camp.name:SetPoint("LEFT", camp.icon, "RIGHT", 8, 0)
-    camp.tooltip = { "Camp", "What each camp feature gives around a campfire, in the order your role wants them, and"
-        .. " how to get it." }
+    camp.tooltip = { L["Camp"], L["What each camp feature gives around a campfire, in the order your role wants" ..
+        " them, and how to get it."] }
     camp:SetScript("OnClick", function()
         ns.Player.Saved().tab = "camp"
         Window.Refresh(true)

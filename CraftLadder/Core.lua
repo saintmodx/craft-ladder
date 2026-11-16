@@ -184,161 +184,8 @@ function ns.OnKnownChanged()
 end
 
 ---------------------------------------------------------------------------------------------------------------
--- Chat printout (/craft chat)
+-- The /craft command
 ---------------------------------------------------------------------------------------------------------------
-
-local COLORS = { orange = "|cffff8040", yellow = "|cffffff00", green = "|cff40c040", grey = "|cff808080" }
-
-local function at(npc)
-    local name, where = ns.Describe.NPC(npc)
-    return name .. (where and (" (" .. where .. ")") or "")
-end
-
-local function buyText(lookup, buy)
-    local parts = {}
-    for item, b in pairs(buy) do
-        local text = ("%d %s"):format(math.ceil(b.need), ns.Describe.ItemName(item))
-        if b.have > 0 then text = text .. (" (you have %d)"):format(math.floor(b.have)) end
-        if b.make and b.buy > 0 then
-            local verb, bought = b.make.mining and "smelt" or "make", b.buy - b.make.made
-            text = text .. ": " .. (bought > 1e-9 and ("%s %d yourself, buy %d"):format(verb, math.ceil(b.make.made),
-                math.ceil(bought - 1e-9)) or (verb .. " yourself")) .. ", " .. ns.Money(b.cost)
-        elseif b.buy > 0 then
-            local e = lookup(item)
-            if b.cost then
-                text = text .. ": " .. ns.Money(b.cost)
-                if e and e.source == "vendor" then text = text .. " at a vendor" end
-                if b.short then text = text .. (" |cffff4040only %d listed|r"):format(e.qty) end
-            else
-                text = text .. ": |cffff4040no price|r"
-            end
-        end
-        parts[#parts + 1] = text
-    end
-    return table.concat(parts, "; ")
-end
-
-local function rankHow(step, data)
-    local rank = step.rank
-    if rank.how == "book" then
-        return "buy the " .. ns.Describe.ItemName(rank.item) .. (step.vendor and (" from " .. at(step.vendor)) or "")
-    elseif rank.how == "quest" then
-        local name, q = ns.Describe.Quest(step.quest)
-        if step.startQuest then
-            local startName, start = ns.Describe.Quest(step.startQuest)
-            return "quest " .. name .. " - start with " .. startName ..
-                (start and start.giver and (" from " .. at(start.giver)) or "")
-        end
-        return "quest " .. name .. (q and q.giver and (" from " .. at(q.giver)) or "")
-    end
-    return "any " .. data.name .. " trainer"
-end
-
-local function printLadder(data)
-    local ladder, lookup, ms = ns.Calculate(data)
-    data = ladder.data
-    local state = ladder.state
-    if state.maxSkill == 0 then
-        chat(("you don't have %s yet - any %s trainer teaches it."):format(data.name, data.name))
-        return
-    end
-    local source, scanned = ns.Prices.Source()
-    chat(("%s %d -> %d. Prices: %s%s. (%.1f ms)"):format(data.name, ladder.from, ladder.to,
-        source or "none - only vendor prices", scanned and (", scanned " .. ns.Age(scanned)) or "", ms))
-    if not next(ns.Player.Prof(data).known) then
-        chat(("|cffffd200Open your %s window once so Craft Ladder sees which recipes you know.|r"):format(data.name))
-    end
-    for i, s in ipairs(ladder.steps) do
-        if s.hour then
-            local g = data.gather or {}
-            print(("  %s%s in %s|r: about %s an hour, ~%d %s an hour, %s a %s"):format(s.dangerous and COLORS.orange or "",
-                s.kind == "fish" and "fish" or (g.verb or "mine"):lower(), data.zones[s.zone].name, ns.Money(s.perHour),
-                s.crafts + 0.5, s.kind == "fish" and "catches" or (g.many or "nodes"), ns.Money(s.value),
-                s.kind == "fish" and "catch" or (g.one or "node")))
-        elseif s.kind == "rank" and s.rank.how == "level" then
-            print(("  |cffffd200at %d: reach level %d|r (your cap, the level x 5, is then %d)%s"):format(s.from,
-                s.rank.charLevel, s.rank.cap, s.needLevel and (" |cffff4040you're level " .. ladder.state.level .. "|r")
-                or ""))
-        elseif s.kind == "rank" then
-            print(("  |cffffd200at %d: learn %s|r (up to %d) - %s, %s%s"):format(s.from, s.rank.name, s.rank.cap,
-                rankHow(s, data), ns.Describe.Price(s.cost, s.guess),
-                s.needLevel and (" |cffff4040needs level " .. s.needLevel .. "|r") or ""))
-            if s.buy then print("      bring: " .. buyText(lookup, s.buy)) end
-        elseif s.kind == "fish" then
-            print(("  %d-%d fish in %s ~%d catches (~%d min), %s%s"):format(s.from, s.to, data.zones[s.zone].name,
-                math.ceil(s.crafts), ns.Fishing.Minutes(s.casts) + 0.5, ns.Money(s.cost),
-                s.landed < 1 and (" |cffff8040%d%% land|r"):format(s.landed * 100) or ""))
-            if next(s.buy) then print("      bring: " .. buyText(lookup, s.buy)) end
-        elseif s.kind == "food" then
-            if #ladder.groups > 1 and (i == 1 or ladder.steps[i - 1].role ~= s.role) then -- a heading per role
-                print(("  |cffffd200%s:|r"):format(s.role))
-            end
-            print(("  %s%s|r: %s, level %d - %s%s"):format(s.later and "|cff999999" or "", data.recipes[s.recipe].name,
-                ns.Describe.Buff(s.buff), s.eat, s.cost and ("cook one for " .. ns.Money(s.cost)) or "no price",
-                s.ah and (", buy one for " .. ns.Money(s.ah)) or ""))
-        elseif s.kind == "profit" then
-            if s.vendor and i == 1 then print("  |cffffd200Sell to a vendor:|r") end
-            if i == ladder.vendorRows + 1 then print("  |cffffd200Sell at the auction house:|r") end
-            print(("  %s%s|r%s: one craft costs %s, sells for about %s - |cff40c040+%s|r (%s)%s%s"):format(
-                s.needSkill and "|cffff4040" or s.color ~= "grey" and COLORS[s.color] or "",
-                data.recipes[s.recipe].name, s.made > 1 and (" x" .. s.made) or "", ns.Money(s.cost), ns.Money(s.back),
-                ns.Money(s.profit), s.vendor and "at a vendor" or (s.listed .. " listed"),
-                s.needSkill and (" |cffff4040needs %s %d%s|r"):format(data.name, s.needSkill,
-                    s.needLevel and (", level " .. s.needLevel) or "") or "",
-                s.payback and
-                (", learn it for %s: pays back after %d %s"):format(ns.Money(s.learn.cost), s.payback,
-                    s.payback == 1 and "craft" or "crafts") or ""))
-        elseif s.kind == "mine" then
-            local bars = {}
-            for spell, n in pairs(s.bars) do bars[#bars + 1] = ("%d %s"):format(n + 0.5, data.recipes[spell].name) end
-            local g = data.gather or {}
-            print(("  %d-%d %s in %s ~%d %s, %s%s"):format(s.from, s.to, (g.verb or "mine"):lower(), data.zones[s.zone].name,
-                math.ceil(s.crafts), g.many or "nodes",
-                ns.Money(s.cost), #bars > 0 and (" - smelt on the way: " .. table.concat(bars, ", ")) or ""))
-        else
-            local rec = data.recipes[s.recipe]
-            local learn = ns.Describe.Learn(s.learn, data)
-            if s.learn.kind == "vendor" then
-                learn = "buy from " .. at(s.learn.npc) .. ", " .. ns.Describe.Price(s.learn.cost, s.learn.guess)
-            end
-            print(("  %d-%d %s%s|r ~%d crafts, %s - %s%s"):format(s.from, s.to, COLORS[s.color] or "", rec.name,
-                math.ceil(s.crafts), ns.Money(s.cost), learn,
-                ns.Describe.Unconfirmed(rec, s.learn) and " |cff999999(unconfirmed)|r" or ""))
-            print("      " .. buyText(lookup, s.buy) .. (s.tool and " - a tool: keep it" or ""))
-            for item, k in pairs(s.keep or {}) do
-                print(("      keep %d %s for %d-%d"):format(k.n + 0.5, ns.Describe.ItemName(item), k.from, k.to))
-            end
-            if s.sale then
-                print(("      sell: %d at the auction house, %d to a vendor - about %s back"):format(s.sale.ah + 0.5,
-                    s.sale.vendor + 0.5, ns.Money(s.sale.total)))
-            end
-        end
-    end
-    if ladder.mode == "food" then
-        chat(("food for your class, %d dishes (grey: above your level)."):format(#ladder.steps))
-        return
-    elseif ladder.steps[1] and ladder.steps[1].kind == "profit" then
-        local soon = 0
-        for _, s in ipairs(ladder.steps) do if s.needSkill then soon = soon + 1 end end
-        chat(("%d sell to a vendor for more than they cost%s, %d earn at the auction house (per craft, at today's" ..
-            " prices)."):format(ladder.vendorRows, soon > 0 and (" (%d of them above your skill)"):format(soon) or "",
-            #ladder.steps - ladder.vendorRows))
-        return
-    elseif data.resale and ladder.mode == "gold" then
-        chat("nothing you can make earns at today's prices.")
-        return
-    elseif ladder.mode == "gold" then
-        chat(#ladder.steps > 0 and ("%d zones by gold an hour at %d, at today's prices."):format(#ladder.steps,
-            ladder.from) or "nothing you can gather here has a price.")
-        return
-    end
-    chat(("total %s%s, ~%d %s%s"):format(ns.Money(ladder.cost),
-        (ladder.back or 0) > 0 and (", about " .. ns.Money(ladder.back) .. " back from sales") or "",
-        math.ceil(ladder.nodes or ladder.crafts),
-        ladder.minutes and "catches" or ladder.nodes and (data.gather and data.gather.many or "nodes") or "crafts",
-        ladder.stuck and ladder.stuck ~= "cap" and (" |cffff4040- stopped: " .. ladder.stuck .. "|r") or ""))
-end
-ns.PrintLadder = printLadder
 
 local function status()
     local source, scanned = ns.Prices.Source()
@@ -360,43 +207,6 @@ local function status()
         ns.lastCalcMs and (" Last calculation: %.1f ms."):format(ns.lastCalcMs) or ""))
 end
 
--- The Disenchant view in chat (/craft chat disenchant): its three groups, the 10 best rows of each (the window has
--- them all), every row with whose it is.
-local function printDisenchant()
-    local ladder, _, ms = ns.CalculateDisenchant()
-    local source, scanned = ns.Prices.Source()
-    chat(("Disenchant, your account. Prices: %s%s. (%.1f ms)"):format(source or "none - only vendor prices",
-        scanned and (", scanned " .. ns.Age(scanned)) or "", ms))
-    if not ladder.enchanter then
-        chat("no character of yours has Enchanting yet - any Enchanting trainer teaches it.")
-    end
-    for _, g in ipairs(ladder.groups) do
-        print(("  |cffffd200%s (%d%s):|r"):format(g.name, g.to - g.from + 1,
-            g.gain > 0 and (", about " .. ns.Money(g.gain) .. " in all") or ""))
-        if g.to < g.from then print("    nothing at today's prices") end
-        for i = g.from, math.min(g.to, g.from + 9) do
-            local s = ladder.steps[i]
-            local needs = s.needSkill and (" |cffff4040needs Enchanting " .. s.needSkill .. "|r")
-                or s.alt and (" |cffffd200" .. s.alt.name .. " can disenchant it|r") or ""
-            if s.kind == "bag" then
-                print(("    %s%s|r x%d (%s, %s): %s - disenchanted about %s each, sold %s%s%s"):format(
-                    s.disenchant and COLORS.green or "", ns.Describe.ItemName(s.item), s.count, s.who, s.where,
-                    ns.Disenchant.Verdict(s), ns.Money(s.each), ns.Money(s.sale.each),
-                    s.bound and " (soulbound)" or "", needs))
-            elseif s.kind == "auction" then
-                print(("    %s: buy for %s, disenchanted about %s on average - |cff40c040+%s|r, more %d%% of the" ..
-                    " time%s"):format(ns.Describe.ItemName(s.item), ns.Money(s.price), ns.Money(s.each),
-                    ns.Money(s.gain), math.floor(s.chance * 100 + 0.5), needs))
-            else
-                print(("    %s%s|r (%s, %s): one craft costs %s, disenchanted about %s on average - %s%s|r%s"):format(
-                    s.needSkill and COLORS.grey or s.color ~= "grey" and COLORS[s.color] or "",
-                    s.data.recipes[s.recipe].name, s.who, s.data.name, ns.Money(s.cost), ns.Money(s.back),
-                    s.profit >= 0 and "|cff40c040+" or "|cffff4040-", ns.Money(math.abs(s.profit)), needs))
-            end
-        end
-    end
-end
-
 -- "first aid", "firstaid", "cooking" -> that profession's data
 local function professionNamed(text)
     text = text:gsub("%s+", "")
@@ -409,13 +219,8 @@ SLASH_CRAFTLADDER1 = "/craft"
 SLASH_CRAFTLADDER2 = "/chef"
 SlashCmdList.CRAFTLADDER = function(msg)
     msg = (msg or ""):lower():gsub("^%s+", ""):gsub("%s+$", "")
-    local chatFor = msg:match("^chat%s*(.*)$")
     if msg == "" then
         ns.Window.Toggle()
-    elseif chatFor == "disenchant" then
-        printDisenchant()
-    elseif chatFor then
-        printLadder(professionNamed(chatFor))
     elseif msg == "status" then
         status()
     elseif msg == "minimap" then
@@ -431,9 +236,8 @@ SlashCmdList.CRAFTLADDER = function(msg)
         local names = {}
         for _, data in ipairs(ns.Professions) do names[#names + 1] = "/craft " .. data.name:lower() end
         chat("/craft - open or close the window; " .. table.concat(names, ", ") .. " - open it on that profession;" ..
-            " /craft disenchant - what's worth disenchanting on your account; /craft chat - the ladder in chat" ..
-            " (/craft chat disenchant too); /craft minimap - hide or show the minimap button; /craft status." ..
-            " /chef works too.")
+            " /craft disenchant - what's worth disenchanting on your account; /craft minimap - hide or show the" ..
+            " minimap button; /craft status. /chef works too.")
     end
 end
 

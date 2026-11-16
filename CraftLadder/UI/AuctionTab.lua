@@ -7,6 +7,7 @@
 local _, ns = ...
 local UI = ns.UI
 local C = UI.C
+local L = ns.L
 
 local AuctionTab = {}
 ns.AuctionTab = AuctionTab
@@ -130,7 +131,7 @@ local function search(rows)
         if e.buy > 0 then -- Profit lists what you already have too: nothing to shop for there
             local name = gameName(e.item)
             if not name then
-                status("The items' names are still loading: click again.", C.warn)
+                status(L["The items' names are still loading: click again."], C.warn)
                 return
             end
             terms[#terms + 1] = { searchString = name, isExact = true, quantity = e.buy }
@@ -161,11 +162,11 @@ end
 -- How far the scan has got, in the status line, and the Full Rescan button as the way to stop it.
 local function rescanStatus()
     local running, done, total = ns.Prices.RescanState()
-    panel.rescan.label:SetText(running and "Stop" or "Full Rescan")
+    panel.rescan.label:SetText(running and L["Stop"] or L["Full Rescan"])
     if running then
-        status(("Scanning %s: %d of %d items."):format(scanWhat or "the auction house", done, total))
+        status(L["Scanning %s: %d of %d items."]:format(scanWhat or L["the auction house"], done, total))
     elseif rescanning then
-        status(("Scan done: %d of %d items searched."):format(done, total), C.good)
+        status(L["Scan done: %d of %d items searched."]:format(done, total), C.good)
     end
     rescanning = running
 end
@@ -173,16 +174,16 @@ end
 -- One item's or one step's Scan button: those prices now, however fresh they are - you asked for them.
 local function scan(items, what)
     if ns.Prices.RescanState() then
-        status("A scan is already running: stop it first.", C.warn)
+        status(L["A scan is already running: stop it first."], C.warn)
         return
     end
     scanWhat = what
     local asked = #items > 0 and ns.Prices.Rescan(items, true) or 0
     rescanning = asked > 0
     if asked == 0 then
-        status("Nothing to scan here.", C.muted)
+        status(L["Nothing to scan here."], C.muted)
     else
-        status(("Scanning %s: 0 of %d items."):format(what, asked))
+        status(L["Scanning %s: 0 of %d items."]:format(what, asked))
     end
     rescanStatus()
 end
@@ -191,15 +192,16 @@ end
 local function scanStep(entry)
     local data = picked(professions())
     local rec = data and entry.step.recipe and data.recipes[entry.step.recipe]
-    scan(data and rescanItems(data, { entry }) or {}, rec and rec.name or "this step")
+    scan(data and rescanItems(data, { entry }) or {},
+         rec and ns.Describe.RecipeName(entry.step.recipe, rec) or L["this step"])
 end
 
 local function paintRow(r)
     local busy = pending and pending.row ~= r
     if pending and pending.row == r and pending.total then
-        r.button.label:SetText("Confirm " .. ns.Money(pending.total))
+        r.button.label:SetText(L["Confirm %s"]:format(ns.Money(pending.total)))
     elseif pending and pending.row == r then
-        r.button.label:SetText("Asking...")
+        r.button.label:SetText(L["Asking..."])
     else
         r.button.label:SetText("Buy")
     end
@@ -215,19 +217,19 @@ local function buyClick(r)
     if not A then return end
     if pending and pending.row == r and pending.total then -- the second click: buy
         A.ConfirmCommoditiesPurchase(pending.item, pending.qty)
-        status(("Buying %d %s..."):format(pending.qty, ns.Describe.ItemName(pending.item)))
+        status(L["Buying %d %s..."]:format(pending.qty, ns.Describe.ItemName(pending.item)))
         return
     end
     local qty = math.floor(tonumber(r.count:GetText()) or 0)
     if qty <= 0 then return end
     if A.IsThrottledMessageSystemReady and not A.IsThrottledMessageSystemReady() then
-        status("The auction house is busy: try again in a moment.", C.warn)
+        status(L["The auction house is busy: try again in a moment."], C.warn)
         return
     end
     r.count:ClearFocus()
     pending = { item = r.item, qty = qty, row = r }
     A.StartCommoditiesPurchase(r.item, qty)
-    status(("Asking the price of %d %s..."):format(qty, ns.Describe.ItemName(r.item)))
+    status(L["Asking the price of %d %s..."]:format(qty, ns.Describe.ItemName(r.item)))
     paintAll()
 end
 
@@ -265,8 +267,8 @@ local function makeRow(parent)
     r.count:SetPoint("RIGHT", r.button, "LEFT", -6, 0)
     r.scan = UI.Button(r, "Scan", 54, 22, function() scan({ r.item }, ns.Describe.ItemName(r.item)) end)
     r.scan:SetPoint("RIGHT", r.count, "LEFT", -6, 0)
-    r.scan.tooltip = { "Scan", "Asks the auction house what this one goes for now, and puts that price in the" ..
-        " ladder. However fresh the price already is." }
+    r.scan.tooltip = { L["Scan"], L["Asks the auction house what this one goes for now, and puts that price in the" ..
+        " ladder. However fresh the price already is."] }
     r.price = UI.Label(r, 11, C.text, nil, "RIGHT")
     r.price:SetPoint("RIGHT", r.scan, "LEFT", -10, 0)
     r:SetScript("OnEnter", function(self) UI.ItemTooltip(self, self.item) end)
@@ -301,11 +303,11 @@ local function makeStep(parent)
     r.sub:SetPoint("BOTTOMLEFT", r.icon, "BOTTOMRIGHT", 8, -1)
     r.scan = UI.Button(r, "Scan", 54, 22, function() scanStep(r.entry) end)
     r.scan:SetPoint("RIGHT", -6, 0)
-    r.scan.tooltip = { "Scan", "Asks the auction house about what this step makes and everything it takes, then" ..
-        " puts those prices in the ladder." }
-    r.search = UI.Button(r, "Search", 70, 22, function() search(r.entry.rows) end)
+    r.scan.tooltip = { L["Scan"], L["Asks the auction house about what this step makes and everything it takes, then" ..
+        " puts those prices in the ladder."] }
+    r.search = UI.Button(r, L["Search"], 70, 22, function() search(r.entry.rows) end)
     r.search:SetPoint("RIGHT", r.scan, "LEFT", -6, 0)
-    r.search.tooltip = { "Search", "Auctionator's Shopping tab with what this step buys, and how many." }
+    r.search.tooltip = { L["Search"], L["Auctionator's Shopping tab with what this step buys, and how many."] }
     r.cost = UI.Label(r, 11, C.text, nil, "RIGHT")
     r.cost:SetPoint("RIGHT", r.search, "LEFT", -10, 0)
     r:SetScript("OnEnter", function(self)
@@ -352,30 +354,31 @@ local function fillStep(r, e, data, lookup, gold)
         r.icon:SetTexture(s.rank.item and UI.ItemIcon(s.rank.item) or ns.Window.Shared.RANK_ICON[s.rank.how]
             or data.icon)
         r.makes = s.rank.item
-        r.name:SetText("Learn " .. s.rank.name)
+        r.name:SetText(L["Learn %s"]:format(s.rank.name))
         UI.SetColor(r.name, C.gold)
-        r.sub:SetText(("at %d, raises your cap to %d"):format(s.from, s.rank.cap))
+        r.sub:SetText(L["at %d, raises your cap to %d"]:format(s.from, s.rank.cap))
         return
     end
     local rec = data.recipes[s.recipe]
     r.makes = rec.makes
     r.icon:SetTexture(rec.makes and UI.ItemIcon(rec.makes) or rec.icon or data.icon)
-    r.name:SetText(rec.name)
+    r.name:SetText(ns.Describe.RecipeName(s.recipe, rec))
     UI.SetColor(r.name, s.color ~= "grey" and ns.Window.Shared.STEP_COLOR[s.color] or C.text)
     if s.kind == "favor" then -- coloured as the window's list: known, learn now, not yet
         UI.SetColor(r.name, s.status == "known" and C.good or s.status == "learn" and C.gold or C.bad)
         r.sub:SetText(ns.Window.Shared.favorSub(s, rec, shown.ladder.state))
     elseif gold then
-        r.sub:SetText(("%s%s|r a craft, %s"):format(s.profit >= 0 and (hex(C.good) .. "+") or (hex(C.bad) .. "-"),
-            ns.Money(math.abs(s.profit)), s.vendor and "sold to a vendor" or (s.listed .. " listed")))
+        r.sub:SetText(L["%s%s|r a craft, %s"]:format(s.profit >= 0 and (hex(C.good) .. "+") or (hex(C.bad) .. "-"),
+            ns.Money(math.abs(s.profit)),
+            s.vendor and L["sold to a vendor"] or L["%d listed"]:format(s.listed)))
     elseif s.to > s.from then
-        r.sub:SetText(("%d - %d, ~%d %s%s"):format(s.from, s.to, math.ceil(s.crafts), data.craftWord or "crafts",
-            s.sale and s.sale.listed and (", %d listed"):format(s.sale.listed) or ""))
+        r.sub:SetText(L["%d - %d, ~%d %s%s"]:format(s.from, s.to, math.ceil(s.crafts), data.craftWord or "crafts",
+            s.sale and s.sale.listed and L[", %d listed"]:format(s.sale.listed) or ""))
     else
-        r.sub:SetText(("at %d, make one and keep it"):format(s.from))
+        r.sub:SetText(L["at %d, make one and keep it"]:format(s.from))
     end
     local total, unpriced = cost(e.rows, lookup)
-    r.cost:SetText(toBuy == 0 and (hex(C.good) .. "nothing to buy|r")
+    r.cost:SetText(toBuy == 0 and (hex(C.good) .. L["nothing to buy"] .. "|r")
         or ns.Money(total) .. (unpriced and (" " .. hex(C.bad) .. "+ ?|r") or ""))
 end
 
@@ -385,9 +388,9 @@ local function fillRow(r, e, lookup)
     r.name:SetText(ns.Describe.ItemName(e.item))
     -- one you have enough of is shown for what the craft takes, in grey; its Buy still buys as many as you type
     UI.SetColor(r.name, e.buy > 0 and C.text or C.muted)
-    r.sub:SetText(("need %d, you have %d"):format(math.ceil(e.need), e.have))
+    r.sub:SetText(L["need %d, you have %d"]:format(math.ceil(e.need), e.have))
     local p = lookup(e.item, true)
-    r.price:SetText(p and (ns.Money(p.unit) .. " each") or (hex(C.bad) .. "not listed|r"))
+    r.price:SetText(p and L["%s each"]:format(ns.Money(p.unit)) or (hex(C.bad) .. L["not listed"] .. "|r"))
     r.count:SetText(tostring(e.buy))
     paintRow(r)
 end
@@ -429,7 +432,7 @@ function AuctionTab.Refresh(cached)
     panel.craftsLabel:Hide()
     panel.rescan:SetShown(data ~= nil)
     if not data then
-        panel.heading:SetText("No crafting profession: nothing to buy for one.")
+        panel.heading:SetText(L["No crafting profession: nothing to buy for one."])
         panel.scroll:SetContentHeight(1)
         lastEntries = nil
         return
@@ -439,7 +442,8 @@ function AuctionTab.Refresh(cached)
     local gold = ladder.mode == "gold" and not ladder.favor
     for _, b in ipairs(panel.modes) do
         b:SetActive(b.mode == shown.mode)
-        b.tooltip = tips and { b.name, tips[b.mode] or FAVOR_TIP }
+        b.label:SetText(L[b.name]) -- here, not at build: the language can change
+        b.tooltip = tips and { L[b.name], L[tips[b.mode] or FAVOR_TIP] }
     end
     panel.crafts:SetShown(gold)
     panel.craftsLabel:SetShown(gold)
@@ -476,7 +480,7 @@ function AuctionTab.Refresh(cached)
     end
     -- no line over the list saying what it is: the professions and the modes above it say that. Only an empty
     -- list needs words.
-    panel.heading:SetText(#entries == 0 and ("%s: nothing to buy"):format(data.name) or "")
+    panel.heading:SetText(#entries == 0 and L["%s: nothing to buy"]:format(data.name) or "")
     local _, lookup = ns.Prices.ForGame()
     local y = 0
     for _, e in ipairs(entries) do
@@ -533,31 +537,31 @@ local function build_panel(parent)
         panel.modes[i] = b
     end
     -- Full Rescan: the prices here are the last scan's, so this asks the auction house about the whole list itself.
-    panel.rescan = UI.Button(panel, "Full Rescan", 90, 18, function()
+    panel.rescan = UI.Button(panel, L["Full Rescan"], 90, 18, function()
         if ns.Prices.RescanState() then
             ns.Prices.RescanStop()
             rescanning = false
-            status("Scan stopped: the prices it had got are in.", C.warn)
+            status(L["Scan stopped: the prices it had got are in."], C.warn)
             rescanStatus()
             return
         end
         local data = picked(professions())
         local items = data and rescanItems(data, lastEntries) or {}
-        scanWhat = "the auction house"
+        scanWhat = L["the auction house"]
         local asked = #items > 0 and ns.Prices.Rescan(items) or 0
         rescanning = asked > 0
         if asked == 0 then
-            status(#items == 0 and "Nothing here to rescan." or
-                "Every price here was searched in the last two minutes: nothing to ask again.", C.muted)
+            status(#items == 0 and L["Nothing here to rescan."] or
+                L["Every price here was searched in the last two minutes: nothing to ask again."], C.muted)
         else
-            status(("Scanning the auction house: 0 of %d items."):format(asked))
+            status(L["Scanning the auction house: 0 of %d items."]:format(asked))
         end
         rescanStatus()
     end)
     panel.rescan:SetPoint("TOPRIGHT", -14, -38)
-    panel.rescan.tooltip = { "Full Rescan", "Searches the auction house for everything this list buys and sells, then" ..
+    panel.rescan.tooltip = { L["Full Rescan"], L["Searches the auction house for everything this list buys and sells, then" ..
         " puts the prices in the ladder. It goes one item at a time, as the server allows: watch the line below." ..
-        " An item searched in the last two minutes is left alone." }
+        " An item searched in the last two minutes is left alone."] }
     panel.crafts = numberBox(panel)
     panel.crafts:SetPoint("TOPRIGHT", -14, -10)
     local function setCrafts(self)
@@ -571,7 +575,7 @@ local function build_panel(parent)
     panel.crafts:SetScript("OnEditFocusLost", setCrafts) -- Enter clears the focus
     panel.craftsLabel = UI.Label(panel, 12, C.muted)
     panel.craftsLabel:SetPoint("RIGHT", panel.crafts, "LEFT", -8, 0)
-    panel.craftsLabel:SetText("Crafts")
+    panel.craftsLabel:SetText(L["Crafts"])
     panel.heading = UI.Label(panel, 13, C.gold)
     panel.status = UI.Label(panel, 11, C.muted)
     panel.status:SetPoint("BOTTOMLEFT", 14, 10)
@@ -582,7 +586,7 @@ local function build_panel(parent)
     stepPool = UI.Pool(makeStep)
     AuctionTab.panel = panel
     panel:SetScript("OnShow", function()
-        status(auctionator() and "A click on a step or a reagent searches it in Auctionator's Shopping tab." or nil)
+        status(auctionator() and L["A click on a step or a reagent searches it in Auctionator's Shopping tab."] or nil)
         AuctionTab.Refresh()
         -- once AuctionDB has scanned again, the ladder with its prices (once a scan; not in the middle of a purchase)
         panel.ticker = C_Timer.NewTicker(1, function()
@@ -615,7 +619,7 @@ local function attach()
         host:SetSize(1, 1)
         host:SetPoint("CENTER", ah.Tabs[#ah.Tabs], "RIGHT", 6, 0)
         local tab = CreateFrame("Button", "CraftLadderAHTab", host, "AuctionHouseFrameDisplayModeTabTemplate")
-        tab:SetText("Craft Ladder")
+        tab:SetText(L["Craft Ladder"])
         if PanelTemplates_TabResize then PanelTemplates_TabResize(tab, 20, nil, 70) end
         tab:SetPoint("LEFT", host, "CENTER", 0, 0)
         if PanelTemplates_DeselectTab then PanelTemplates_DeselectTab(tab) end
@@ -646,20 +650,20 @@ events:SetScript("OnEvent", function(_, event, a, b)
         attach()
     elseif event == "COMMODITY_PRICE_UPDATED" and pending then -- unit price, total
         pending.total = b
-        status(("%d %s for %s (%s each): click Confirm to buy."):format(pending.qty, ns.Describe.ItemName(pending.item),
+        status(L["%d %s for %s (%s each): click Confirm to buy."]:format(pending.qty, ns.Describe.ItemName(pending.item),
             ns.Money(b), ns.Money(a)))
         paintAll()
     elseif event == "COMMODITY_PRICE_UNAVAILABLE" and pending then
-        status(("No price for %s: not enough listed, or not sold that way (try the Buy tab)."):format(
+        status(L["No price for %s: not enough listed, or not sold that way (try the Buy tab)."]:format(
             ns.Describe.ItemName(pending.item)), C.bad)
         pending = nil
         paintAll()
     elseif event == "COMMODITY_PURCHASE_SUCCEEDED" and pending then
-        status(("Bought %d %s."):format(pending.qty, ns.Describe.ItemName(pending.item)), C.good)
+        status(L["Bought %d %s."]:format(pending.qty, ns.Describe.ItemName(pending.item)), C.good)
         pending = nil
         paintAll()
     elseif event == "COMMODITY_PURCHASE_FAILED" and pending then
-        status("The purchase failed (the price may have changed): ask again.", C.bad)
+        status(L["The purchase failed (the price may have changed): ask again."], C.bad)
         pending = nil
         paintAll()
     elseif event == "AUCTION_HOUSE_CLOSED" then

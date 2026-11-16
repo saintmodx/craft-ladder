@@ -93,7 +93,6 @@ from the auction house say "no price" and Gold is empty.
 | --- | --- |
 | `/craft` | Open or close the window |
 | `/craft <profession>` | Open it on that profession, e.g. `/craft mining` |
-| `/craft chat` | Print the ladder in chat |
 | `/craft minimap` | Hide or show the minimap button |
 | `/craft status` | What's loaded and the last calculation |
 

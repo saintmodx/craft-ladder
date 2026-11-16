@@ -14,7 +14,7 @@ end
 function D.NPC(npc)
     local n = ns.Lookup("npcs", npc)
     if not n then return tostring(npc), nil end
-    local zone = n.zone or zoneName(n.map)
+    local zone = zoneName(n.map) or n.zone -- the game's zone name is in the client's language
     local where = zone and n.x and ("%s %s, %s"):format(zone, n.x, n.y) or zone
     return n.name or tostring(npc), where
 end
@@ -24,9 +24,29 @@ function D.Quest(quest)
     return q and q.name or tostring(quest), q
 end
 
+-- The name of an item or a recipe in the language Craft Ladder is set to, when the data has that language
+-- (Data/Names_<code>.lua, built from the client's tables for a client that speaks another language). English is
+-- the data's own, so it needs no table of its own.
+local function translated(section, id)
+    local lang = ns.Language()
+    if lang == "enUS" then return nil end
+    local names = ns.Names and ns.Names[lang]
+    names = names and names[section]
+    return names and names[id]
+end
+
+-- The picked language first, then the game's name (the client's language, and it knows items the data doesn't),
+-- then the data's English. The data also answers in the tests, which have no client.
 function D.ItemName(item)
-    return ns.Lookup("items", item) or (C_Item and C_Item.GetItemNameByID and C_Item.GetItemNameByID(item))
-        or ("item " .. tostring(item))
+    return translated("items", item) or (C_Item and C_Item.GetItemNameByID and C_Item.GetItemNameByID(item))
+        or ns.Lookup("items", item) or ("item " .. tostring(item))
+end
+
+-- What a recipe is called: the picked language, the game's word for it, or the data's English.
+function D.RecipeName(spell, rec)
+    return translated("recipes", spell)
+        or (spell and C_Spell and C_Spell.GetSpellName and C_Spell.GetSpellName(spell)) or (rec and rec.name)
+        or ("recipe " .. tostring(spell))
 end
 
 -- What a dish raises (Cooking's food): "+20 Strength, +10 Stamina", in this order.

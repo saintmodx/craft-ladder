@@ -179,6 +179,11 @@ end
 ---------------------------------------------------------------------------------------------------------------
 
 -- A rounded button with a label. onClick(self, mouseButton).
+-- A label's text size again, for a row that has to fit a fixed width in any language.
+function UI.FontSize(fs, size)
+    fs:SetFont(FONT, size, "")
+end
+
 function UI.Button(parent, text, w, h, onClick)
     local b = CreateFrame("Button", nil, parent)
     b:SetSize(w, h)
@@ -230,6 +235,58 @@ function UI.IconButton(parent, glyph, size, color, onClick)
         UI.HideTooltip()
     end)
     if onClick then b:SetScript("OnClick", onClick) end
+    return b
+end
+
+-- A button that opens a short list under it and closes on a pick (the language in Settings). options =
+-- { { value, name }, ... }; onPick(value). SetPicked(value) puts that option's name on the button.
+function UI.Dropdown(parent, w, h, options, onPick)
+    local b = UI.Button(parent, "", w, h)
+    b.list = CreateFrame("Frame", nil, b)
+    b.list:SetWidth(w)
+    b.list:SetHeight(#options * (h + 2) + 4)
+    b.list:SetFrameStrata("DIALOG")
+    UI.Panel(b.list, C.panel, C.edge, 5)
+    b.list:Hide()
+    b.options = {}
+    for i, o in ipairs(options) do
+        local row = UI.Button(b.list, o[2], w - 8, h, function()
+            b:SetPicked(o[1])
+            b.list:Hide()
+            b:SetActive(false)
+            if onPick then onPick(o[1]) end
+        end)
+        row:SetPoint("TOPLEFT", 4, -2 - (i - 1) * (h + 2))
+        row.value = o[1]
+        b.options[i] = row
+    end
+    function b:SetPicked(value)
+        self.picked = value
+        for _, row in ipairs(self.options) do
+            row:SetActive(row.value == value)
+            if row.value == value then self.label:SetText(row.label:GetText()) end
+        end
+    end
+    -- under the button, or over it when the list would hang out of the frame it is in
+    function b:Place()
+        local list, parent = self.list, self:GetParent()
+        local mine, floor = self.GetBottom and self:GetBottom(), parent and parent.GetBottom and parent:GetBottom()
+        list:ClearAllPoints()
+        if mine and floor and mine - list:GetHeight() - 2 < floor then
+            list:SetPoint("BOTTOMLEFT", self, "TOPLEFT", 0, 2)
+            list.above = true
+        else
+            list:SetPoint("TOPLEFT", self, "BOTTOMLEFT", 0, -2)
+            list.above = false
+        end
+    end
+    b:Place()
+    b:SetScript("OnClick", function(self)
+        self:Place()
+        self.list:SetShown(not self.list:IsShown())
+        self:SetActive(self.list:IsShown())
+    end)
+    b:SetPicked(options[1] and options[1][1])
     return b
 end
 

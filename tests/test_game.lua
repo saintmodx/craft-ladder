@@ -43,10 +43,6 @@ expect("vendor prices shared by a faction are dropped", CraftLadderDB.vendorPric
 expect("money below zero", strip(ns.Money(-73)) == "-73c" and strip(ns.Money(-10526)) == "-1g 5s 26c")
 ns.Player.Prof(ns.COOKING).known = {}
 
--- before the Cooking window was opened
-SlashCmdList.CRAFTLADDER("chat cooking")
-expect("chat printout asks to open the Cooking window", said("Open your Cooking window"))
-
 -- the Cooking window: three events, one read a second later
 mock.fire("TRADE_SKILL_SHOW"); mock.fire("TRADE_SKILL_LIST_UPDATE"); mock.fire("TRADE_SKILL_LIST_UPDATE")
 expect("the Cooking window is read once for three events", #mock.timers == 1)
@@ -326,6 +322,71 @@ expect("... Auctionator picked, and the menu says it isn't installed",
 mock.click(sourceChecks.auctionDB)
 expect("... back to AuctionDB: nothing saved, no warning",
     CraftLadderDB.prices.source == nil and strip(frame.settings.missing.text) == "")
+
+-- the language: the dropdown at the bottom of Settings picks it, and Craft Ladder's own words change with it
+do
+    local pick = frame.settings.language
+    local function option(code)
+        for _, row in ipairs(pick.options) do if row.value == code then return row end end
+    end
+    expect("Settings: the language dropdown, English picked", pick and pick.picked == "enUS"
+        and #pick.options == #ns.Languages and option("enUS") and option("deDE") and option("zhCN")
+        and strip(option("ruRU").label.text) == "\208\160\209\131\209\129\209\129\208\186\208\184\208\185")
+    expect("... every language it offers has a file of its own",
+        (function()
+            for _, l in ipairs(ns.Languages) do
+                if l.code ~= "enUS" and not ns.Locales[l.code] then return false end
+                if not option(l.code) then return false end
+            end
+            return #ns.Languages == 10
+        end)())
+    expect("... English: the addon's own words stand as they are in the code",
+        ns.L["Disenchant"] == "Disenchant" and ns.L["a string nobody has translated"] == "a string nobody has translated")
+    mock.click(pick)
+    mock.click(option("ruRU"))
+    expect("... Russian picked: saved for the account, the menu's words change", CraftLadderDB.locale == "ruRU"
+        and ns.Language() == "ruRU" and ns.L["Disenchant"] ~= "Disenchant"
+        and strip(frame.menu.de.name.text) == ns.L["Disenchant"])
+    expect("... and a word with no translation still shows in English",
+        ns.L["a string nobody has translated"] == "a string nobody has translated")
+    -- the panel the dropdown sits in: its words are drawn again, so no /reload is needed
+    expect("... and Settings itself: its headings, its ticks and its footnote",
+        ns.L["The median listed price"] ~= "The median listed price"
+        and strip(frame.settings.lang.text) == ns.L["Language"]
+        and strip(howChecks.median.label.text) == ns.L["The median listed price"]
+        and strip(howChecks.median.help.text) == ns.L["Half of what's listed costs less. The cheapest listing is" ..
+            " one auction, often gone minutes after the scan."]
+        and strip(frame.settings.foot.text) == ns.L["What you sell is always priced at the cheapest listing, the" ..
+            " one you undercut."])
+    -- the names: the picked language's own table (the client would answer in its language, which the tests lack)
+    local linen = 2589
+    expect("... item and recipe names follow the picked language",
+        ns.Names and ns.Names.ruRU and ns.Names.ruRU.items[linen]
+        and ns.Describe.ItemName(linen) == ns.Names.ruRU.items[linen])
+    -- a client Craft Ladder has no file for falls back to the closest it does have
+    CraftLadderDB.locale = "zhTW"
+    expect("... a Traditional Chinese client reads the Simplified file", ns.Language() == "zhCN")
+    CraftLadderDB.locale = "esMX"
+    expect("... and a Latin American Spanish one reads the Spanish file", ns.Language() == "esES")
+    CraftLadderDB.locale = "ruRU"
+    mock.click(pick)
+    mock.click(option("enUS"))
+    expect("... back to English: the default is saved as nothing", CraftLadderDB.locale == nil
+        and ns.L["Disenchant"] == "Disenchant")
+    expect("... and the names are the data's English again", ns.Describe.ItemName(linen) == "Linen Cloth")
+    expect("... and Settings is English again",
+        strip(howChecks.median.label.text) == "The median listed price")
+    -- a help line that wraps to three lines pushes everything under it down, instead of being sat on
+    local function topOf(f) return f.point and f.point[3] or 0 end
+    local wasY, help = topOf(howChecks.min), howChecks.median.help
+    help.GetStringHeight = function() return 42 end
+    ns.Settings.Render()
+    expect("... a help line of three lines pushes the next tick down, not over it",
+        topOf(howChecks.min) <= wasY - 28)
+    help.GetStringHeight = nil
+    ns.Settings.Render()
+    expect("... and back to one line it closes up again", topOf(howChecks.min) == wasY)
+end
 mock.click(frame.settingsButton)
 expect("... clicked again: the card is back", frame.detail:IsShown() and not frame.settings:IsShown())
 mock.click(frame.settingsButton)
@@ -643,9 +704,6 @@ expect("Expert Fishing: Old Man Heming with a pin, 1g", #places() == 1 and place
 mock.click(rankRows()[2])
 expect("Artisan Fishing: Nat Pagle, his four fish", #places() == 1 and places()[1].npc == 12919
     and lines():find("Feralas Ahi: Verdantis River") and strip(frame.detail.head.line2.text):find("level 35"))
-mock.output = {}
-SlashCmdList.CRAFTLADDER("chat fishing")
-expect("chat printout of the Fishing ladder", said("fish in The Barrens") and said("catches"))
 
 -- Skill + Gold: the same zones without getaways, ranked by gold an hour; the rows show what the catches are worth
 expect("Fishing: Skill, Skill + Gold and Gold", frame.list.modes[2]:IsShown() and frame.list.modes[3]:IsShown())
@@ -663,9 +721,6 @@ mock.click(rows()[1])
 expect("Gold: the zone's card, an hour at your skill, no other zones",
     strip(frame.detail.head.line1.text):find("^An hour at skill 78") and #options() == 0)
 expect("Gold: the footer", strip(frame.total.text):find("zones at skill 78; the best"))
-mock.output = {}
-SlashCmdList.CRAFTLADDER("chat fishing")
-expect("Gold: in chat", said("an hour") and said("zones by gold an hour"))
 -- a pool GatherMate2 saw in Durotar counts there
 GatherMate2FishDB = { [1411] = { [1] = 101, [2] = 101, [3] = 107 } }
 mock.click(frame.list.modes[2])
@@ -763,9 +818,6 @@ expect("Mining Gold: the zone's card sells ore or bars, smelts nothing on the wa
     strip(frame.detail.head.line1.text):find("^An hour at skill") and lines():find("as ore")
     and not lines():find("Smelting gives skill%-ups") and #options() == 0)
 mock.click(frame.list.modes[1])
-mock.output = {}
-SlashCmdList.CRAFTLADDER("chat mining")
-expect("chat printout of the Mining ladder", said("mine in ") and said("nodes"))
 local miniTip = CraftLadderMinimapButton
 miniTip.scripts.OnEnter(miniTip); miniTip.scripts.OnLeave(miniTip)
 expect("the minimap tooltip shows the Mining step", true)
@@ -790,6 +842,29 @@ for _, f in ipairs(items()) do
     smelted = smelted or sub:find("^Smelt %d+ yourself from") ~= nil
 end
 expect("Blacksmithing: bars smelted from ore with your Mining", smelted and made)
+-- the modes and Specialization sit in one row 12 in from each side of the list: in a language whose words are
+-- longer than English's they get tighter and smaller, they never run over the step's card
+do
+    local function barWidth()
+        local w, n = 0, 0
+        for _, b in ipairs({ frame.list.modes[1], frame.list.modes[2], frame.list.modes[3], frame.list.modes[4],
+                             frame.list.spec }) do
+            if b:IsShown() then w, n = w + b:GetWidth(), n + 1 end
+        end
+        return w + 4 * math.max(0, n - 1), n
+    end
+    local wide, shown = barWidth()
+    expect("the mode row fits the list, with Specialization", shown >= 3 and frame.list.spec:IsShown()
+        and wide <= 360 - 24)
+    for _, code in ipairs({ "ruRU", "deDE", "frFR", "ukUA", "zhCN" }) do
+        CraftLadderDB.locale = code
+        ns.Window.Refresh()
+        local w = barWidth()
+        expect("... and in " .. code .. " too", w <= 360 - 24)
+    end
+    CraftLadderDB.locale = nil
+    ns.Window.Refresh()
+end
 expect("Blacksmithing: what selling it brings back", lines():find("back, so this step"))
 expect("... and what one sells for, at the auction house and at a vendor", lines():find("ells for .+ at a vendor%."))
 local sections = mock.shownChildren(frame.detail.scroll.child, "label")
@@ -798,11 +873,23 @@ expect("... Learn it first, then One craft", sections[1] and strip(sections[1].l
 local batch
 for _, f in ipairs(sections) do if strip(f.label.text):find("^Batch: ") then batch = f end end
 expect("... the Batch with its price, and what it all sells for", batch and lines():find("%d+ sell for .+ at a vendor%."))
+
+-- the card's own words follow the language too (UI/Cards.lua), not only the menu and the header
+do
+    local function firstSection()
+        local s = mock.shownChildren(frame.detail.scroll.child, "label")[1]
+        return s and strip(s.label.text)
+    end
+    CraftLadderDB.locale = "ruRU"
+    ns.Window.Refresh()
+    expect("... with Russian picked, the card's headings are Russian",
+        ns.L["Learn it"] ~= "Learn it" and firstSection() == ns.L["Learn it"])
+    CraftLadderDB.locale = nil
+    ns.Window.Refresh()
+    expect("... and English again", firstSection() == "Learn it")
+end
 expect("Blacksmithing: the footer counts the sales; the Merchant's Favor box (its quartermasters sell plans for it)",
     strip(frame.total.text):find("back from sales") and frame.favor:IsShown())
-mock.output = {}
-SlashCmdList.CRAFTLADDER("chat blacksmithing")
-expect("chat printout of the Blacksmithing ladder", said("sell:") and said("back from sales"))
 -- the Specialization button: the steps to Weaponsmith or Armorsmith instead of the ladder and its card
 local function specLabels()
     local out = {}
@@ -1040,9 +1127,6 @@ expect("... its details say what it's for, and offer no other recipe", lines():f
     and #options() == 0)
 mock.click(keepRow)
 expect("Engineering: what a step makes for later ones, to keep", lines():find("Keep %d+ .+: the steps at %d+ %- %d+ use them"))
-mock.output = {}
-SlashCmdList.CRAFTLADDER("chat engineering")
-expect("chat printout of the Engineering ladder: the tool and what to keep", said("a tool: keep it") and said("keep %d+ "))
 -- Skill: only vendors buy what you make; Skill + Gold: the auction house too
 local function soldAtAH()
     for _, r in ipairs(rows()) do
@@ -1111,9 +1195,6 @@ expect("... the vendor heading only when something sells to a vendor, then the a
 expect("... the footer: what sells at the auction house (and to a vendor, if anything)",
     strip(frame.total.text):find("%d+ at the auction house; the best %+")
     and (strip(frame.total.text):find("sell to a vendor") ~= nil) == vendorGroup)
-mock.output = {}
-SlashCmdList.CRAFTLADDER("chat engineering")
-expect("... and in chat", said("sell to a vendor for more than they cost") and said("Sell at the auction house:"))
 mock.click(frame.list.modes[3]) -- AH sales picked while there was still something to level
 fx.engineering.skill, fx.engineering.maxSkill = 300, 300
 mock.fire("SKILL_LINES_CHANGED")
@@ -1326,12 +1407,6 @@ do
         and CraftLadderDB.disenchantFolded["Buy and disenchant"] and #byKind("bag") > 0)
     mock.click(buyHead)
     expect("... and opens again", #byKind("auction") > 0 and not CraftLadderDB.disenchantFolded["Buy and disenchant"])
-    mock.output = {}
-    SlashCmdList.CRAFTLADDER("chat disenchant")
-    expect("... and in chat, with every group, what it brings and whose each row is",
-        said("In bags and banks %(%d+") and said("Buy and disenchant %(%d+, about ")
-        and said("Craft and disenchant %(%d+") and said("Disenchant, your account")
-        and said("%(Zug, bags%)"))
     -- a disenchant: the item the game locked while casting, what the loot window gave
     GetTime = function() return 1000 end
     locked = true
@@ -1383,9 +1458,6 @@ mock.click(rows()[1])
 expect("... its card: an hour at your skill, the ride counted", strip(frame.detail.head.line1.text):find("^An hour at skill 100")
     and lines():find("a 60%% mount between them") and #items() > 0 and #options() == 0)
 mock.click(frame.list.modes[1])
-mock.output = {}
-SlashCmdList.CRAFTLADDER("chat skinning")
-expect("... and in chat", said("skin in "))
 local newMob, cand = next(ns.SKINNING.candidates)
 GetTime = function() return 1000 end
 GetNumLootItems = function() return 1 end
@@ -1447,9 +1519,6 @@ expect("a zone's card: its locks, where they are, other zones", strip(frame.deta
 local pins = #mock.waypoints
 mock.click(places()[1])
 expect("... a click on where they are pins it", #mock.waypoints == pins + 1)
-mock.output = {}
-SlashCmdList.CRAFTLADDER("chat lockpicking")
-expect("... and in chat", said("pick locks in ") and said("reach level 30"))
 -- not learned yet, level 28: Learn Pick Lock first (a rogue sees the tab anyway), with Thieves' Tools and the quests
 mock.lockpicking.skill, mock.lockpicking.maxSkill = 0, 0
 mock.fire("SKILL_LINES_CHANGED")
@@ -1516,7 +1585,7 @@ mock.click(mini)
 expect("minimap click again closes it", not frame:IsShown())
 mock.output = {}
 mock.click(mini, "RightButton")
-expect("minimap right-click prints the ladder of the profession shown", said("First Aid 133") and said("total"))
+expect("minimap right-click does nothing", not frame:IsShown() and #mock.output == 0)
 mock.cursor = { 100, 200 } -- straight above the minimap's centre (100, 100)
 mini.scripts.OnDragStart(mini)
 expect("dragging updates while moving", mini.scripts.OnUpdate ~= nil)

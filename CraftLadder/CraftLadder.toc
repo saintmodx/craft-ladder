@@ -14,6 +14,17 @@
 ## AddonCompartmentFuncOnEnter: CraftLadder_OnCompartmentEnter
 ## AddonCompartmentFuncOnLeave: CraftLadder_OnCompartmentLeave
 
+Locale\enUS.lua
+Locale\deDE.lua
+Locale\esES.lua
+Locale\frFR.lua
+Locale\itIT.lua
+Locale\koKR.lua
+Locale\ptBR.lua
+Locale\ruRU.lua
+Locale\ukUA.lua
+Locale\zhCN.lua
+Locale.lua
 Core.lua
 Data\Cooking.lua
 Data\FirstAid.lua
@@ -31,6 +42,7 @@ Data\Leatherworking.lua
 Data\Poisons.lua
 Data\Camp.lua
 Data\Disenchant.lua
+Data\Names_ruRU.lua
 Professions.lua
 Ladder.lua
 Fishing.lua

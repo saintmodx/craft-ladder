@@ -5,6 +5,31 @@ version numbers [Semantic Versioning](https://semver.org).
 
 ## Unreleased
 
+### Added
+
+- Craft Ladder speaks nine languages besides English: Deutsch, Español, Français, Italiano, Português,
+  Русский, Українська, 한국어 and 简体中文. Settings has a Language setting at the bottom, each language written in its own
+  language; a new install follows your game client (a Latin American Spanish client reads the Spanish file,
+  a Traditional Chinese one the Simplified file). The whole window is translated, from the menu and the
+  modes down to the long notes on a card about where the numbers come from. The names of items, recipes and
+  zones come from the client itself, so they are in its language; with Russian picked on an English client,
+  Craft Ladder knows the Russian names of 6512 items and 2550 recipes of its own. NPC and quest names stay
+  English: nothing translates them.
+
+  The translations are Craft Ladder's own work, not a native speaker's: if a line reads wrong in your
+  language, say so and it will be fixed.
+
+  The window makes room for them: the buttons over the list (Vendor sales, AH sales, Profit, Food,
+  Specialization) share the width of the list, growing tighter and, if they must, smaller, so the last of
+  them never runs over the step's card; and in Settings every tick sits under the help line above it,
+  however many lines that takes.
+
+### Removed
+
+- `/craft chat` and `/craft chat disenchant` are gone, and a right-click on the minimap button no longer
+  prints the ladder in chat. The window says all of it, and more, and the chat version was the one
+  corner of Craft Ladder nobody could read in Russian.
+
 ### Changed
 
 - The data is rebuilt from today's AllTheThings and QuestieDB: 366 recipes now say where their plan comes from - a

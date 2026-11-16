@@ -33,11 +33,11 @@ def latest_build():
                 if b["version"].startswith("1.6")), key=_key)
 
 
-def table(name, build, refresh=False):
-    """One DB2 table at one build, as a list of rows."""
-    path = CACHE / ("%s-%s.csv" % (name, build))
+def table(name, build, refresh=False, locale=None):
+    """One DB2 table at one build, as a list of rows. locale ("ruRU"): its *_lang columns in that language."""
+    path = CACHE / ("%s-%s%s.csv" % (name, build, "-" + locale if locale else ""))
     if refresh or not path.exists():
-        data = _get(DB2 % (name, build))
+        data = _get((DB2 % (name, build)) + ("&locale=" + locale if locale else ""))
         if not data.strip() or data.lstrip().startswith(b"<"):
             raise ValueError("wago.tools sent no table for %s %s" % (name, build))
         path.parent.mkdir(parents=True, exist_ok=True)

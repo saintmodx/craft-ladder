@@ -3,7 +3,7 @@
 What's new in Craft Ladder, newest first. The format follows [Keep a Changelog](https://keepachangelog.com), the
 version numbers [Semantic Versioning](https://semver.org).
 
-## 1.10.1 - 2026-11-16
+## Unreleased
 
 ### Added
 
@@ -29,6 +29,8 @@ version numbers [Semantic Versioning](https://semver.org).
 - `/craft chat` and `/craft chat disenchant` are gone, and a right-click on the minimap button no longer
   prints the ladder in chat. The window says all of it, and more, and the chat version was the one
   corner of Craft Ladder nobody could read in Russian.
+
+## 1.10.1 - 2026-11-16
 
 ### Changed
 

@@ -289,13 +289,14 @@ function Disenchant.Account(quote, opts)
         return (a.who or "") < (b.who or "")
     end)
 
-    -- the auction house: an item gone from its last scan has sold or expired (listed = false); Auctionator's, a day
-    -- old at most (a guess). A bound one is never listed, so it isn't looked for.
+    -- the auction house: an item gone from its last scan has sold or expired (listed = false); Auctionator's, from
+    -- its last scan (stale: an older day, or no age at all, which means older than the days it keeps).
+    -- A bound one is never listed, so it isn't looked for.
     local auction = {}
     for item, id in pairs(opts.auction and DE.items or {}) do
         if not DE.bop[item] then
             local _, e = quote(item, 1, 0, true)
-            local price = e and e.listed ~= false and (e.ageDays or 0) <= 1 and (e.min or e.unit)
+            local price = e and e.listed ~= false and not e.stale and (e.min or e.unit)
             if price and price > 0 then
                 local row = common({ kind = "auction", item = item, price = price, listed = e.qty }, id)
                 row.gain = row.each - price

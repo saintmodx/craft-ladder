@@ -165,6 +165,23 @@ end
 -- Set by ForGame, so it isn't looked up for every item of a ladder.
 local auctionatorQty = false
 
+-- How many days behind today a price may be and still be the last scan's. Auctionator stamps a price with the day
+-- its own database file loaded, not the day it writes the price (daysSinceZero in its Database/Mixin.lua), while the
+-- age it reports counts from today: a client left running past local midnight dates every new price a day back. Our
+-- own load is that same client start (a /reload loads both again), so the midnights this session has crossed are
+-- how far a fresh price may lag.
+local loadedAt = (time or os.time)() -- os.time: the offline tests load this file without the game's globals
+function Prices.DayDrift()
+    local day0 = Auctionator and Auctionator.Constants and Auctionator.Constants.SCAN_DAY_0
+    if not day0 then return 0 end
+    return math.floor((time() - day0) / 86400) - math.floor((loadedAt - day0) / 86400)
+end
+
+-- Auctionator keeps an item's price from the day it last saw it and never drops it, so a price can be days old: the
+-- item wasn't in the last scan (it sold, or the scan never finished). ageDays says how old; nil is older than the
+-- three weeks of days it keeps, and e.stale is set for both. The count is only read from a price that isn't stale:
+-- an older day's count is not what the auction house has now, and a dead count of 120 would carry a dead price into
+-- the plan.
 local function fromAuctionator(item)
     local api = Auctionator and Auctionator.API and Auctionator.API.v1
     if not (api and api.GetAuctionPriceByItemID) then return end
@@ -172,7 +189,8 @@ local function fromAuctionator(item)
     if not ok or not p then return end
     local okAge, age = pcall(api.GetAuctionAgeByItemID, ADDON, item)
     local e = { source = "auctionator", ageDays = okAge and age or nil }
-    local db = auctionatorQty and Auctionator.Database
+    e.stale = not (e.ageDays and e.ageDays <= Prices.DayDrift()) or nil
+    local db = not e.stale and auctionatorQty and Auctionator.Database
     if db and db.GetPriceHistory then
         local okDays, days = pcall(db.GetPriceHistory, db, tostring(item))
         local day = okDays and days and days[1]
@@ -210,6 +228,10 @@ end
 -- a minute: the header draws every second.
 local STAPLES = { 2589, 2770, 2318, 2447, 4306 } -- Linen Cloth, Copper Ore, Light Leather, Peacebloom, Silk Cloth
 local staleDays, askedAt = nil, nil
+
+-- A scan has just finished: ask again at once instead of up to a minute later, or the header keeps dating the
+-- prices it had before it.
+function Prices.Scanned() askedAt = nil end
 function Prices.AuctionatorAge()
     local api = Auctionator and Auctionator.API and Auctionator.API.v1
     if not (api and api.GetAuctionAgeByItemID) then return end

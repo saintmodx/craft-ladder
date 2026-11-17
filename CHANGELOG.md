@@ -3,6 +3,23 @@
 What's new in Craft Ladder, newest first. The format follows [Keep a Changelog](https://keepachangelog.com), the
 version numbers [Semantic Versioning](https://semver.org).
 
+## Unreleased
+
+### Fixed
+
+- A full scan with Auctionator reaches the ladder the moment it ends. Auctionator marks the scan's time when it
+  starts, so the window used to go on showing the prices it had until the next /reload; now its own "scan finished"
+  redraws the ladder and the cards.
+- Auctionator's old prices no longer pass for today's. Auctionator keeps the price it last saw of an item for ever,
+  so an item that wasn't in the last scan kept a price and a "120 listed" from days ago - and a dead high price
+  could send the plan after a recipe nobody is buying. Such a price is now shown with the day it was last seen
+  ("last seen 2 days ago") and counts only for what things cost to buy, not for what a step earns at the auction
+  house.
+- The header no longer promises a scan that brought nothing. Auctionator notes the moment a scan starts and keeps
+  it even when the scan dies halfway, so "scanned 10:51 (22m ago)" could sit over prices days old. When its newest
+  prices are older than that, the header says the day they are from, in yellow - and a client left open past
+  midnight, which makes Auctionator date its own fresh prices a day back, no longer counts as old.
+
 ## 1.11.1 - 2026-11-17
 
 ### Fixed

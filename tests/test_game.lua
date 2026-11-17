@@ -2108,7 +2108,7 @@ ns.Player.Prof(ns.COOKING).known[3397] = nil
 -- picks Auctionator
 local savedADB = AuctionDB
 Auctionator = { API = { v1 = { GetAuctionPriceByItemID = function(_, item) return item == 999002 and 500 or nil end,
-                               GetAuctionAgeByItemID = function() return 1 end } },
+                               GetAuctionAgeByItemID = function() return 0 end } },
                 SavedState = { TimeOfLastBrowseScan = 1700000000 },
                 Database = { GetPriceHistory = function(_, key)
                     return key == "999002" and { { minSeen = 480, maxSeen = 520, available = 99 } } or {}
@@ -2121,6 +2121,27 @@ expect("Auctionator alone: how many are listed comes from its database, the pric
 expect("... three cost three times that, not three times the day's lowest",
     quoteAuctionator(999002, 3, 0, true) == 1500)
 expect("... and the header gets the time of its last scan", select(2, ns.Prices.Source()) == 1700000000)
+-- a price Auctionator saw on an earlier day: the item wasn't in the last scan, so the day's count isn't what the
+-- auction house has now
+Auctionator.API.v1.GetAuctionAgeByItemID = function() return 2 end
+priced = select(2, ns.Prices.ForGame())(999002, true)
+expect("... a price from an earlier day keeps the price but drops how many were listed",
+    priced and priced.unit == 500 and priced.qty == nil and priced.ageDays == 2)
+expect("... and its card says when it was last seen",
+    ns.Describe.PriceSource(priced)
+        == ("auction house (Auctionator), %s each, last seen 2 days ago"):format(ns.Money(500)))
+-- a client left running past local midnight: Auctionator dates every new price a day back (it stamps them with the
+-- day it loaded), so while the session has crossed a midnight a day's lag is still the last scan's price
+ns.Prices.DayDrift = function() return 1 end
+Auctionator.API.v1.GetAuctionAgeByItemID = function() return 1 end
+priced = select(2, ns.Prices.ForGame())(999002, true)
+expect("... a day's lag after a midnight in the session is fresh: the count and the card stay",
+    priced and priced.qty == 99 and not priced.stale
+    and ns.Describe.PriceSource(priced)
+        == ("auction house (Auctionator), %s each, 99 listed"):format(ns.Money(500)))
+-- back to a session of its own day (what the real DayDrift gives here: the mock Auctionator has no Constants)
+ns.Prices.DayDrift = function() return 0 end
+Auctionator.API.v1.GetAuctionAgeByItemID = function() return 0 end
 AuctionDB = savedADB
 local _, lookupBoth = ns.Prices.ForGame()
 expect("... with AuctionDB there, Auctionator isn't read", lookupBoth(999002, true) == nil)
@@ -2137,6 +2158,18 @@ ticker.fn()
 expect("Auctionator with no scan of its own: the header dates its prices by the day",
     strip(frame.prices.text) == "Prices: Auctionator, newest prices from 2 days ago")
 expect("... and AuctionDB's countdown is hidden while Auctionator is read", strip(frame.nextScan.text) == "")
+-- Auctionator's scan time moves when a scan starts, so only its own "scan complete" says the prices are in: the
+-- ladders priced before it go
+Auctionator.FullScan = { Events = { ScanComplete = "replicate_scan_complete" } }
+Auctionator.EventBus = { Register = function(self, listener) self.listener = listener end }
+frame:Hide(); frame:Show() -- the window listens from the first time it is opened
+frame:Hide()
+expect("the ladder the window drew is cached before Auctionator scans",
+    Auctionator.EventBus.listener and ns.Window.Cached((ns.Window.Selected())) ~= nil)
+Auctionator.EventBus.listener.ReceiveEvent("replicate_scan_complete")
+expect("... and a finished Auctionator scan drops it, prices and all",
+    ns.Window.Cached((ns.Window.Selected())) == nil)
+frame:Show()
 CraftLadderDB.prices = nil
 ticker.fn()
 expect("... back on AuctionDB: its countdown is there again", strip(frame.nextScan.text):find("^Next AuctionDB scan"))

@@ -962,9 +962,14 @@ end
 -- Where the prices come from, how old they are and when AuctionDB may scan next (redrawn every second while open).
 local function renderPrices()
     local source, scanned = ns.Prices.Source()
+    -- Auctionator stamps the time a scan starts and keeps it when the scan fails, so its clock may promise prices it
+    -- never got: when the newest prices are older than this session may date a fresh one (Prices.DayDrift), the day
+    -- is what the header says, not the hour.
+    local days = source == "Auctionator" and ns.Prices.AuctionatorAge()
+    local stale = days and days > ns.Prices.DayDrift()
     if not source then
         frame.prices:SetText(hex(C.bad) .. L["No auction house prices: AuctionDB or Auctionator needed"] .. "|r")
-    elseif scanned then
+    elseif scanned and not stale then
         -- quiet while fresh; after 3 h a nudge; after 12 h a warning: costs may be off by then
         local age = time() - scanned
         if age > 12 * 3600 then
@@ -979,12 +984,11 @@ local function renderPrices()
                 date("%H:%M", scanned), ns.Age(scanned)))
         end
     else
-        -- Auctionator without a scan of its own: it dates its prices by the day, not the hour
-        local days = source == "Auctionator" and ns.Prices.AuctionatorAge()
+        -- Auctionator without a scan of its own, or with one that brought nothing: it dates its prices by the day
         local when = days and (days == 0 and L["today"] or days == 1 and L["yesterday"]
             or L["%d days ago"]:format(days))
         frame.prices:SetText(when
-            and (hex(days >= 2 and C.warn or C.muted)
+            and (hex(stale and C.warn or C.muted)
                 .. L["Prices: Auctionator, newest prices from %s|r"]:format(when))
             or (hex(C.muted) .. L["Prices: %s"]:format(source) .. "|r"))
     end
@@ -1538,8 +1542,29 @@ local function build()
             if frame:IsShown() then Window.Refresh(true) end
         end)
     end)
+    -- Auctionator stamps its scan time when a scan starts, not when it ends, so its prices land minutes after that
+    -- clock moved and nothing else says they are there (AuctionDB's time is its finished scan's). Its own event is
+    -- what says the database has them. Registered once, when the window is first opened: Auctionator has loaded by
+    -- then, whatever the order the game loaded the addons in.
+    local listening = false
+    local function watchAuctionator()
+        if listening or not (Auctionator and Auctionator.EventBus and Auctionator.EventBus.Register) then return end
+        local names = {}
+        for _, scan in ipairs({ Auctionator.FullScan or {}, Auctionator.IncrementalScan or {} }) do
+            local done = scan.Events and scan.Events.ScanComplete
+            if done then names[#names + 1] = done end
+        end
+        if #names == 0 then return end
+        listening = pcall(Auctionator.EventBus.Register, Auctionator.EventBus, { ReceiveEvent = function()
+            ns.Prices.Scanned()
+            version = version + 1
+            if frame:IsShown() then Window.Refresh(true) end
+        end }, names)
+    end
+
     frame:SetScript("OnShow", function()
         fitScreen()
+        watchAuctionator()
         for _, e in ipairs(CRAFT_WATCH) do pcall(craftEvents.RegisterEvent, craftEvents, e) end
         shownProf = nil -- opening shows the row you looked at last, else the step you're on
         Window.Refresh(true)

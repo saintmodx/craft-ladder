@@ -128,6 +128,16 @@ function D.Vendors(data, spell, faction, favorOK)
     return list
 end
 
+-- How old an Auctionator price is: it keeps what it last saw, so a price stays after the item is gone from the
+-- auction house. Only a stale one is dated (Prices.DayDrift says which); nil days: older than the three weeks of
+-- days Auctionator keeps.
+local function lastSeen(e)
+    if not e.stale then return "" end
+    if not e.ageDays then return ", last seen over three weeks ago" end
+    if e.ageDays == 1 then return ", last seen yesterday" end
+    return (", last seen %d days ago"):format(e.ageDays)
+end
+
 -- Where an ingredient's price came from: "vendor, 36c each" / "auction house, 10c each (cheapest listed 9c),
 -- 1018 listed". The ladder pays the median, so that is the price named; the cheapest listing is one auction.
 function D.PriceSource(e)
@@ -146,7 +156,10 @@ function D.PriceSource(e)
         return ("auction house, %s, %d listed - you searched it %s%s"):format(each, e.qty or 0, ns.Age(e.ts),
             e.partial and ", of the listings loaded" or "")
     end
-    if e.source == "auctionator" then return "auction house (Auctionator), " .. ns.Money(e.unit) .. " each" end
+    if e.source == "auctionator" then
+        return "auction house (Auctionator), " .. ns.Money(e.unit) .. " each"
+            .. (e.qty and (", %d listed"):format(e.qty) or "") .. lastSeen(e)
+    end
     return ""
 end
 

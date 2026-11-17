@@ -3,6 +3,16 @@
 What's new in Craft Ladder, newest first. The format follows [Keep a Changelog](https://keepachangelog.com), the
 version numbers [Semantic Versioning](https://semver.org).
 
+## Unreleased
+
+### Fixed
+
+- The plan stops changing its mind under you. The recipe of the step you're on is kept while it's still of the
+  same colour and nearly as cheap a skill point, so one craft, a new auction house scan or a trip to a vendor no
+  longer swaps it for a recipe that costs the same, after you've already bought the reagents for the one it showed.
+  It still switches the moment another recipe is really cheaper a point (your reagents ran out, a price moved for
+  real) — and your own pick on a card always wins.
+
 ## 1.11.0 - 2026-11-17
 
 ### Added

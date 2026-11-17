@@ -432,7 +432,9 @@ end
 --   quote = function(item, n, already, ahOnly) -> copper for buying n more after `already`, or nil (see Prices.Make)
 --   opts  = { favor, maxOptions (6), realPrices = { [item] = what a vendor asked },
 --             choices = { { from, to, recipe, bags }, ... } recipes the player picked for those stretches
---             (bags: the "with what you have" option of that recipe) }
+--             (bags: the "with what you have" option of that recipe),
+--             sticky = the recipe the player is crafting now, kept for the first step while it's nearly as good
+--             (see STICKY) }
 -- Returns { from, to, steps = { ... }, cost, crafts, missing = { [item] = true }, stuck = reason or nil }.
 -- A craft step also carries canCook (crafts the character can do right now with what they own) and haveMain (the
 -- same, counting only the ingredients vendors don't sell); ready: how many of its crafts what they own covers as the
@@ -578,10 +580,20 @@ local function toolDue(ctx, data, skill, late)
     return due
 end
 
+-- How much worse a point the recipe the player is on may be before the plan drops it (opts.sticky). Every craft and
+-- every new scan move every option's cost a little, and the cheapest a point changes hands over a few copper: without
+-- this the plan swaps the recipe while the player is still gathering for the one it showed. With the reagents for the
+-- whole step already in the bags it buys nothing, so no price can make it the wrong choice and it takes a recipe
+-- earning twice as much a point to move the plan - but something has to, since the same reagents can go into a recipe
+-- that earns far more points from them (Light Armor Kits over Handstitched Leather Vests). Both are guesses
+-- (ASSUMPTIONS.md).
+local STICKY, STICKY_OWNED = 0.25, 1
+
 local function buildOnce(data, state, quote, opts, sunk)
     local ctx = newContext(data, state, quote, opts, sunk)
     -- from the range's start when one is picked (ns.Calculate), with the rank that skill needs
     local skill, cap = state.from or state.skill, state.fromCap or state.maxSkill or 0
+    local startSkill = skill -- where the step the player is on begins: only that one is kept (opts.sticky)
     local target = state.target or cap
     local result = { from = skill, to = target, steps = {}, cost = 0, crafts = 0, missing = {} }
     local steps = result.steps
@@ -641,6 +653,23 @@ local function buildOnce(data, state, quote, opts, sunk)
             table.sort(options, better)
 
             local chosen = options[1]
+            -- the recipe the player is crafting keeps this step while it's of the same colour tier and no more than
+            -- STICKY worse a point, so a craft or a new scan doesn't swap the plan under them. It becomes the plan's
+            -- own first option, not a choice made for the player: the card and the step read it the usual way.
+            if opts.sticky and skill == startSkill and chosen and chosen.score then
+                for i, o in ipairs(options) do
+                    if o.recipe == opts.sticky and o.score and o.tier == chosen.tier then
+                        local covered = haveCrafts(ctx, data.recipes[o.recipe]) >= o.crafts
+                        local room = (covered and STICKY_OWNED or STICKY) * math.abs(chosen.score)
+                        if o.score - chosen.score <= room then
+                            table.remove(options, i)
+                            table.insert(options, 1, o)
+                            chosen = o
+                            break
+                        end
+                    end
+                end
+            end
             local wanted = choiceAt(opts.choices, skill)
             if wanted then
                 local sameRecipe

@@ -148,6 +148,26 @@ local bear = bearAt110({ [3397] = true })
 assert(bear.recipe == 3397 and bear.fromBags and bear.to == 118, "what you have first: Big Bear Steak 110-118")
 assert(bearAt110({}).recipe ~= 3397, "... not when its recipe has still to be bought")
 
+-- the recipe you're crafting keeps the first step while it's nearly as cheap a point (opts.sticky): a craft or a new
+-- scan moves every option a little, and the plan mustn't swap under you. One far worse a point doesn't hold it.
+do
+    local st = { skill = 260, maxSkill = 300, target = 300, faction = "A", level = 60, known = {}, owned = {} }
+    local function pick(sticky)
+        return Ladder.Build(data, st, q5, { vendorOnly = true, sticky = sticky }).steps[1]
+    end
+    local best = pick(nil)
+    local near, far
+    for _, o in ipairs(best.options) do
+        local gap = o.score and (o.score - best.options[1].score) / math.abs(best.options[1].score)
+        if gap and o.recipe ~= best.recipe then
+            if gap <= 0.2 then near = near or o.recipe elseif gap >= 0.3 then far = far or o.recipe end
+        end
+    end
+    assert(near and far, "sticky: this skill has an option close to the cheapest a point and one far from it")
+    assert(pick(near).recipe == near, "the recipe you're on keeps the step while it's nearly as cheap a point")
+    assert(pick(far).recipe == best.recipe, "... one far worse a point doesn't")
+end
+
 do
 -- Profit: the vendor group also holds what you can't make yet, after everything you can, marked with the skill it
 -- asks (and the level of the rank that would lift your cap to it). The auction house group stays what you can make.

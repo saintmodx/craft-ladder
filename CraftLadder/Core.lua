@@ -100,6 +100,11 @@ local function craftingProfessions()
     return list
 end
 
+-- The recipe each ladder's first step is on, per profession, mode and picked range, for this session only: it keeps
+-- the step the player is crafting from being swapped under them by a craft or a new scan (Ladder.Build's opts.sticky).
+-- Yours only: another character's view is read-only, and nothing is crafted there.
+local onNow = {}
+
 -- Builds the ladder of one profession (the shown one by default) for this character. Returns the ladder, the price
 -- lookup and how long it took (ms).
 function ns.Calculate(data)
@@ -134,13 +139,22 @@ function ns.Calculate(data)
     local build = fishing and ns.Fishing.Build or data.kind == "mining" and ns.Mining.Build
         or data.resale and mode == "gold" and ns.Ladder.Profits or data.food and mode == "food" and ns.Ladder.Food
         or ns.Ladder.Build
+    local stickyKey = not ns.Player.viewing
+        and table.concat({ data.key, mode, tostring(range and range.from), tostring(range and range.to) }, ":")
     local opts = { favor = ns.db.favor, choices = choices, realPrices = ns.Prices.Real(),
+                   sticky = stickyKey and onNow[stickyKey] or nil,
                    rate = fishing and (ns.Fishing.Rate()) or nil, mode = mode,
                    seenPools = fishing and ns.Fishing.SeenPools(data) or nil,
                    smelt = smeltFor(data),
                    standing = ns.Player.Standing,
                    vendorOnly = data.resale and mode == "skill" or nil }
     local ladder = build(data, state, quote, opts)
+    if stickyKey then -- the step being crafted now, for the next calculation (a tool is made once: it isn't one)
+        onNow[stickyKey] = nil
+        for _, s in ipairs(ladder.steps or {}) do
+            if s.kind == "craft" and not s.tool then onNow[stickyKey] = s.recipe; break end
+        end
+    end
     ladder.mode = mode
     ladder.state, ladder.data = state, data
     ladder.quote, ladder.opts = quote, opts -- the Merchant's Favor recipes plan their ingredients as the ladder does

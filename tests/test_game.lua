@@ -173,6 +173,24 @@ for i = 1, mats do
 end
 expect("a step that cooks what's in your bags still prices one craft at today's prices",
     ownedStep ~= nil and priced and lines():find("takes them from your bags") ~= nil)
+
+-- the step you're on is kept with the character, so a /reload doesn't change what you are in the middle of crafting
+do
+    local l = ns.Calculate(ns.COOKING)
+    local first
+    for _, s in ipairs(l.steps) do
+        if s.kind == "craft" and not s.tool then first = s; break end
+    end
+    local saved, entries, held = char().prof.cooking.onNow or {}, 0, nil
+    for _, v in pairs(saved) do entries, held = entries + 1, v end
+    expect("the step you're on is saved with the character", entries == 1 and first ~= nil and held ~= nil
+        and held.recipe == first.recipe and held.to == first.to and type(held.score) == "number")
+    for key in pairs(saved) do saved[key].to = ns.Player.Skill(ns.COOKING) end -- as if it had been crafted through
+    ns.Calculate(ns.COOKING)
+    local stale = false
+    for _, v in pairs(char().prof.cooking.onNow) do stale = stale or v.to <= ns.Player.Skill(ns.COOKING) end
+    expect("a step crafted through is forgotten, not held for ever", not stale)
+end
 clickFirstCraft()
 -- the Craft bar: the button crafts the count, opening the profession window first when it's closed
 local bar = frame.detail.craft
@@ -472,6 +490,20 @@ mock.click(rows()[2])
 expect("'back to cheapest' shows on a pick", frame.detail.back:IsShown())
 mock.click(frame.detail.back)
 expect("back to cheapest", strip(rows()[2].name.text) == "Strider Stew" and #char().prof.cooking.choices == 0)
+
+-- the same on the step you're on: the hold would otherwise put the recipe you picked straight back
+do
+    local was = strip(rows()[1].name.text)
+    mock.click(rows()[1])
+    local pick
+    for _, o in ipairs(options()) do if not o.chosen then pick = o; break end end
+    mock.click(pick)
+    expect("picking another recipe changes the step you're on", strip(rows()[1].name.text) == pick.option.name)
+    mock.click(rows()[1])
+    mock.click(frame.detail.back)
+    expect("back to cheapest on the step you're on", strip(rows()[1].name.text) == was
+        and #char().prof.cooking.choices == 0)
+end
 
 -- the rank-ups on the way to 300
 local function rankRows()

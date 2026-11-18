@@ -148,24 +148,68 @@ local bear = bearAt110({ [3397] = true })
 assert(bear.recipe == 3397 and bear.fromBags and bear.to == 118, "what you have first: Big Bear Steak 110-118")
 assert(bearAt110({}).recipe ~= 3397, "... not when its recipe has still to be bought")
 
--- the recipe you're crafting keeps the first step while it's nearly as cheap a point (opts.sticky): a craft or a new
--- scan moves every option a little, and the plan mustn't swap under you. One far worse a point doesn't hold it.
+-- the step you're crafting keeps its recipe until you've crafted it through (opts.sticky), however good the other
+-- options look by then: your bags empty into this very step, which makes every other recipe look better. Only the
+-- recipe itself getting worse a point than it was moves the plan.
 do
     local st = { skill = 260, maxSkill = 300, target = 300, faction = "A", level = 60, known = {}, owned = {} }
-    local function pick(sticky)
-        return Ladder.Build(data, st, q5, { vendorOnly = true, sticky = sticky }).steps[1]
+    local function pick(sticky, score, to)
+        return Ladder.Build(data, st, q5,
+            { vendorOnly = true, sticky = sticky and { recipe = sticky, to = to or 300, score = score } }).steps[1]
     end
     local best = pick(nil)
-    local near, far
+    local other -- another priced recipe at this skill, dearer a point than the plan's own pick
     for _, o in ipairs(best.options) do
-        local gap = o.score and (o.score - best.options[1].score) / math.abs(best.options[1].score)
-        if gap and o.recipe ~= best.recipe then
-            if gap <= 0.2 then near = near or o.recipe elseif gap >= 0.3 then far = far or o.recipe end
-        end
+        if o.recipe ~= best.recipe and o.score and o.score > best.options[1].score then other = other or o end
     end
-    assert(near and far, "sticky: this skill has an option close to the cheapest a point and one far from it")
-    assert(pick(near).recipe == near, "the recipe you're on keeps the step while it's nearly as cheap a point")
-    assert(pick(far).recipe == best.recipe, "... one far worse a point doesn't")
+    assert(other, "sticky: this skill has another priced option, dearer a point")
+    assert(pick(other.recipe, other.score).recipe == other.recipe,
+        "the recipe you're on keeps the step while it costs what it did when it was shown")
+    assert(pick(other.recipe, other.score - 2 * math.abs(other.score)).recipe == best.recipe,
+        "... and loses it once that recipe itself has got much dearer a point")
+    -- crafted through to where the step ended, the plan is free again
+    assert(pick(other.recipe, other.score, 260).recipe == best.recipe, "a step already crafted through is held no longer")
+end
+
+-- the held step ends where the player saw it end: its stretch can reach further than the one they were shown, and
+-- carrying it on would swallow the step that followed (the row would vanish under them). At Cooking 3 the plan picks
+-- Herb Baked Egg 3-10; holding Crispy Bat Wing, shown as a step to 4, must give the egg back at 4.
+do
+    local st = { skill = 3, maxSkill = 300, target = 300, faction = "A", level = 60, known = {}, owned = {} }
+    local BAT, EGG = 15935, 8604
+    local batScore
+    for _, o in ipairs(Ladder.Build(data, st, q5, { vendorOnly = true }).steps[1].options) do
+        if o.recipe == BAT then batScore = batScore or o.score end
+    end
+    assert(batScore, "Crispy Bat Wing is an option at Cooking 3")
+    local function hold(to)
+        return Ladder.Build(data, st, q5, { vendorOnly = true, sticky = { recipe = BAT, to = to, score = batScore } }).steps
+    end
+    local long = hold(300)
+    assert(long[1].recipe == BAT and long[1].to == 10, "without an end of its own the hold carries the recipe on")
+    local held = hold(4)
+    assert(held[1].recipe == BAT and held[1].to == 4, "the held step ends where it was shown to end")
+    assert(held[2] and held[2].recipe == EGG, "... and the step that followed is there again")
+end
+
+-- a reagent the step would make itself earns skill too (Bolt of Linen Cloth, 1 to 50): making it is a step of its own,
+-- not a line in that step's shopping list, or the plan hands out points it never counted
+do
+    local tail = ns.ProfessionByKey["tailoring"]
+    local BOLT, CLOTH, THREAD, LINEN_BAG, MAKE_BOLT = 2996, 2589, 2320, 3755, 2963
+    -- bolts dear, what they're made of cheap: the plan would rather make them than buy them
+    local q = function(item, n) return (item == CLOTH or item == THREAD) and 10 * n or 1000 * n end
+    local st = { skill = 1, maxSkill = 300, target = 60, faction = "A", level = 60, known = {}, owned = {} }
+    local l = Ladder.Build(tail, st, q, { vendorOnly = true })
+    assert(l.steps[1].recipe == MAKE_BOLT, "the bolts earn the first points themselves, so they are the first step")
+    for _, s in ipairs(l.steps) do
+        local b = s.buy and s.buy[BOLT]
+        assert(not (b and b.make) or s.from >= 50, "no step makes bolts for itself while they still earn skill")
+    end
+    -- the bag the old plan started with is still an option there, just not the cheapest a point
+    local listed = false
+    for _, o in ipairs(l.steps[1].options or {}) do listed = listed or o.recipe == LINEN_BAG end
+    assert(listed, "the recipe the reagents are for stays in the step's options")
 end
 
 do

@@ -3,6 +3,23 @@
 What's new in Craft Ladder, newest first. The format follows [Keep a Changelog](https://keepachangelog.com), the
 version numbers [Semantic Versioning](https://semver.org).
 
+## Unreleased
+
+### Fixed
+
+- The step you're crafting stays until you've crafted it through. It used to be dropped a point or two before its
+  end: the reagents in your bags go into that very step, which makes every other recipe look better by comparison,
+  and the plan swapped to one of them - after you had already bought what the step asked for. Now the plan only
+  drops it if that recipe itself has got dearer a point, and it keeps the end it showed you, so the row that comes
+  after it stays in place too (it used to vanish when the held step ran over it). The step you're on is kept
+  with the character now, so a /reload or coming back tomorrow doesn't change what you are in the middle of
+  crafting.
+- The plan no longer sends you off to make reagents and then drops the recipe they were for. Making what a step
+  needs earns skill of its own - the 156 Bolts of Linen Cloth a run of Linen Bags asks for take Tailoring from 1 to
+  50 by themselves - and none of it was counted, so you came back with the reagents already past the step, the plan
+  moved on and the rest of the materials you had bought sat unused. Reagents that still earn skill are now a step of
+  their own, with the points they earn counted, and the recipe comes after, from the skill you really have by then.
+
 ## 1.11.2 - 2026-11-18
 
 ### Fixed

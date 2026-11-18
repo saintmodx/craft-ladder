@@ -186,6 +186,9 @@ local function backToCheapest(step)
         if c.to <= step.from or c.from >= step.to then keep[#keep + 1] = c end
     end
     saved.choices = keep
+    -- the step you're on is held to the recipe it last showed (Core.lua's heldSteps), which here is the one being
+    -- dropped: forget it, or the plan puts it straight back
+    saved.onNow = nil
     Window.Refresh()
 end
 

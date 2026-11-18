@@ -100,10 +100,19 @@ local function craftingProfessions()
     return list
 end
 
--- The recipe each ladder's first step is on, per profession, mode and picked range, for this session only: it keeps
--- the step the player is crafting from being swapped under them by a craft or a new scan (Ladder.Build's opts.sticky).
--- Yours only: another character's view is read-only, and nothing is crafted there.
-local onNow = {}
+-- The recipe the ladder's first step is on, where that step ends and what it cost a point then, per mode and picked
+-- range: it keeps the step the player is crafting from being swapped under them by a craft or a new scan
+-- (Ladder.Build's opts.sticky). It is saved with the character (`prof[key].onNow`), so a /reload or tomorrow's
+-- session doesn't change what they are in the middle of crafting; an entry goes once its step has been crafted
+-- through. Yours only: another character's view is read-only, and nothing is crafted there.
+local function heldSteps(data, skill)
+    local saved = ns.Player.Prof(data)
+    if type(saved.onNow) ~= "table" then saved.onNow = {} end
+    for key, held in pairs(saved.onNow) do
+        if type(held) ~= "table" or (held.to or 0) <= skill then saved.onNow[key] = nil end
+    end
+    return saved.onNow
+end
 
 -- Builds the ladder of one profession (the shown one by default) for this character. Returns the ladder, the price
 -- lookup and how long it took (ms).
@@ -140,19 +149,23 @@ function ns.Calculate(data)
         or data.resale and mode == "gold" and ns.Ladder.Profits or data.food and mode == "food" and ns.Ladder.Food
         or ns.Ladder.Build
     local stickyKey = not ns.Player.viewing
-        and table.concat({ data.key, mode, tostring(range and range.from), tostring(range and range.to) }, ":")
+        and table.concat({ mode, tostring(range and range.from), tostring(range and range.to) }, ":")
+    local onNow = stickyKey and heldSteps(data, state.from or state.skill) or nil
     local opts = { favor = ns.db.favor, choices = choices, realPrices = ns.Prices.Real(),
-                   sticky = stickyKey and onNow[stickyKey] or nil,
+                   sticky = onNow and onNow[stickyKey] or nil,
                    rate = fishing and (ns.Fishing.Rate()) or nil, mode = mode,
                    seenPools = fishing and ns.Fishing.SeenPools(data) or nil,
                    smelt = smeltFor(data),
                    standing = ns.Player.Standing,
                    vendorOnly = data.resale and mode == "skill" or nil }
     local ladder = build(data, state, quote, opts)
-    if stickyKey then -- the step being crafted now, for the next calculation (a tool is made once: it isn't one)
+    if onNow then -- the step being crafted now, for the next calculation (a tool is made once: it isn't one)
         onNow[stickyKey] = nil
         for _, s in ipairs(ladder.steps or {}) do
-            if s.kind == "craft" and not s.tool then onNow[stickyKey] = s.recipe; break end
+            if s.kind == "craft" and not s.tool then
+                onNow[stickyKey] = { recipe = s.recipe, to = s.to, score = s.score }
+                break
+            end
         end
     end
     ladder.mode = mode

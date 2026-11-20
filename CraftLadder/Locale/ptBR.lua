@@ -307,7 +307,7 @@ ns.Locales.ptBR = {
         "Estes rendem mais na casa de leilões: 5 ou mais à venda (ou quantos forem se você mesmo buscou), e" ..
         " ela paga 1,5 vezes o que um vendedor dá. Quantos vão vender, a casa de leilões não diz.",
     ["nothing at today's prices"] = "nada pelos preços de hoje",
-    ["Disenchant, your whole account: no Enchanting needed"] = "Desencantar, toda a sua conta: não precisa de Encantamento",
+    ["Disenchant, your whole account: Enchanting 1 disenchants anything"] = "Desencantar, toda a sua conta: Encantamento 1 desencanta qualquer coisa",
     ["the ladder from %d to %d"] = "a escada de %d até %d",
     ["the ladder to %d"] = "a escada até %d",
     ["%s%s %d / %d, %s%s"] = "%s%s %d / %d, %s%s",

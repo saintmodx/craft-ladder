@@ -311,7 +311,7 @@ ns.Locales.deDE = {
         " gesucht hast), und es zahlt das 1,5-fache eines Händlers. Wie viel sich verkauft, sagt das" ..
         " Auktionshaus nicht.",
     ["nothing at today's prices"] = "nichts zu heutigen Preisen",
-    ["Disenchant, your whole account: no Enchanting needed"] = "Entzaubern, dein ganzer Account: keine Verzauberkunst nötig",
+    ["Disenchant, your whole account: Enchanting 1 disenchants anything"] = "Entzaubern, dein ganzer Account: Verzauberkunst 1 entzaubert alles",
     ["the ladder from %d to %d"] = "die Leiter von %d bis %d",
     ["the ladder to %d"] = "die Leiter bis %d",
     ["%s%s %d / %d, %s%s"] = "%s%s %d / %d, %s%s",

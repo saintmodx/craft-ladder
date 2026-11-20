@@ -310,7 +310,7 @@ ns.Locales.frFR = {
         " cherché toi-même), et il paie 1,5 fois ce que donne un marchand. Combien se vendent, l'hôtel des" ..
         " ventes ne le dit pas.",
     ["nothing at today's prices"] = "rien aux prix d'aujourd'hui",
-    ["Disenchant, your whole account: no Enchanting needed"] = "Désenchanter, tout ton compte : aucun Enchantement requis",
+    ["Disenchant, your whole account: Enchanting 1 disenchants anything"] = "Désenchanter, tout ton compte : Enchantement 1 désenchante tout",
     ["the ladder from %d to %d"] = "l'échelle de %d à %d",
     ["the ladder to %d"] = "l'échelle jusqu'à %d",
     ["%s%s %d / %d, %s%s"] = "%s%s %d / %d, %s%s",

@@ -374,7 +374,8 @@ end
 ---------------------------------------------------------------------------------------------------------------
 -- In game: every disenchant is recorded (CraftLadderDB.disenchantLog: "item time material:count ..." lines), so the
 -- builder can compare what Forever gives with Classic's table (tools/seen_in_game.py, tools/build_disenchant.py).
--- The item is the one the game locks in the bags while Disenchant is cast on it; failing that, the loot's source.
+-- The item is the one the game locks in the bags for the cast (the slot ITEM_LOCK_CHANGED names, else whatever
+-- is locked when the cast starts); failing that, the loot's source.
 ---------------------------------------------------------------------------------------------------------------
 
 -- The one item locked in the bags (Disenchant's target while it's cast), or nil (none, or more than one).
@@ -396,17 +397,29 @@ end
 
 if CreateFrame then
     local frame = CreateFrame("Frame")
-    for _, event in ipairs({ "UNIT_SPELLCAST_START", "UNIT_SPELLCAST_SUCCEEDED", "LOOT_OPENED" }) do
+    -- SENT comes even when the cast is instant (Forever's Disenchanter perk cuts its 3 s, and then START never
+    -- comes), ITEM_LOCK_CHANGED says which slot the game took, and LOOT_READY comes when auto-loot opens no window
+    for _, event in ipairs({ "UNIT_SPELLCAST_SENT", "UNIT_SPELLCAST_START", "UNIT_SPELLCAST_SUCCEEDED",
+                             "ITEM_LOCK_CHANGED", "LOOT_READY", "LOOT_OPENED" }) do
         pcall(frame.RegisterEvent, frame, event)
     end
-    local target, at -- the item being disenchanted, and when the cast ended
-    frame:SetScript("OnEvent", function(_, event, unit, _, spell)
+    local target, at, sent -- the item being disenchanted, when the cast ended, and when it was sent
+    frame:SetScript("OnEvent", function(_, event, a1, a2, a3, a4)
         if not ns.db then return end
-        if event == "UNIT_SPELLCAST_START" then
-            if unit == "player" and spell == Disenchant.SPELL then target, at = lockedItem(), nil end
+        if event == "UNIT_SPELLCAST_SENT" then -- (unit, target, castGUID, spellID): the cast may be instant
+            if a1 == "player" and a4 == Disenchant.SPELL then target, at, sent = lockedItem(), nil, GetTime() end
             return
-        elseif event == "UNIT_SPELLCAST_SUCCEEDED" then
-            if unit == "player" and spell == Disenchant.SPELL then at = GetTime() end
+        elseif event == "UNIT_SPELLCAST_START" or event == "UNIT_SPELLCAST_SUCCEEDED" then -- (unit, castGUID, spell)
+            if a1 == "player" and a3 == Disenchant.SPELL then
+                target = target or lockedItem()
+                at = event == "UNIT_SPELLCAST_SUCCEEDED" and GetTime() or nil
+            end
+            return
+        elseif event == "ITEM_LOCK_CHANGED" then -- (bag, slot): the one the game locked for this cast
+            if not target and sent and GetTime() - sent < 5 and a1 and a2 and a1 >= 0 and C_Container then
+                local info = C_Container.GetContainerItemInfo(a1, a2)
+                if info and info.isLocked then target = info.itemID end
+            end
             return
         end
         if not (at and GetTime() - at < 5 and GetNumLootItems) then return end
@@ -426,6 +439,7 @@ if CreateFrame then
         local log = ns.db.disenchantLog or {}
         log[#log + 1] = ("%d %d %s"):format(item, time(), table.concat(got, " "))
         ns.db.disenchantLog = log
+        target, sent = nil, nil
         if ns.OnKnownChanged then ns.OnKnownChanged() end -- what it gave may change Disenchant's numbers
     end)
 end

@@ -307,7 +307,7 @@ ns.Locales.esES = {
         "Estos dan más en la casa de subastas: 5 o más en venta (o los que sean si lo has buscado tú mismo), y" ..
         " paga 1,5 veces lo que da un vendedor. Cuántos se venden, la casa de subastas no lo dice.",
     ["nothing at today's prices"] = "nada a los precios de hoy",
-    ["Disenchant, your whole account: no Enchanting needed"] = "Desencantar, toda tu cuenta: no hace falta Encantamiento",
+    ["Disenchant, your whole account: Enchanting 1 disenchants anything"] = "Desencantar, toda tu cuenta: Encantamiento 1 desencanta cualquier cosa",
     ["the ladder from %d to %d"] = "la escalera de %d a %d",
     ["the ladder to %d"] = "la escalera hasta %d",
     ["%s%s %d / %d, %s%s"] = "%s%s %d / %d, %s%s",

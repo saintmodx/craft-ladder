@@ -309,7 +309,7 @@ ns.Locales.itIT = {
         "Questi rendono di più alla casa d'aste: 5 o più in vendita (o quanti vuoi se li hai cercati tu), e" ..
         " paga 1,5 volte quanto dà un mercante. Quanti se ne vendano, la casa d'aste non lo dice.",
     ["nothing at today's prices"] = "nulla a prezzi di oggi",
-    ["Disenchant, your whole account: no Enchanting needed"] = "Disincanta, tutto il tuo account: non serve l'Incantamento",
+    ["Disenchant, your whole account: Enchanting 1 disenchants anything"] = "Disincanta, tutto il tuo account: Incantamento 1 disincanta qualsiasi cosa",
     ["the ladder from %d to %d"] = "la scala da %d a %d",
     ["the ladder to %d"] = "la scala fino a %d",
     ["%s%s %d / %d, %s%s"] = "%s%s %d / %d, %s%s",

@@ -1363,7 +1363,7 @@ do
         headTexts():find("^In bags and banks | ") and headTexts():find("Buy and disenchant")
         and headTexts():find("Craft and disenchant") and not frame.list.modes[1].shown
         and not frame.range.shown
-        and strip(frame.subtitle.text):find("^Disenchant, your whole account: no Enchanting needed"))
+        and strip(frame.subtitle.text):find("^Disenchant, your whole account: Enchanting 1 disenchants anything"))
     -- Zug's: the bound green from its bags (a vendor at most), the shoulders from its bank
     local bags = byKind("bag")
     local zug, zugBank
@@ -1453,6 +1453,16 @@ do
     expect("Disenchanting: what it gave is recorded, once", CraftLadderDB.disenchantLog
         and #CraftLadderDB.disenchantLog == 1
         and CraftLadderDB.disenchantLog[1]:find(("^%d %%d+ 10940:3 10998:1$"):format(shoulders)))
+    -- an instant cast (the Disenchanter perk): no UNIT_SPELLCAST_START, the item from the slot the game locked,
+    -- and auto-loot that opens no window (LOOT_READY, not LOOT_OPENED)
+    locked = false
+    mock.fire("UNIT_SPELLCAST_SENT", "player", nil, "Cast-10", 13262)
+    locked = true
+    mock.fire("ITEM_LOCK_CHANGED", 0, 2)
+    mock.fire("UNIT_SPELLCAST_SUCCEEDED", "player", "Cast-10", 13262)
+    mock.fire("LOOT_READY")
+    expect("... an instant cast and auto-loot are recorded too", #CraftLadderDB.disenchantLog == 2
+        and CraftLadderDB.disenchantLog[2]:find(("^%d %%d+ 10940:3 10998:1$"):format(shoulders)))
     C_Container, GetNumLootItems, GetLootSlotLink, GetLootSlotInfo, C_Item.GetItemInfo = nil, nil, nil, nil, nil
     fx.tailoring.owned[shoulders], fx.tailoring.owned[sword] = nil, nil
     CraftLadderDB.chars["Player-ALT"], CraftLadderDB.disenchantFolded = nil, nil
@@ -1463,8 +1473,8 @@ do
     -- no Enchanting on the account: the view is there all the same, and every row is still worth disenchanting
     expect("... Disenchant stays in the menu without an enchanter", frame.menu.de:IsShown())
     mock.click(frame.menu.de)
-    expect("... and its line says no Enchanting is needed", strip(frame.subtitle.text):find(
-        "^Disenchant, your whole account: no Enchanting needed") ~= nil)
+    expect("... and its line says any Enchanting disenchants anything", strip(frame.subtitle.text):find(
+        "^Disenchant, your whole account: Enchanting 1 disenchants anything") ~= nil)
     mock.click(rows()[1])
     expect("... a row's card is its own, not \"No Enchanting yet\"",
         strip(frame.detail.head.title.text) ~= "No Enchanting yet"

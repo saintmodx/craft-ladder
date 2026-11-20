@@ -801,7 +801,7 @@ end
 local function renderHeader()
     local state = ladder.state
     if ladder.account then -- the Disenchant view: the account's, no modes to pick and no specialization
-        frame.subtitle:SetText(L["Disenchant, your whole account: no Enchanting needed"])
+        frame.subtitle:SetText(L["Disenchant, your whole account: Enchanting 1 disenchants anything"])
         for _, b in ipairs(frame.list.modes) do b:Hide() end
         frame.list.spec:Hide()
         return

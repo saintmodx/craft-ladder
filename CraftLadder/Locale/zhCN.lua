@@ -277,7 +277,7 @@ ns.Locales.zhCN = {
         " and it pays 1.5 times what a vendor does. How many sell, the auction house doesn't say."] =
         "这些在拍卖行收益更高：在售 5 件或以上（若是你自己搜索的则不限数量），且价格是商人出价的 1.5 倍。能卖出多少，拍卖行不会告诉你。",
     ["nothing at today's prices"] = "按今天的价格没有收益",
-    ["Disenchant, your whole account: no Enchanting needed"] = "分解，你的整个账号：无需附魔",
+    ["Disenchant, your whole account: Enchanting 1 disenchants anything"] = "分解，你的整个账号：附魔 1 级即可分解任何物品",
     ["the ladder from %d to %d"] = "从 %d 到 %d 的阶梯",
     ["the ladder to %d"] = "到 %d 的阶梯",
     ["%s%s %d / %d, %s%s"] = "%s%s %d / %d，%s%s",

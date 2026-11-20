@@ -283,7 +283,7 @@ ns.Locales.koKR = {
         " and it pays 1.5 times what a vendor does. How many sell, the auction house doesn't say."] =
         "이것들은 경매장에서 더 벌립니다: 5개 이상 등록(직접 검색했다면 수량 무관)되고, 상인가의 1.5배를 받습니다. 몇 개가 팔릴지는 경매장이 알려주지 않습니다.",
     ["nothing at today's prices"] = "오늘 가격으로는 없음",
-    ["Disenchant, your whole account: no Enchanting needed"] = "마력 추출, 계정 전지: 마법부여 필요 없음",
+    ["Disenchant, your whole account: Enchanting 1 disenchants anything"] = "마력 추출, 계정 전체: 마법부여 1이면 무엇이든 추출됩니다",
     ["the ladder from %d to %d"] = "%d에서 %d까지의 사다리",
     ["the ladder to %d"] = "%d까지의 사다리",
     ["%s%s %d / %d, %s%s"] = "%s%s %d / %d, %s%s",

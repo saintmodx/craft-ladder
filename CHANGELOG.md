@@ -7,12 +7,19 @@ version numbers [Semantic Versioning](https://semver.org).
 
 ### Fixed
 
-- Disenchanting no longer asks for Enchanting. Forever lets any character disenchant anything from the first level,
-  but the Disenchant view still held back the items Classic wanted a higher Enchanting for: they were greyed out,
+- Disenchanting no longer asks for a higher Enchanting. In Forever any enchanter disenchants anything, from
+  Enchanting 1, but the Disenchant view still held back the items Classic wanted more for: they were greyed out,
   pushed to the end of their group, labelled with the skill they supposedly needed and with the character to mail
   them to, and left out of what the groups and the footer say you can gain. Every row now counts and is sorted by
   what it brings, so the blues and the higher-level greens sit in the plan where they belong, whatever your
   Enchanting.
+- Disenchants are recorded again when the cast is instant (the Disenchanter perk) or when auto-loot takes the
+  materials without opening a window. They were missed before, so the odds on a card never became your own.
+- Shields and off-hand items now disenchant as the armor they are: mostly dust, not mostly essence. Classic put
+  them with the weapons and Craft Ladder followed, which made a green off-hand item of level 56-60 look worth
+  about 3g27s disenchanted when it brings about 1g21s - enough to send you buying at the auction house at a loss.
+  453 items moved, and 72 more can be disenchanted that the plan used to leave out.
+- The item data is Forever's client build 1.60.1.71037.
 
 ## 1.11.3 - 2026-11-18
 

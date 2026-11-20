@@ -299,7 +299,7 @@ ns.Locales.ruRU = {
         "Эти выгоднее на аукционе: выставлено 5 и больше (или сколько угодно, если вы искали сами), и платят в" ..
         " 1.5 раза больше торговца. Сколько продастся, аукцион не говорит.",
     ["nothing at today's prices"] = "ничего при нынешних ценах",
-    ["Disenchant, your whole account: no Enchanting needed"] = "Распыление, весь ваш аккаунт: чары не нужны",
+    ["Disenchant, your whole account: Enchanting 1 disenchants anything"] = "Распыление, весь ваш аккаунт: чар 1 хватит на что угодно",
     ["the ladder from %d to %d"] = "лестница с %d до %d",
     ["the ladder to %d"] = "лестница до %d",
     ["%s%s %d / %d, %s%s"] = "%s%s %d / %d, %s%s",

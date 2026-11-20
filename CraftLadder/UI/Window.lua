@@ -301,7 +301,6 @@ local function stepTooltip(owner, step)
             { L["Sold"], step.sale.how and (ns.Money(step.sale.each * n) .. (step.sale.how == "auction"
                 and L[" at the auction house"] or L[" at a vendor"])) or L["nobody buys it"] },
             bag and { L["Best"], ns.Disenchant.Verdict(step) } or { L["Disenchanting one craft"], signed(step.profit) },
-            step.needSkill and (hex(C.bad) .. "Disenchanting it needs Enchanting " .. step.needSkill .. "|r") or nil,
         })
         return
     end
@@ -310,7 +309,6 @@ local function stepTooltip(owner, step)
             { L["Cheapest listing"], ns.Money(step.price) .. (step.listed and (", " .. step.listed .. " listed") or "") },
             { L["Disenchanted"], ns.Money(step.each) .. " on average" },
             { L["Gains"], signed(step.gain) .. L[", more %d%% of the time"]:format(math.floor(step.chance * 100 + 0.5)) },
-            step.needSkill and (hex(C.bad) .. "Disenchanting it needs Enchanting " .. step.needSkill .. "|r") or nil,
         })
         return
     end
@@ -553,28 +551,23 @@ local function fillRow(row, step, index)
         local rec = step.data.recipes[step.recipe]
         row.icon:SetTexture(UI.ItemIcon(rec.makes))
         row.name:SetText(ns.Describe.RecipeName(step.recipe, rec))
-        -- what needs a higher Enchanting is grey (the user's rule); else the recipe's skill-up colour, as Gold's rows
-        UI.SetColor(row.name, step.needSkill and C.dim or step.color ~= "grey" and STEP_COLOR[step.color] or C.text)
-        row.sub:SetText(L["%s, %s, disenchanted ~%s, sold %s%s"]:format(step.who or "you", step.data.name,
-            ns.Money(step.each), step.sale.how and ns.Money(step.sale.each) or "-",
-            step.needSkill and (" - " .. hex(C.bad) .. "Enchanting " .. step.needSkill .. "|r") or ""))
+        -- the recipe's skill-up colour, as Gold's rows: disenchanting it asks no Enchanting
+        UI.SetColor(row.name, step.color ~= "grey" and STEP_COLOR[step.color] or C.text)
+        row.sub:SetText(L["%s, %s, disenchanted ~%s, sold %s"]:format(step.who or "you", step.data.name,
+            ns.Money(step.each), step.sale.how and ns.Money(step.sale.each) or "-"))
     elseif step.kind == "bag" then -- what to do with it: disenchant (green) or sell
         row.icon:SetTexture(UI.ItemIcon(step.item))
         row.name:SetText(ns.Describe.ItemName(step.item) .. (step.count > 1 and (" x" .. step.count) or ""))
         UI.SetColor(row.name, step.disenchant and C.good or C.text)
-        row.sub:SetText(L["%s's %s - %s: ~%s disenchanted, %s sold%s%s"]:format(step.who or "your", step.where or "bags",
+        row.sub:SetText(L["%s's %s - %s: ~%s disenchanted, %s sold%s"]:format(step.who or "your", step.where or "bags",
             ns.Disenchant.Verdict(step), ns.Money(step.each),
-            step.sale.how and ns.Money(step.sale.each) or "-", step.bound and ", soulbound" or "",
-            step.needSkill and (" - " .. hex(C.bad) .. "Enchanting " .. step.needSkill .. "|r") or ""))
+            step.sale.how and ns.Money(step.sale.each) or "-", step.bound and ", soulbound" or ""))
     elseif step.kind == "auction" then -- buy it to disenchant: what one gains on average, and how often it pays
         row.icon:SetTexture(UI.ItemIcon(step.item))
         row.name:SetText(ns.Describe.ItemName(step.item))
-        -- nobody of yours can disenchant it yet: grey (the user's rule, as the recipes')
-        UI.SetColor(row.name, step.needSkill and not step.alt and C.dim or C.text)
-        row.sub:SetText(L["buy %s, ~%s disenchanted, pays %d%% of the time%s"]:format(ns.Money(step.price),
-            ns.Money(step.each), math.floor(step.chance * 100 + 0.5), step.needSkill and (" - " .. hex(C.bad)
-            .. "Enchanting " .. step.needSkill .. "|r" .. (step.alt and (", " .. step.alt.name .. " has " ..
-            step.alt.skill) or "")) or ""))
+        UI.SetColor(row.name, C.text)
+        row.sub:SetText(L["buy %s, ~%s disenchanted, pays %d%% of the time"]:format(ns.Money(step.price),
+            ns.Money(step.each), math.floor(step.chance * 100 + 0.5)))
     elseif step.kind == "mine" then
         -- the item that gives the most points (Gold: earns the most), then what else counts
         row.icon:SetTexture(UI.ItemIcon(step.mix and step.mix[1] and step.mix[1].item or prof.nodes[step.node].item))
@@ -808,11 +801,7 @@ end
 local function renderHeader()
     local state = ladder.state
     if ladder.account then -- the Disenchant view: the account's, no modes to pick and no specialization
-        local who = ladder.enchanter
-        frame.subtitle:SetText(L["Disenchant, your whole account: %s"]:format(who and (who.live
-            and L["your Enchanting %d is the best of yours"]:format(who.skill)
-            or L["%s has the most Enchanting, %d"]:format(who.name, who.skill))
-            or L["no character of yours has Enchanting yet"]))
+        frame.subtitle:SetText(L["Disenchant, your whole account: no Enchanting needed"])
         for _, b in ipairs(frame.list.modes) do b:Hide() end
         frame.list.spec:Hide()
         return
@@ -1014,7 +1003,7 @@ local function renderFooter()
         local de, earn, all = 0, 0, 0
         for _, s in ipairs(ladder.steps) do
             if s.kind == "bag" and s.disenchant then de = de + 1
-            elseif s.kind == "disenchant" and s.profit > 0 and not s.needSkill then earn = earn + 1 end
+            elseif s.kind == "disenchant" and s.profit > 0 then earn = earn + 1 end
         end
         for _, g in ipairs(ladder.groups) do all = all + g.gain end
         text = ("Disenchant %d of yours, buy %d, make %d: about %s in all (at today's prices)")

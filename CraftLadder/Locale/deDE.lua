@@ -277,10 +277,10 @@ ns.Locales.deDE = {
     ["an hour: ~%d catches, %s each%s%s"] = "eine Stunde: ~%d Fänge, %s pro Stück%s%s",
     ["%d - %d, ~%d catches%s"] = "%d - %d, ~%d Fänge%s",
     ["%s%s, %s%s%s%s%s%s"] = "%s%s, %s%s%s%s%s%s",
-    ["%s, %s, disenchanted ~%s, sold %s%s"] = "%s, %s, entzaubert ~%s, verkauft %s%s",
-    ["%s's %s - %s: ~%s disenchanted, %s sold%s%s"] = "%s%s - %s: ~%s entzaubert, %s verkauft%s%s",
-    ["buy %s, ~%s disenchanted, pays %d%% of the time%s"] = "kauf %s, ~%s entzaubert, lohnt sich in %d%% der" ..
-        " Fälle%s",
+    ["%s, %s, disenchanted ~%s, sold %s"] = "%s, %s, entzaubert ~%s, verkauft %s",
+    ["%s's %s - %s: ~%s disenchanted, %s sold%s"] = "%s%s - %s: ~%s entzaubert, %s verkauft%s",
+    ["buy %s, ~%s disenchanted, pays %d%% of the time"] = "kauf %s, ~%s entzaubert, lohnt sich in %d%% der" ..
+        " Fälle",
     ["%d - %d%s: %s"] = "%d - %d%s: %s",
     ["keep them"] = "behalte sie",
     ["unconfirmed"] = "unbestätigt",
@@ -311,10 +311,7 @@ ns.Locales.deDE = {
         " gesucht hast), und es zahlt das 1,5-fache eines Händlers. Wie viel sich verkauft, sagt das" ..
         " Auktionshaus nicht.",
     ["nothing at today's prices"] = "nichts zu heutigen Preisen",
-    ["Disenchant, your whole account: %s"] = "Entzaubern, dein ganzer Account: %s",
-    ["your Enchanting %d is the best of yours"] = "dein Verzauberkunst %d ist dein bestes",
-    ["%s has the most Enchanting, %d"] = "%s hat die höchste Verzauberkunst, %d",
-    ["no character of yours has Enchanting yet"] = "kein Charakter von dir hat bisher Verzauberkunst",
+    ["Disenchant, your whole account: no Enchanting needed"] = "Entzaubern, dein ganzer Account: keine Verzauberkunst nötig",
     ["the ladder from %d to %d"] = "die Leiter von %d bis %d",
     ["the ladder to %d"] = "die Leiter bis %d",
     ["%s%s %d / %d, %s%s"] = "%s%s %d / %d, %s%s",
@@ -642,8 +639,6 @@ ns.Locales.deDE = {
         " Entzauberungen ähnlicher Gegenstände ersetzt das, was du bekommen hast, sie",
     ["One craft%s costs about %s; disenchanted, about %s on average: %s"] = "Eine Herstellung%s kostet etwa" ..
         " %s; entzaubert im Schnitt etwa %s: %s",
-    ["Disenchanting it needs Enchanting %d; the best of yours is %d."] = "Zum Entzaubern braucht es" ..
-        " Verzauberkunst %d; dein bestes ist %d.",
     ["A %s recipe %s knows."] = "Ein Rezept in %s, das %s kennt.",
     ["you"] = "du",
     ["Making it costs more than disenchanting brings: disenchant it when you make it anyway, for skill."] =
@@ -654,8 +649,6 @@ ns.Locales.deDE = {
     ["your"] = "dir",
     ["bags"] = "Taschen",
     ["Soulbound: no auction house."] = "Seelengebunden: kein Auktionshaus.",
-    ["%s has the most Enchanting of yours, %d: mail it there."] = "%s hat die höchste Verzauberkunst von dir," ..
-        " %d: schick es per Post dorthin.",
     ["Or sell it"] = "Oder verkaufen",
     ["Soulbound: the auction house won't take it."] = "Seelengebunden: das Auktionshaus nimmt es nicht.",
     ["%s each at the auction house (after its cut%s)."] = "%s pro Stück im Auktionshaus (nach dessen Abzug%s).",
@@ -665,8 +658,6 @@ ns.Locales.deDE = {
         " wenn du selbst gesucht hast. Woraus es gemacht ist, zählt nicht: es ist gemacht.",
     ["Buy one for %s; disenchanted, about %s on average: %s"] = "Für %s kaufen; entzaubert im Schnitt etwa %s:" ..
         " %s",
-    ["Disenchanting it needs Enchanting %d; the best of yours is %d: no character of yours can.|r"] =
-        "Zum Entzaubern braucht es Verzauberkunst %d; dein bestes ist %d: kein Charakter von dir kann es.|r",
     ["One disenchant brings more than it cost %d%% of the time."] = "Eine Entzauberung bringt in %d%% der" ..
         " Fälle mehr, als sie gekostet hat.",
     ["Buy it"] = "Kaufen",

@@ -1362,8 +1362,8 @@ do
     expect("... three groups, the account's, no mode buttons and no skill to pick",
         headTexts():find("^In bags and banks | ") and headTexts():find("Buy and disenchant")
         and headTexts():find("Craft and disenchant") and not frame.list.modes[1].shown
-        and not frame.range.shown and strip(frame.subtitle.text):find("^Disenchant, your whole account: your" ..
-            " Enchanting 150 is the best of yours"))
+        and not frame.range.shown
+        and strip(frame.subtitle.text):find("^Disenchant, your whole account: no Enchanting needed"))
     -- Zug's: the bound green from its bags (a vendor at most), the shoulders from its bank
     local bags = byKind("bag")
     local zug, zugBank
@@ -1460,11 +1460,11 @@ do
     mock.click(tab("firstaid"))
     expect("a profession picked again: the ladder back, Disenchant no longer the view",
         ns.Player.Me().tab == "firstaid" and frame.list.shown)
-    -- no Enchanting on the account: the view is there all the same, and its rows say what Enchanting they need
+    -- no Enchanting on the account: the view is there all the same, and every row is still worth disenchanting
     expect("... Disenchant stays in the menu without an enchanter", frame.menu.de:IsShown())
     mock.click(frame.menu.de)
-    expect("... and its line says nobody of yours enchants yet", strip(frame.subtitle.text):find(
-        "^Disenchant, your whole account: no character of yours has Enchanting yet") ~= nil)
+    expect("... and its line says no Enchanting is needed", strip(frame.subtitle.text):find(
+        "^Disenchant, your whole account: no Enchanting needed") ~= nil)
     mock.click(rows()[1])
     expect("... a row's card is its own, not \"No Enchanting yet\"",
         strip(frame.detail.head.title.text) ~= "No Enchanting yet"

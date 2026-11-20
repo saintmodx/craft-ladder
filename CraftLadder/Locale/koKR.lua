@@ -254,9 +254,9 @@ ns.Locales.koKR = {
     ["an hour: ~%d catches, %s each%s%s"] = "한 시간: 약 %d회 어획, 개당 %s%s%s",
     ["%d - %d, ~%d catches%s"] = "%d - %d, 약 %d회 어획%s",
     ["%s%s, %s%s%s%s%s%s"] = "%s%s, %s%s%s%s%s%s",
-    ["%s, %s, disenchanted ~%s, sold %s%s"] = "%s, %s, 추출 약 %s, 판매 %s%s",
-    ["%s's %s - %s: ~%s disenchanted, %s sold%s%s"] = "%s, %s - %s: 추출 약 %s, 판매 %s%s%s",
-    ["buy %s, ~%s disenchanted, pays %d%% of the time%s"] = "%s에 구매, 추출 약 %s, %d%% 확률로 이득%s",
+    ["%s, %s, disenchanted ~%s, sold %s"] = "%s, %s, 추출 약 %s, 판매 %s",
+    ["%s's %s - %s: ~%s disenchanted, %s sold%s"] = "%s, %s - %s: 추출 약 %s, 판매 %s%s",
+    ["buy %s, ~%s disenchanted, pays %d%% of the time"] = "%s에 구매, 추출 약 %s, %d%% 확률로 이득",
     ["%d - %d%s: %s"] = "%d - %d%s: %s",
     ["keep them"] = "보관하세요",
     ["unconfirmed"] = "미확인",
@@ -283,10 +283,7 @@ ns.Locales.koKR = {
         " and it pays 1.5 times what a vendor does. How many sell, the auction house doesn't say."] =
         "이것들은 경매장에서 더 벌립니다: 5개 이상 등록(직접 검색했다면 수량 무관)되고, 상인가의 1.5배를 받습니다. 몇 개가 팔릴지는 경매장이 알려주지 않습니다.",
     ["nothing at today's prices"] = "오늘 가격으로는 없음",
-    ["Disenchant, your whole account: %s"] = "마력 추출, 계정 전체: %s",
-    ["your Enchanting %d is the best of yours"] = "당신의 마법부여 %d이(가) 가장 높습니다",
-    ["%s has the most Enchanting, %d"] = "%s의 마법부여가 가장 높습니다, %d",
-    ["no character of yours has Enchanting yet"] = "아직 마법부여를 익힌 캐릭터가 없습니다",
+    ["Disenchant, your whole account: no Enchanting needed"] = "마력 추출, 계정 전지: 마법부여 필요 없음",
     ["the ladder from %d to %d"] = "%d에서 %d까지의 사다리",
     ["the ladder to %d"] = "%d까지의 사다리",
     ["%s%s %d / %d, %s%s"] = "%s%s %d / %d, %s%s",
@@ -583,8 +580,6 @@ ns.Locales.koKR = {
         " you got replaces it"] = ", Classic의 표 기준(Forever에서는 아직 확인되지 않음): 비슷한 아이템을 %d회 추출하면 당신의 결과가 이를 대신합니다",
     ["One craft%s costs about %s; disenchanted, about %s on average: %s"] = "1회 제작%s에 약 %s이(가) 들고, 추출하면 평균 약" ..
         " %s: %s",
-    ["Disenchanting it needs Enchanting %d; the best of yours is %d."] = "추출하려면 마법부여 %d이(가) 필요합니다; 당신의 최고는" ..
-        " %d입니다.",
     ["A %s recipe %s knows."] = "%s 제조법이며 %s이(가) 알고 있습니다.",
     ["you"] = "당신",
     ["Making it costs more than disenchanting brings: disenchant it when you make it anyway, for skill."] =
@@ -594,7 +589,6 @@ ns.Locales.koKR = {
     ["your"] = "당신의",
     ["bags"] = "가방",
     ["Soulbound: no auction house."] = "귀속: 경매장에 올릴 수 없습니다.",
-    ["%s has the most Enchanting of yours, %d: mail it there."] = "%s의 마법부여가 당신 중 가장 높습니다, %d: 우편으로 보내세요.",
     ["Or sell it"] = "또는 판매",
     ["Soulbound: the auction house won't take it."] = "귀속: 경매장이 받지 않습니다.",
     ["%s each at the auction house (after its cut%s)."] = "경매장에서 개당 %s (수수료를 뺀 뒤%s).",
@@ -603,8 +597,6 @@ ns.Locales.koKR = {
         " it doesn't count: it's made."] = "경매장은 5개 이상 등록되었을 때, 또는 직접 검색했다면 수량 무관으로 셉니다. 무엇으로 만들었는지는 세지 않습니다:" ..
         " 이미 만들어진 것입니다.",
     ["Buy one for %s; disenchanted, about %s on average: %s"] = "%s에 하나 구매; 추출하면 평균 약 %s: %s",
-    ["Disenchanting it needs Enchanting %d; the best of yours is %d: no character of yours can.|r"] =
-        "추출하려면 마법부여 %d이(가) 필요합니다; 당신의 최고는 %d입니다: 당신의 어떤 캐릭터도 할 수 없습니다.|r",
     ["One disenchant brings more than it cost %d%% of the time."] = "한 번의 추출이 값을 넘기는 경우는 %d%%입니다.",
     ["Buy it"] = "구매",
     ["The cheapest listing: %s. %s."] = "최저 등록가: %s. %s.",

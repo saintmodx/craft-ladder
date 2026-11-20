@@ -817,8 +817,7 @@ assert(table.concat(fvs, " ") == "1:known 2:learn 4:level 3:skill" and fv[1].can
     check("... a lesser essence: a third of a greater, after the cut", deWorth(10938), 600 * 0.95 / 3)
     check("... a greater essence: its own price, after the cut", deWorth(10939), 600 * 0.95)
     -- Ho: Enchanting 150 and Tailoring 103, today's prices from both snapshots. Only what's worth more disenchanted
-    -- than sold: what Ho has first (what making it cost doesn't count), then what to make (at a loss last), then what
-    -- Enchanting can't disenchant yet
+    -- than sold: what Ho has first (what making it cost doesn't count), then what to make (at a loss last)
     local hoT = dofile(root .. "tests/fixtures/ho_tailoring.lua")
     local hoE = dofile(root .. "tests/fixtures/ho_enchanting.lua")
     local qho = ns.Prices.Make({ faction = "H", auctionDB = function(item)
@@ -910,18 +909,20 @@ assert(table.concat(fvs, " ") == "1:known 2:learn 4:level 3:skill" and fv[1].can
         enchanters = { { name = "Ho", skill = 150, live = true } }, seen = five })
     local sashSeen = named(withSeen, "Novice Arcanist's Sash")
     assert(sashSeen and sashSeen.de.seen == 5 and sashSeen.seen.n == 5, "... and the ladder prices it so")
+    -- Forever asks no Enchanting to disenchant: at Enchanting 1 the same rows, in the same order, although
+    -- Classic's table asks more than 1 for some of them
     local hoLow = hoRows(1)
     local lowCrafts = groupOf(hoLow, "crafts")
-    local short = false
+    local asksMore, sameOrder = false, true
     for i = lowCrafts.from, lowCrafts.to do
         local r = hoLow.steps[i]
-        local needs = DE.buckets[r.bucket].skill > 1
-        assert((r.needSkill ~= nil) == needs and (r.needSkill or 1) == DE.buckets[r.bucket].skill
-            and not (short and not needs),
-            "Disenchant: at Enchanting 1 what asks more comes last, with the skill it asks")
-        short = short or needs
+        assert(not r.needSkill and not r.alt, "Disenchant: at Enchanting 1 no row asks an Enchanting")
+        asksMore = asksMore or DE.buckets[r.bucket].skill > 1
     end
+    assert(asksMore, "... and Classic would have held some of them back")
     check("... the same rows", #hoLow.steps, #ho.steps)
+    for i = 1, #ho.steps do sameOrder = sameOrder and hoLow.steps[i].recipe == ho.steps[i].recipe end
+    assert(sameOrder, "... in the same order, whatever your Enchanting")
     -- how often one disenchant brings more than it cost: of 75% 4-6 of a 10c dust only 6 beats 55c (a third), and the
     -- 25% 1s shard does
     check("Disenchant: how often one brings more than 55c", Disenchant.Chance({ gives = {
@@ -941,7 +942,8 @@ assert(table.concat(fvs, " ") == "1:known 2:learn 4:level 3:skill" and fv[1].can
     assert(Disenchant.Table(sashBucket, byBucket, sashRec.makes, byItem) == sashTable,
         "... the likeliest came once: the bucket's still")
     -- the auction house: what its last scan lists for less than disenchanting brings, on average. A green sword (Raider
-    -- Shortsword, level 20) at 1s; one gone from the last scan isn't there; a green of level 31-35 asks Enchanting 75
+    -- Shortsword, level 20) at 1s; one gone from the last scan isn't there; a green of level 31-35 (Classic asks
+    -- Enchanting 75 for it) is listed all the same
     local sword, gone, high = 15210, nil, nil
     for item, id in pairs(DE.items) do
         if not DE.bop[item] then
@@ -968,17 +970,11 @@ assert(table.concat(fvs, " ") == "1:known 2:learn 4:level 3:skill" and fv[1].can
         "Disenchant: the sword at 1s is worth buying to disenchant; one gone from the last scan isn't listed")
     check("... how often it pays", sw.chance, Disenchant.Chance(sw.de, ah.worth, 100))
     for i = ahGroup.from + 1, ahGroup.to do
-        local a, b = ah.steps[i - 1], ah.steps[i]
-        local ca, cb = not a.needSkill, not b.needSkill
-        assert(ca and not cb or ca == cb and b.gain <= a.gain, "... what you can disenchant first, the most gained first")
+        assert(ah.steps[i].gain <= ah.steps[i - 1].gain, "... the most gained first")
     end
     local _, aloneBy = ahRows(1)
-    assert(aloneBy[high] and aloneBy[high].needSkill == 75 and not aloneBy[high].alt,
-        "... at Enchanting 1 and no other enchanter, a green of level 31-35 asks 75")
-    local _, lowBy = ahRows(nil, { { name = "Ho", skill = 1, live = true }, { name = "Zug", skill = 200 },
-                                   { name = "Yungzug", skill = 60 } })
-    assert(lowBy[high] and not lowBy[high].needSkill and lowBy[high].alt.name == "Zug",
-        "... the account's best Enchanting counts (Zug's 200): mail it there")
+    assert(aloneBy[high] and not aloneBy[high].needSkill and aloneBy[high].gain == by[high].gain,
+        "... at Enchanting 1 the green of level 31-35 gains the same: Forever asks no skill to disenchant it")
 end)()
 -- a real ladder
 local fx = dofile(root .. "tests/fixtures/" .. fixtureName .. ".lua")

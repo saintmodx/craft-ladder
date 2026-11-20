@@ -912,15 +912,14 @@ end
 -- what one craft takes and what selling it instead brings. prof is the recipe's profession here (so the Craft bar
 -- makes it); Cards.Render sets it back.
 local function disenchantDetail(step)
-    local rec, skill = prof.recipes[step.recipe], ladder.from -- the account's best Enchanting: an item can be mailed
+    local rec = prof.recipes[step.recipe]
     local result = (step.profit >= 0 and hex(C.good) .. "+" or hex(C.bad) .. "-") .. ns.Money(math.abs(step.profit))
         .. "|r"
     headline(UI.ItemIcon(rec.makes), ns.Describe.RecipeName(step.recipe, rec),
-        step.needSkill and C.dim or step.color ~= "grey" and STEP_COLOR[step.color] or C.text,
+        step.color ~= "grey" and STEP_COLOR[step.color] or C.text,
         (L["One craft%s costs about %s; disenchanted, about %s on average: %s"]):format(
             step.made > 1 and (L[" (makes %d)"]):format(step.made) or "", ns.Money(step.cost), ns.Money(step.back), result),
-        step.needSkill and (hex(C.bad) .. (L["Disenchanting it needs Enchanting %d; the best of yours is %d."]):format(
-            step.needSkill, skill) .. "|r") or (L["A %s recipe %s knows."]):format(prof.name, step.who or L["you"]))
+        (L["A %s recipe %s knows."]):format(prof.name, step.who or L["you"]))
     if step.live then craftBar(step, rec) end -- only your own character can craft it from here
     disenchanting(step, ns.Disenchant.BATCH)
     if step.profit < 0 then
@@ -939,11 +938,7 @@ local function bagDetail(step)
         (L["Best: %s. %d in %s's %s: disenchanted, about %s on average; sold, %s."]):format(
             ns.Disenchant.Verdict(step), step.count, step.who or L["your"], step.where or L["bags"],
             ns.Money(step.each * step.count), ns.Money(step.sale.each * step.count)),
-        step.needSkill and (hex(C.bad) .. (L["Disenchanting it needs Enchanting %d; the best of yours is %d."]):format(
-            step.needSkill, ladder.from) .. "|r") or (step.bound and L["Soulbound: no auction house."] or ""))
-    if step.alt and step.alt.name ~= step.who then
-        line((L["%s has the most Enchanting of yours, %d: mail it there."]):format(step.alt.name, step.alt.skill), C.muted)
-    end
+        step.bound and L["Soulbound: no auction house."] or "")
     disenchanting(step, step.count, true)
     section(L["Or sell it"])
     line(step.bound and L["Soulbound: the auction house won't take it."] or ah and (L["%s each at the auction house" ..
@@ -958,13 +953,9 @@ end
 -- Disenchant: an item the auction house lists for less than disenchanting it brings: what buying one gains on average
 -- and how often, what it breaks into, the listing; with Auctionator, a button that searches it.
 local function auctionDetail(step)
-    headline(UI.ItemIcon(step.item), ns.Describe.ItemName(step.item), step.needSkill and C.dim or C.text,
+    headline(UI.ItemIcon(step.item), ns.Describe.ItemName(step.item), C.text,
         (L["Buy one for %s; disenchanted, about %s on average: %s"]):format(ns.Money(step.price), ns.Money(step.each),
-            signed(step.gain)),
-        step.needSkill and (hex(C.bad) .. (L["Disenchanting it needs Enchanting %d; the best of yours is %d:" ..
-            " no character of yours can.|r"]):format(step.needSkill, ladder.from))
-            or step.alt and (L["%s has the most Enchanting of yours, %d: mail it there."]):format(step.alt.name,
-                step.alt.skill) or "")
+            signed(step.gain)))
     line((L["One disenchant brings more than it cost %d%% of the time."]):format(math.floor(step.chance * 100 + 0.5)),
         step.chance >= 0.5 and C.good or C.warn)
     local api = Auctionator and Auctionator.API and Auctionator.API.v1

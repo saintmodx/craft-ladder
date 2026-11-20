@@ -3,6 +3,17 @@
 What's new in Craft Ladder, newest first. The format follows [Keep a Changelog](https://keepachangelog.com), the
 version numbers [Semantic Versioning](https://semver.org).
 
+## Unreleased
+
+### Fixed
+
+- Disenchanting no longer asks for Enchanting. Forever lets any character disenchant anything from the first level,
+  but the Disenchant view still held back the items Classic wanted a higher Enchanting for: they were greyed out,
+  pushed to the end of their group, labelled with the skill they supposedly needed and with the character to mail
+  them to, and left out of what the groups and the footer say you can gain. Every row now counts and is sorted by
+  what it brings, so the blues and the higher-level greens sit in the plan where they belong, whatever your
+  Enchanting.
+
 ## 1.11.3 - 2026-11-18
 
 ### Fixed

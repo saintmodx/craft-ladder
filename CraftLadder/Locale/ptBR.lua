@@ -274,10 +274,10 @@ ns.Locales.ptBR = {
     ["an hour: ~%d catches, %s each%s%s"] = "uma hora: ~%d pescas, %s cada%s%s",
     ["%d - %d, ~%d catches%s"] = "%d - %d, ~%d pescas%s",
     ["%s%s, %s%s%s%s%s%s"] = "%s%s, %s%s%s%s%s%s",
-    ["%s, %s, disenchanted ~%s, sold %s%s"] = "%s, %s, desencantado ~%s, vendido %s%s",
-    ["%s's %s - %s: ~%s disenchanted, %s sold%s%s"] = "%s, %s - %s: ~%s desencantado, %s vendido%s%s",
-    ["buy %s, ~%s disenchanted, pays %d%% of the time%s"] = "compre %s, ~%s desencantado, compensa em %d%% das" ..
-        " vezes%s",
+    ["%s, %s, disenchanted ~%s, sold %s"] = "%s, %s, desencantado ~%s, vendido %s",
+    ["%s's %s - %s: ~%s disenchanted, %s sold%s"] = "%s, %s - %s: ~%s desencantado, %s vendido%s",
+    ["buy %s, ~%s disenchanted, pays %d%% of the time"] = "compre %s, ~%s desencantado, compensa em %d%% das" ..
+        " vezes",
     ["%d - %d%s: %s"] = "%d - %d%s: %s",
     ["keep them"] = "guarde-os",
     ["unconfirmed"] = "não confirmado",
@@ -307,10 +307,7 @@ ns.Locales.ptBR = {
         "Estes rendem mais na casa de leilões: 5 ou mais à venda (ou quantos forem se você mesmo buscou), e" ..
         " ela paga 1,5 vezes o que um vendedor dá. Quantos vão vender, a casa de leilões não diz.",
     ["nothing at today's prices"] = "nada pelos preços de hoje",
-    ["Disenchant, your whole account: %s"] = "Desencantar, toda a sua conta: %s",
-    ["your Enchanting %d is the best of yours"] = "seu Encantamento %d é o melhor que você tem",
-    ["%s has the most Enchanting, %d"] = "%s tem o maior Encantamento, %d",
-    ["no character of yours has Enchanting yet"] = "nenhum personagem seu tem Encantamento ainda",
+    ["Disenchant, your whole account: no Enchanting needed"] = "Desencantar, toda a sua conta: não precisa de Encantamento",
     ["the ladder from %d to %d"] = "a escada de %d até %d",
     ["the ladder to %d"] = "a escada até %d",
     ["%s%s %d / %d, %s%s"] = "%s%s %d / %d, %s%s",
@@ -638,8 +635,6 @@ ns.Locales.ptBR = {
         " dos seus desencantamentos de itens parecidos, o que você obteve a substitui",
     ["One craft%s costs about %s; disenchanted, about %s on average: %s"] = "Uma produção%s custa cerca de %s;" ..
         " desencantada, cerca de %s em média: %s",
-    ["Disenchanting it needs Enchanting %d; the best of yours is %d."] = "Desencantar pede Encantamento %d; o" ..
-        " melhor que você tem é %d.",
     ["A %s recipe %s knows."] = "Uma receita de %s que %s conhece.",
     ["you"] = "você",
     ["Making it costs more than disenchanting brings: disenchant it when you make it anyway, for skill."] =
@@ -649,8 +644,6 @@ ns.Locales.ptBR = {
     ["your"] = "suas",
     ["bags"] = "bolsas",
     ["Soulbound: no auction house."] = "Vinculado: sem casa de leilões.",
-    ["%s has the most Enchanting of yours, %d: mail it there."] = "%s tem o maior Encantamento dos seus, %d:" ..
-        " mande para lá pelo correio.",
     ["Or sell it"] = "Ou vender",
     ["Soulbound: the auction house won't take it."] = "Vinculado: a casa de leilões não aceita.",
     ["%s each at the auction house (after its cut%s)."] = "%s cada na casa de leilões (após a taxa dela%s).",
@@ -660,8 +653,6 @@ ns.Locales.ptBR = {
         " você mesmo buscou. Do que foi feito não conta: já está feito.",
     ["Buy one for %s; disenchanted, about %s on average: %s"] = "Compre um por %s; desencantado, cerca de %s" ..
         " em média: %s",
-    ["Disenchanting it needs Enchanting %d; the best of yours is %d: no character of yours can.|r"] =
-        "Desencantar pede Encantamento %d; o melhor que você tem é %d: nenhum personagem seu consegue.|r",
     ["One disenchant brings more than it cost %d%% of the time."] = "Um desencantamento rende mais do que" ..
         " custou em %d%% das vezes.",
     ["Buy it"] = "Comprar",

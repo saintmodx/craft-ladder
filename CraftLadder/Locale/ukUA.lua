@@ -270,10 +270,10 @@ ns.Locales.ukUA = {
     ["an hour: ~%d catches, %s each%s%s"] = "година: ~%d уловів, %s за штуку%s%s",
     ["%d - %d, ~%d catches%s"] = "%d - %d, ~%d уловів%s",
     ["%s%s, %s%s%s%s%s%s"] = "%s%s, %s%s%s%s%s%s",
-    ["%s, %s, disenchanted ~%s, sold %s%s"] = "%s, %s, розпилено ~%s, продано %s%s",
-    ["%s's %s - %s: ~%s disenchanted, %s sold%s%s"] = "%s, %s - %s: ~%s розпилено, %s продано%s%s",
-    ["buy %s, ~%s disenchanted, pays %d%% of the time%s"] = "купіть %s, ~%s розпилено, вигідно у %d%%" ..
-        " випадків%s",
+    ["%s, %s, disenchanted ~%s, sold %s"] = "%s, %s, розпилено ~%s, продано %s",
+    ["%s's %s - %s: ~%s disenchanted, %s sold%s"] = "%s, %s - %s: ~%s розпилено, %s продано%s",
+    ["buy %s, ~%s disenchanted, pays %d%% of the time"] = "купіть %s, ~%s розпилено, вигідно у %d%%" ..
+        " випадків",
     ["%d - %d%s: %s"] = "%d - %d%s: %s",
     ["keep them"] = "залиште їх",
     ["unconfirmed"] = "не підтверджено",
@@ -303,10 +303,7 @@ ns.Locales.ukUA = {
         "Ці дають більше на аукціоні: виставлено 5 і більше (або скільки завгодно, якщо ви шукали самі), і він" ..
         " платить у 1,5 раза більше за торговця. Скільки продасться, аукціон не каже.",
     ["nothing at today's prices"] = "нічого за сьогоднішніми цінами",
-    ["Disenchant, your whole account: %s"] = "Розпилення, увесь ваш обліковий запис: %s",
-    ["your Enchanting %d is the best of yours"] = "ваше Накладання чарів %d - найкраще у вас",
-    ["%s has the most Enchanting, %d"] = "%s має найвище Накладання чарів, %d",
-    ["no character of yours has Enchanting yet"] = "жоден ваш персонаж ще не має Накладання чарів",
+    ["Disenchant, your whole account: no Enchanting needed"] = "Розпилення, увесь ваш обліковий запис: Накладання чарів не потрібне",
     ["the ladder from %d to %d"] = "драбина від %d до %d",
     ["the ladder to %d"] = "драбина до %d",
     ["%s%s %d / %d, %s%s"] = "%s%s %d / %d, %s%s",
@@ -630,8 +627,6 @@ ns.Locales.ukUA = {
         " схожих предметів її замінять ваші результати",
     ["One craft%s costs about %s; disenchanted, about %s on average: %s"] = "Одне створення%s коштує близько" ..
         " %s; розпилене, у середньому близько %s: %s",
-    ["Disenchanting it needs Enchanting %d; the best of yours is %d."] = "Для розпилення потрібне Накладання" ..
-        " чарів %d; найкраще у вас - %d.",
     ["A %s recipe %s knows."] = "Рецепт професії %s, який знає %s.",
     ["you"] = "ви",
     ["Making it costs more than disenchanting brings: disenchant it when you make it anyway, for skill."] =
@@ -641,8 +636,6 @@ ns.Locales.ukUA = {
     ["your"] = "вас",
     ["bags"] = "сумки",
     ["Soulbound: no auction house."] = "Персональний: на аукціон не виставити.",
-    ["%s has the most Enchanting of yours, %d: mail it there."] = "У %s найвище Накладання чарів, %d:" ..
-        " надішліть поштою туди.",
     ["Or sell it"] = "Або продати",
     ["Soulbound: the auction house won't take it."] = "Персональний: аукціон його не прийме.",
     ["%s each at the auction house (after its cut%s)."] = "%s за штуку на аукціоні (після його збору%s).",
@@ -652,8 +645,6 @@ ns.Locales.ukUA = {
         " завгодно, якщо ви шукали самі. З чого він зроблений, не рахується: він уже зроблений.",
     ["Buy one for %s; disenchanted, about %s on average: %s"] = "Купити за %s; розпилене, у середньому близько" ..
         " %s: %s",
-    ["Disenchanting it needs Enchanting %d; the best of yours is %d: no character of yours can.|r"] =
-        "Для розпилення потрібне Накладання чарів %d; найкраще у вас - %d: жоден ваш персонаж не може.|r",
     ["One disenchant brings more than it cost %d%% of the time."] = "Одне розпилення приносить більше, ніж" ..
         " коштувало, у %d%% випадків.",
     ["Buy it"] = "Купити",

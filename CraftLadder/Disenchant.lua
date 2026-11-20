@@ -205,9 +205,10 @@ end
 --     with how often one brings more), what one gains first;
 --   - what any character's crafting professions make with the recipes it knows (at its skill, with its tools) that's
 --     worth more disenchanted than sold and nobody holds: by what disenchanting brings less what making it costs (at
---     a loss last), the ones no Enchanting of yours reaches after them.
--- The Enchanting that counts is the account's best: an item can be mailed to whoever has it (alt says who, when it
--- isn't you). Every row says whose it is (who); a craft's, which profession (data).
+--     a loss last).
+-- Forever asks no Enchanting to disenchant: every character can, whatever the item, so no row is gated by a skill
+-- (enchanter still says who has the most of it). Every row says whose it is (who); a craft's, which profession
+-- (data).
 --   opts.chars = { { name, live = yours, bags = its snapshot's ({ [item] = count }; nil for yours: opts.bags),
 --     bank = the same, crafts = { { data, state, smelt }, ... } its crafting professions }, ... } (Player.Chars's
 --     order, yours first); opts.bags = what your bags hold (Disenchant.Bags: the game knows what's bound);
@@ -219,10 +220,9 @@ end
 -- folding sections, bags = how many rows are the bags', auction = how many are the auction house's, known = how many
 -- known recipes make something to disenchant, worth = what each material is worth, enchanter = the best of yours }.
 -- Every row: each = what one disenchant brings on average, spread = of one disenchant, bucket, de = what it gives
--- (Disenchant.Table), seen = what the game gave of the bucket, needSkill = the Enchanting it asks when above the
--- account's best, alt = the character to mail it to when that isn't you, who = whose row it is.
+-- (Disenchant.Table), seen = what the game gave of the bucket, who = whose row it is.
 -- A bag's row: { kind = "bag", item, count, bound, where = "bags", "bank" or "bags and bank", sale = { each, how },
--- disenchant = disenchanting brings more (and some Enchanting of yours allows it), gain = what disenchanting them
+-- disenchant = disenchanting brings more, gain = what disenchanting them
 -- all brings over selling them (below 0: selling brings more) }. A recipe's: { kind = "disenchant", recipe, data =
 -- its profession, live = yours (only then can the card craft it), made, buy, matCost, cost = what making it costs,
 -- back = what disenchanting what it makes brings, profit = back - cost, color = its skill-up colour at that
@@ -236,14 +236,11 @@ function Disenchant.Account(quote, opts)
         if c.skill > best.skill then best = c end
     end
     local skill = best.skill
-    local alt = not best.live and best.name and best or nil -- your own Enchanting is short: who to mail it to
     local function common(row, id)
         row.de = Disenchant.Table(id, opts.seen, row.item or row.data and row.data.recipes[row.recipe].makes,
             opts.seenItems)
         row.seen, row.bucket = opts.seen and opts.seen[id], id
         row.each, row.spread = Disenchant.Value(row.de, worth)
-        row.needSkill = row.de.skill > skill and row.de.skill or nil
-        row.alt = alt
         row.from, row.to = skill, skill
         return row
     end
@@ -275,7 +272,7 @@ function Disenchant.Account(quote, opts)
             local sold, how = sell, sell > 0 and "vendor" or nil -- soulbound: only a vendor
             if not e.bound then sold, how = ns.Prices.Worth({ sell = { [item] = sell } }, quote, {}, item) end
             row.sale = { each = sold, how = how }
-            row.disenchant = not row.needSkill and row.each > sold
+            row.disenchant = row.each > sold
             row.gain = (row.each - sold) * e.count
             bags[#bags + 1] = row
         end
@@ -308,15 +305,13 @@ function Disenchant.Account(quote, opts)
         end
     end
     table.sort(auction, function(a, b)
-        local ca, cb = not a.needSkill, not b.needSkill
-        if ca ~= cb then return ca end
         if a.gain ~= b.gain then return a.gain > b.gain end
         return a.item < b.item
     end)
 
     -- what any character can make that's worth more disenchanted than sold (what sells for more is Gold's, the
     -- user's rule), and nobody holds already
-    local now, later, known = {}, {}, 0
+    local now, known = {}, 0
     for _, c in ipairs(opts.chars or {}) do
         for _, p in ipairs(c.crafts or {}) do
             local ctx = Ladder.NewContext(p.data, p.state, quote, { realPrices = opts.realPrices,
@@ -343,7 +338,7 @@ function Disenchant.Account(quote, opts)
                         for item, n in pairs(rec.mats) do
                             row.canCook = math.min(row.canCook, math.floor((mats[item] or 0) / n))
                         end
-                        table.insert(row.needSkill and later or now, row)
+                        now[#now + 1] = row
                     end
                 end
             end
@@ -355,11 +350,6 @@ function Disenchant.Account(quote, opts)
         return (a.who or "") < (b.who or "")
     end
     table.sort(now, better)
-    table.sort(later, function(a, b)
-        if a.needSkill ~= b.needSkill then return a.needSkill < b.needSkill end
-        return better(a, b)
-    end)
-    for _, r in ipairs(later) do now[#now + 1] = r end
 
     -- a group's gain is what the rows worth doing bring together: what disenchanting them gains over selling (the
     -- bags), what buying and disenchanting gains (the auction house), what a craft of each leaves (what to make)
@@ -369,7 +359,7 @@ function Disenchant.Account(quote, opts)
         for _, r in ipairs(rows) do
             steps[#steps + 1] = r
             local one = r.kind == "disenchant" and r.profit or r.gain
-            if not r.needSkill and one > 0 then gain = gain + one end
+            if one > 0 then gain = gain + one end
         end
         groups[#groups + 1] = { key = key, name = name, from = from, to = #steps, gain = gain }
     end

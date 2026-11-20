@@ -267,10 +267,10 @@ ns.Locales.ruRU = {
     ["an hour: ~%d catches, %s each%s%s"] = "в час: ~%d уловов, %s за штуку%s%s",
     ["%d - %d, ~%d catches%s"] = "%d - %d, ~%d уловов%s",
     ["%s%s, %s%s%s%s%s%s"] = "%s%s, %s%s%s%s%s%s",
-    ["%s, %s, disenchanted ~%s, sold %s%s"] = "%s, %s, распыление ~%s, продажа %s%s",
-    ["%s's %s - %s: ~%s disenchanted, %s sold%s%s"] = "%s, %s - %s: ~%s распылением, %s продажей%s%s",
-    ["buy %s, ~%s disenchanted, pays %d%% of the time%s"] = "купить за %s, ~%s распылением, выгодно в %d%%" ..
-        " случаев%s",
+    ["%s, %s, disenchanted ~%s, sold %s"] = "%s, %s, распыление ~%s, продажа %s",
+    ["%s's %s - %s: ~%s disenchanted, %s sold%s"] = "%s, %s - %s: ~%s распылением, %s продажей%s",
+    ["buy %s, ~%s disenchanted, pays %d%% of the time"] = "купить за %s, ~%s распылением, выгодно в %d%%" ..
+        " случаев",
     ["%d - %d%s: %s"] = "%d - %d%s: %s",
     ["keep them"] = "оставьте себе",
     ["unconfirmed"] = "не подтверждено",
@@ -299,10 +299,7 @@ ns.Locales.ruRU = {
         "Эти выгоднее на аукционе: выставлено 5 и больше (или сколько угодно, если вы искали сами), и платят в" ..
         " 1.5 раза больше торговца. Сколько продастся, аукцион не говорит.",
     ["nothing at today's prices"] = "ничего при нынешних ценах",
-    ["Disenchant, your whole account: %s"] = "Распыление, весь ваш аккаунт: %s",
-    ["your Enchanting %d is the best of yours"] = "ваши чары %d - лучшие из ваших",
-    ["%s has the most Enchanting, %d"] = "у персонажа %s больше всего чар, %d",
-    ["no character of yours has Enchanting yet"] = "ни у одного вашего персонажа ещё нет чар",
+    ["Disenchant, your whole account: no Enchanting needed"] = "Распыление, весь ваш аккаунт: чары не нужны",
     ["the ladder from %d to %d"] = "лестница с %d до %d",
     ["the ladder to %d"] = "лестница до %d",
     ["%s%s %d / %d, %s%s"] = "%s%s %d / %d, %s%s",
@@ -627,8 +624,6 @@ ns.Locales.ruRU = {
         " похожих предметов её заменят ваши результаты",
     ["One craft%s costs about %s; disenchanted, about %s on average: %s"] = "Одно создание%s стоит около %s;" ..
         " распылённое, в среднем около %s: %s",
-    ["Disenchanting it needs Enchanting %d; the best of yours is %d."] = "Для распыления нужно Наложение чар" ..
-        " %d; лучшее у вас - %d.",
     ["A %s recipe %s knows."] = "Рецепт профессии %s, который знает %s.",
     ["you"] = "вы",
     ["Making it costs more than disenchanting brings: disenchant it when you make it anyway, for skill."] =
@@ -638,8 +633,6 @@ ns.Locales.ruRU = {
     ["your"] = "вас",
     ["bags"] = "сумки",
     ["Soulbound: no auction house."] = "Персональный: на аукцион не выставить.",
-    ["%s has the most Enchanting of yours, %d: mail it there."] = "У %s самое высокое Наложение чар, %d:" ..
-        " отправьте почтой туда.",
     ["Or sell it"] = "Или продать",
     ["Soulbound: the auction house won't take it."] = "Персональный: аукцион его не примет.",
     ["%s each at the auction house (after its cut%s)."] = "%s за штуку на аукционе (после его сбора%s).",
@@ -649,8 +642,6 @@ ns.Locales.ruRU = {
         " если вы искали сами. Из чего он сделан, не считается: он уже сделан.",
     ["Buy one for %s; disenchanted, about %s on average: %s"] = "Купить за %s; распылённое, в среднем около" ..
         " %s: %s",
-    ["Disenchanting it needs Enchanting %d; the best of yours is %d: no character of yours can.|r"] =
-        "Для распыления нужно Наложение чар %d; лучшее у вас - %d: ни один ваш персонаж не может.|r",
     ["One disenchant brings more than it cost %d%% of the time."] = "Одно распыление приносит больше, чем" ..
         " стоило, в %d%% случаев.",
     ["Buy it"] = "Купить",

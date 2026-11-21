@@ -1609,7 +1609,11 @@ function Window.Refresh(cached)
         ladder, lookup = cache[key].ladder, cache[key].lookup
     else
         if account then -- an `and ... or` here would keep only the first of the three it returns
-            ladder, lookup, ms = ns.CalculateDisenchant()
+            -- a bag change can't move the auction house's rows, and pricing every item that can be disenchanted is
+            -- the most of the work: they are kept while everything else `fresh` looks at is the same
+            local old = cache[key]
+            local keep = old and old.version == version and old.scan == lastScan() and old.ladder.auctionRows
+            ladder, lookup, ms = ns.CalculateDisenchant(keep or nil)
         else
             ladder, lookup, ms = ns.Calculate(data)
         end

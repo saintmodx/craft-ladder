@@ -214,10 +214,13 @@ end
 --     order, yours first); opts.bags = what your bags hold (Disenchant.Bags: the game knows what's bound);
 --   opts.bucketOf = the bucket an item falls in (Disenchant.BucketOf); opts.seen, opts.seenItems = what the game
 --   gave, by bucket and by item (Disenchant.Seen); opts.enchanters = every character with Enchanting
---   (Disenchant.Enchanters); opts.auction = look at the auction house's last scan too
+--   (Disenchant.Enchanters); opts.auction = look at the auction house's last scan too; opts.auctionRows = the
+--   auction house's rows an earlier build gave (its ladder.auctionRows), for a caller that knows nothing they
+--   depend on has changed since: they are taken as they are, so the items aren't priced again.
 -- Ingredients are bought or made, whichever costs less, what the character owns at its price too (as Gold).
 -- Returns { mode = "disenchant", account = true, steps, groups = { { key, name, from, to } } for the window's
--- folding sections, bags = how many rows are the bags', auction = how many are the auction house's, known = how many
+-- folding sections, bags = how many rows are the bags', auction = how many are the auction house's, auctionRows =
+-- those rows, to hand back to the next build, known = how many
 -- known recipes make something to disenchant, worth = what each material is worth, enchanter = the best of yours }.
 -- Every row: each = what one disenchant brings on average, spread = of one disenchant, bucket, de = what it gives
 -- (Disenchant.Table), seen = what the game gave of the bucket, who = whose row it is.
@@ -288,9 +291,11 @@ function Disenchant.Account(quote, opts)
 
     -- the auction house: an item gone from its last scan has sold or expired (listed = false); Auctionator's, from
     -- its last scan (stale: an older day, or no age at all, which means older than the days it keeps).
-    -- A bound one is never listed, so it isn't looked for.
-    local auction = {}
-    for item, id in pairs(opts.auction and DE.items or {}) do
+    -- A bound one is never listed, so it isn't looked for. Pricing every item that can be disenchanted is the most
+    -- of this function's work, and nothing in the bags can move these rows: a caller that knows the prices are the
+    -- same hands the rows of its last build back in opts.auctionRows, and then nothing here is priced again.
+    local auction = opts.auctionRows or {}
+    for item, id in pairs(not opts.auctionRows and opts.auction and DE.items or {}) do
         if not DE.bop[item] then
             local _, e = quote(item, 1, 0, true)
             local price = e and e.listed ~= false and not e.stale and (e.min or e.unit)
@@ -367,8 +372,8 @@ function Disenchant.Account(quote, opts)
     group("auction", "Buy and disenchant", auction)
     group("crafts", "Craft and disenchant", now)
     return { from = skill, to = skill, mode = "disenchant", account = true, steps = steps, groups = groups,
-             bags = #bags, auction = #auction, known = known, worth = worth, cost = 0, back = 0, crafts = 0,
-             missing = {}, enchanter = best.name and best or nil }
+             bags = #bags, auction = #auction, auctionRows = auction, known = known, worth = worth, cost = 0,
+             back = 0, crafts = 0, missing = {}, enchanter = best.name and best or nil }
 end
 
 ---------------------------------------------------------------------------------------------------------------

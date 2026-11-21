@@ -3,6 +3,15 @@
 What's new in Craft Ladder, newest first. The format follows [Keep a Changelog](https://keepachangelog.com), the
 version numbers [Semantic Versioning](https://semver.org).
 
+## Unreleased
+
+### Fixed
+
+- The Disenchant view no longer stops the game for a moment every time your bags change. It used to work out the
+  whole account again on every loot, sale or bag move, and with it the price of every item in the game that can be
+  disenchanted. The "Buy and disenchant" group now keeps what it found until the prices change, so looting a
+  dungeon with the view open costs nothing.
+
 ## 1.11.5 - 2026-11-21
 
 ### Changed

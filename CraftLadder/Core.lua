@@ -176,7 +176,9 @@ end
 
 -- The menu's Disenchant view: the whole account's, so it reads every character (through Player.viewing) and hands
 -- Disenchant.Account what it found, which then does the arithmetic. Returns what ns.Calculate does.
-function ns.CalculateDisenchant()
+-- auctionRows: the auction house's rows of an earlier build (a ladder's auctionRows), when the caller knows the
+-- prices behind them haven't changed - the whole auction house isn't priced again then (Window's cache).
+function ns.CalculateDisenchant(auctionRows)
     local start = debugprofilestop()
     local was = ns.Player.viewing
     ns.Player.viewing = nil
@@ -190,7 +192,7 @@ function ns.CalculateDisenchant()
     end
     ns.Player.viewing = nil
     local opts = { chars = chars, bags = bags, bucketOf = ns.Disenchant.BucketOf, auction = true,
-                   realPrices = ns.Prices.Real(), standing = ns.Player.Standing,
+                   realPrices = ns.Prices.Real(), standing = ns.Player.Standing, auctionRows = auctionRows,
                    enchanters = ns.Disenchant.Enchanters(ns.ENCHANTING) }
     opts.seen, opts.seenItems = ns.Disenchant.Seen(ns.db.disenchantLog, ns.Disenchant.BucketOf)
     local ladder = ns.Disenchant.Account(quote, opts)

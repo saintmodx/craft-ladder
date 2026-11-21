@@ -975,6 +975,17 @@ assert(table.concat(fvs, " ") == "1:known 2:learn 4:level 3:skill" and fv[1].can
     local _, aloneBy = ahRows(1)
     assert(aloneBy[high] and not aloneBy[high].needSkill and aloneBy[high].gain == by[high].gain,
         "... at Enchanting 1 the green of level 31-35 gains the same: Forever asks no skill to disenchant it")
+    -- the rows handed back are taken as they are: a quote that finds nothing gives the same group
+    local empty = ns.Prices.Make({ faction = "H", auctionDB = function() return nil end })
+    local again = Disenchant.Account(empty, { auction = true, chars = {}, auctionRows = ah.auctionRows,
+        enchanters = { { name = "Ho", skill = 150, live = true } } })
+    local kept = nil
+    for _, x in ipairs(again.groups) do if x.key == "auction" then kept = x end end
+    assert(again.auctionRows == ah.auctionRows and again.auction == ah.auction
+        and kept.to - kept.from == ahGroup.to - ahGroup.from and kept.gain == ahGroup.gain
+        and again.steps[kept.from].item == ah.steps[ahGroup.from].item
+        and again.steps[kept.from].each == ah.steps[ahGroup.from].each,
+        "Disenchant: opts.auctionRows are used as they are, nothing is priced again")
 end)()
 -- a real ladder
 local fx = dofile(root .. "tests/fixtures/" .. fixtureName .. ".lua")

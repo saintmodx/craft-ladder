@@ -3,6 +3,15 @@
 What's new in Craft Ladder, newest first. The format follows [Keep a Changelog](https://keepachangelog.com), the
 version numbers [Semantic Versioning](https://semver.org).
 
+## Unreleased
+
+### Changed
+
+- The data is read from Forever's client build 1.60.1.71037. Only one recipe changes with it: Orcish War Leggings
+  is learned at Blacksmithing 205, not 210, and its plans are bought at the auction house - the build added the
+  plans as an item of its own, and nothing says who sells or drops them, so the plan no longer sends you to the
+  quest Classic rewarded them with.
+
 ## 1.11.4 - 2026-11-21
 
 ### Fixed

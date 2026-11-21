@@ -5,6 +5,10 @@ local function chat(text) print("|cffffb347Craft Ladder:|r " .. text) end
 ns.Chat = chat
 
 local DEFAULTS = { favor = false }
+-- The two logs the builders read keep a line each (a gather, a disenchant), so they alone can grow without end: the
+-- oldest go at login. About 50 hours of gathering, which writes some 200 lines an hour; every line the builder has
+-- already taken is kept for good in tools/seen_in_game.json, so only lines never collected can be lost.
+local LOG_LINES = 10000
 
 local frame = CreateFrame("Frame")
 frame:RegisterEvent("ADDON_LOADED")
@@ -21,6 +25,14 @@ frame:SetScript("OnEvent", function(_, event, name)
         -- quartermasters' prices were briefly saved under favor, the "Merchant's Favor recipes" box's own setting
         if type(CraftLadderDB.favor) == "table" then
             CraftLadderDB.favorPrices, CraftLadderDB.favor = CraftLadderDB.favor, false
+        end
+        for _, key in ipairs({ "gatherLog", "disenchantLog" }) do
+            local log = CraftLadderDB[key]
+            if log and #log > LOG_LINES then
+                local keep = {}
+                for i = #log - LOG_LINES + 1, #log do keep[#keep + 1] = log[i] end
+                CraftLadderDB[key] = keep
+            end
         end
         ns.Player.ApplyTrainerNotes()
         ns.Mining.ApplySkinLog(ns.SKINNING) -- creatures you skinned that Classic's data doesn't have

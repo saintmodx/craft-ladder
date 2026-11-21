@@ -18,9 +18,13 @@ mock.echo = arg[3] == "-v"
 local ns = {}
 mock.install(fx, ns)
 mock.load(root, ns)
+-- a gather log past the limit: its oldest lines go at login, a short one is left alone
+local longLog = {}
+for i = 1, 10005 do longLog[i] = ("mining 1731 1446 0.1000 0.2000 %d"):format(i) end
 -- saved data from before First Aid: one character's Cooking recipes and picks straight under the character
 CraftLadderDB = { chars = { ["Player-TEST"] = { known = { [2540] = true }, knownAt = 1, choices = {} } },
-                  vendorPrices = { H = { [2678] = 1 } } } -- vendor prices from when a faction shared them
+                  vendorPrices = { H = { [2678] = 1 } }, -- vendor prices from when a faction shared them
+                  gatherLog = longLog, disenchantLog = { "7909 1 10940:1" } }
 mock.fire("ADDON_LOADED", "CraftLadder")
 mock.fire("PLAYER_LOGIN")
 
@@ -40,6 +44,10 @@ local function char() return CraftLadderDB.chars["Player-TEST"] end
 
 expect("old saved recipes move under Cooking", ns.Player.Prof(ns.COOKING).known[2540] and char().known == nil)
 expect("vendor prices shared by a faction are dropped", CraftLadderDB.vendorPrices == nil)
+expect("a gather log past 10000 lines keeps its last 10000, a short disenchant log is left alone",
+    #CraftLadderDB.gatherLog == 10000 and CraftLadderDB.gatherLog[10000]:find(" 10005$")
+    and CraftLadderDB.gatherLog[1]:find(" 6$") and #CraftLadderDB.disenchantLog == 1)
+CraftLadderDB.gatherLog, CraftLadderDB.disenchantLog = nil, nil -- the recording tests below start from nothing
 expect("money below zero", strip(ns.Money(-73)) == "-73c" and strip(ns.Money(-10526)) == "-1g 5s 26c")
 ns.Player.Prof(ns.COOKING).known = {}
 

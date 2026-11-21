@@ -11,6 +11,9 @@ version numbers [Semantic Versioning](https://semver.org).
   whole account again on every loot, sale or bag move, and with it the price of every item in the game that can be
   disenchanted. The "Buy and disenchant" group now keeps what it found until the prices change, so looting a
   dungeon with the view open costs nothing.
+- Craft Ladder's saved data no longer grows without end. It records every node you gather and every item you
+  disenchant, which is how the addon's own numbers get better; it now keeps the newest 10,000 of each and drops
+  what is older when you log in, so the file stays small and logging in stays quick.
 
 ## 1.11.5 - 2026-11-21
 

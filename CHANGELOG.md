@@ -3,7 +3,7 @@
 What's new in Craft Ladder, newest first. The format follows [Keep a Changelog](https://keepachangelog.com), the
 version numbers [Semantic Versioning](https://semver.org).
 
-## Unreleased
+## 1.11.4 - 2026-11-21
 
 ### Fixed
 
@@ -19,7 +19,7 @@ version numbers [Semantic Versioning](https://semver.org).
   them with the weapons and Craft Ladder followed, which made a green off-hand item of level 56-60 look worth
   about 3g27s disenchanted when it brings about 1g21s - enough to send you buying at the auction house at a loss.
   453 items moved, and 72 more can be disenchanted that the plan used to leave out.
-- The item data is Forever's client build 1.60.1.71037.
+- The disenchanting data is Forever's client build 1.60.1.71037.
 
 ## 1.11.3 - 2026-11-18
 

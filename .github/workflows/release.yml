@@ -16,9 +16,12 @@ jobs:
     runs-on: ubuntu-latest
     env:
       CF_API_TOKEN: ${{ secrets.CF_API_KEY }}
-      GITHUB_OAUTH: ${{ secrets.GITHUB_TOKEN }} # the name packager v2 reads (GH_API_TOKEN is newer than v2)
+      GH_API_TOKEN: ${{ secrets.GITHUB_TOKEN }} # the name the packager reads (GITHUB_OAUTH, the old one, is deprecated)
     steps:
-      - uses: actions/checkout@v5
+      # the actions are pinned to a commit, not a tag: a tag can be moved to other code, and this job holds the
+      # CurseForge token and may write a release. The comment after each one is the version that commit is, which is
+      # what dependabot.yml reads to offer the next one in a pull request: never put a tag back here.
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
           fetch-depth: 0 # the whole history: the version comes from the tags
       # nothing goes out with "Unreleased" as its notes or the last version in the toc
@@ -27,4 +30,4 @@ jobs:
           v="${GITHUB_REF_NAME#v}"
           grep -q "^## $v - " CHANGELOG.md || { echo "CHANGELOG.md has no '## $v - <date>'"; exit 1; }
           grep -q "^## Version: $v" CraftLadder/CraftLadder.toc || { echo "the toc's Version isn't $v"; exit 1; }
-      - uses: BigWigsMods/packager@v2
+      - uses: BigWigsMods/packager@01e8631a69c69d7654c788d152630d5fed9e3812 # v2.7.0

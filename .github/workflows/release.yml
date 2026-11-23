@@ -21,7 +21,7 @@ jobs:
       # the actions are pinned to a commit, not a tag: a tag can be moved to other code, and this job holds the
       # CurseForge token and may write a release. The comment after each one is the version that commit is, which is
       # what dependabot.yml reads to offer the next one in a pull request: never put a tag back here.
-      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0 # the whole history: the version comes from the tags
       # nothing goes out with "Unreleased" as its notes or the last version in the toc

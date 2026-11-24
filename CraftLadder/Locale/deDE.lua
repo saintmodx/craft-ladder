@@ -947,4 +947,46 @@ ns.Locales.deDE = {
         " ihnen sterben.",
     ["Then learn the mastery from the trainer who gave you the quest."] = "Lern dann die Meisterschaft bei dem" ..
         " Lehrer, der dir die Quest gegeben hat.",
+
+    -- Buy or craft: the bar over the list, its groups, its rows and its card
+    [", %s an item"] = ", %s pro Stück",
+    ["No price for one of the two sides yet."] = "Für eine der beiden Seiten gibt es noch keinen Preis.",
+    ["Cheaper to make: one craft saves %s%s."] = "Herstellen ist billiger: ein Handwerk spart %s%s.",
+    ["Cheaper to buy: making it costs %s more%s."] = "Kaufen ist billiger: Herstellen kostet %s mehr%s.",
+    ["The same either way at today's prices."] = "Zu heutigen Preisen gleich, so oder so.",
+    ["Make %s, buy %s%s"] = "Herstellen %s, kaufen %s%s",
+    [" (one craft makes %d)"] = " (ein Handwerk macht %d)",
+    ["%s has no price: Craft Ladder can't say what a craft costs. Search the auction house for it, or scan" ..
+        " again."] = "%s hat keinen Preis: Craft Ladder kann nicht sagen, was ein Handwerk kostet. Such es im" ..
+        " Auktionshaus, oder scanne neu.",
+    ["Nothing says what %s costs to buy: nobody lists it, no vendor sells it, or it's soulbound (made only," ..
+        " never bought)."] = "Nichts sagt, was %s zu kaufen kostet: niemand bietet es an, kein Händler" ..
+        " verkauft es, oder es ist seelengebunden (nur herstellbar, nie käuflich).",
+    ["%d listed at the auction house now."] = "Gerade %d im Auktionshaus angeboten.",
+    ["Making it needs %s %d, and yours is %d."] = "Zum Herstellen braucht es %s %d, und deines ist %d.",
+    ["You have %s: they're priced here all the same, since you could sell them instead."] =
+        "Du hast %s: sie sind hier trotzdem zum Preis gezählt, denn du könntest sie stattdessen verkaufen.",
+    ["Nothing matches"] = "Nichts passt",
+    ["Nothing here is called %s."] = "Hier heißt nichts %s.",
+    ["Favor (%d)"] = "Gunst (%d)",
+    ["Buy or craft (%d)"] = "Kaufen/herstellen (%d)",
+    ["%d recipes here, %d cheaper to make than to buy (one craft, at today's prices)"] =
+        "%d Rezepte hier, %d billiger herzustellen als zu kaufen (ein Handwerk, zu heutigen Preisen)",
+    ["Buy or craft"] = "Kaufen oder herstellen",
+    ["Every recipe of this profession: what one craft's ingredients cost at today's prices against what buying" ..
+        " the thing itself costs. The ones you know come first."] = "Jedes Rezept dieses Berufs: was die" ..
+        " Zutaten eines Handwerks zu heutigen Preisen kosten, gegen den Preis der Sache selbst. Die, die du" ..
+        " kennst, kommen zuerst.",
+    ["search"] = "suchen",
+    ["Type part of a name: the rows left are the ones that make something of that name. Escape clears it."] =
+        "Tipp einen Teil eines Namens: übrig bleiben die Zeilen, die etwas mit diesem Namen herstellen. Esc" ..
+        " leert es.",
+    ["Recipes you know"] = "Rezepte, die du kennst",
+    ["Not known yet"] = "Noch nicht bekannt",
+    ["What you can make now, by the skill it's learned at. Click to fold or open."] =
+        "Was du jetzt herstellen kannst, nach der Fertigkeit, bei der es gelernt wird. Klick zum Zu- oder" ..
+        " Aufklappen.",
+    ["The rest of the profession's recipes: what each would cost to make, and how to learn it. Click to fold" ..
+        " or open."] = "Die übrigen Rezepte des Berufs: was jedes herzustellen kosten würde, und wie man es" ..
+        " lernt. Klick zum Zu- oder Aufklappen.",
 }

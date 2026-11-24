@@ -1208,6 +1208,25 @@ do
     for _, spell in ipairs(mine) do ns.Player.Prof(ns.BLACKSMITHING).known[spell] = nil end
     ns.Window.Refresh()
 end
+-- the two bars share one line, each half the list wide: in a language whose words are longer than English's both
+-- labels must still fit
+do
+    CraftLadderDB.favor = true
+    ns.Window.Refresh()
+    local favor, buy = frame.list.favor, frame.list.buy
+    expect("both bars share the line over the list", favor:IsShown() and buy:IsShown()
+        and math.abs(favor:GetWidth() - buy:GetWidth()) < 1)
+    for _, code in ipairs({ "enUS", "deDE", "esES", "frFR", "itIT", "koKR", "ptBR", "ruRU", "ukUA", "zhCN" }) do
+        CraftLadderDB.locale = code ~= "enUS" and code or nil
+        ns.Window.Refresh()
+        local room = favor:GetWidth() - 8
+        expect("... and both labels fit in " .. code,
+            favor.label:GetStringWidth() <= room and buy.label:GetStringWidth() <= room)
+    end
+    CraftLadderDB.locale = nil
+    CraftLadderDB.favor = false
+    ns.Window.Refresh()
+end
 -- a Blacksmithing trainer: a guessed recipe it doesn't list (though it lists recipes that ask more) leaves the
 -- ladder; one past what it lists stays a guess; one it lists gets its real skill
 local function spellNamed(name)

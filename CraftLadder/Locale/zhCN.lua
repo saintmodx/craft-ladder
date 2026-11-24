@@ -819,4 +819,40 @@ ns.Locales.zhCN = {
     ["Save 15 wounded soldiers with the Triage Bandages the doctor gives you, before 6 of them die."] =
         "在 6 名伤兵死去之前，用医生给你的急救绷带救活 15 名伤兵。",
     ["Then learn the mastery from the trainer who gave you the quest."] = "然后向发布该任务的训练师学习精通。",
+
+    -- Buy or craft: the bar over the list, its groups, its rows and its card
+    [", %s an item"] = "，每件 %s",
+    ["No price for one of the two sides yet."] = "两边中有一边还没有价格。",
+    ["Cheaper to make: one craft saves %s%s."] = "自己做更便宜：一次制作省 %s%s。",
+    ["Cheaper to buy: making it costs %s more%s."] = "买更便宜：自己做要多花 %s%s。",
+    ["The same either way at today's prices."] = "按今天的价格，两种做法一样。",
+    ["Make %s, buy %s%s"] = "制作 %s，购买 %s%s",
+    [" (one craft makes %d)"] = "（一次制作产出 %d 个）",
+    ["%s has no price: Craft Ladder can't say what a craft costs. Search the auction house for it, or scan" ..
+        " again."] = "%s 没有价格：Craft Ladder 无法算出一次制作的成本。到拍卖行搜索它，或者重新扫描。",
+    ["Nothing says what %s costs to buy: nobody lists it, no vendor sells it, or it's soulbound (made only," ..
+        " never bought)."] = "没有任何来源说明 %s 的购买价格：无人上架、无商人出售，或者它是灵魂绑定的（只能制作，买不到）。",
+    ["%d listed at the auction house now."] = "目前拍卖行上有 %d 件在售。",
+    ["Making it needs %s %d, and yours is %d."] = "制作它需要%s %d，而你是 %d。",
+    ["You have %s: they're priced here all the same, since you could sell them instead."] =
+        "你有 %s：这里仍按价格计入，因为你也可以卖掉它们。",
+    ["Nothing matches"] = "没有匹配项",
+    ["Nothing here is called %s."] = "这里没有叫 %s 的东西。",
+    ["Favor (%d)"] = "恩惠（%d）",
+    ["Buy or craft (%d)"] = "买还是做（%d）",
+    ["%d recipes here, %d cheaper to make than to buy (one craft, at today's prices)"] =
+        "这里有 %d 个配方，其中 %d 个自己做比买更便宜（一次制作，按今天的价格）",
+    ["Buy or craft"] = "买还是做",
+    ["Every recipe of this profession: what one craft's ingredients cost at today's prices against what buying" ..
+        " the thing itself costs. The ones you know come first."] = "这个专业的每个配方：一次制作的材料按今天价格的花费，对比直接买成品的价格。你已学会" ..
+        "的排在前面。",
+    ["search"] = "搜索",
+    ["Type part of a name: the rows left are the ones that make something of that name. Escape clears it."] =
+        "输入名称的一部分：只留下制作该名称物品的行。按 Escape 清空。",
+    ["Recipes you know"] = "你已学会的配方",
+    ["Not known yet"] = "尚未学会",
+    ["What you can make now, by the skill it's learned at. Click to fold or open."] =
+        "你现在就能做的东西，按学会所需技能排列。点击可折叠或展开。",
+    ["The rest of the profession's recipes: what each would cost to make, and how to learn it. Click to fold" ..
+        " or open."] = "这个专业其余的配方：每个做出来要多少钱，以及怎么学。点击可折叠或展开。",
 }

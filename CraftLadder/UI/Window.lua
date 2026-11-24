@@ -758,8 +758,8 @@ local function renderList()
             local group = ladder.account and DISENCHANT_GROUPS[g.key]
             local count = g.to - g.from + 1
             -- the Disenchant view: what the group brings in all, next to how many rows it has
-            heading(g.name, group and g.gain > 0 and ("%d, +%s"):format(count, ns.Money(g.gain)) or count,
-                { g.name, g.tip or group and group.tip or L["Dishes for this role, by what" ..
+            heading(L[g.name], group and g.gain > 0 and ("%d, +%s"):format(count, ns.Money(g.gain)) or count,
+                { L[g.name], L[g.tip or group and group.tip or "Dishes for this role, by what" ..
                 " eating one raises. Click to fold or open."] }, function()
                 if ladder.account then
                     ns.db.disenchantFolded = ns.db.disenchantFolded or {}
@@ -773,7 +773,7 @@ local function renderList()
             end, shutRoles[g.name])
             if not shutRoles[g.name] then
                 if group and g.to < g.from then
-                    heading(group.empty, nil, { L["Nothing here"], group.tip })
+                    heading(L[group.empty], nil, { L["Nothing here"], L[group.tip] })
                 end
                 rows(g.from, g.to)
             end

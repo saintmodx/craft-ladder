@@ -4,6 +4,7 @@
 local _, ns = ...
 local UI = ns.UI
 local C = UI.C
+local L = ns.L
 local Window = ns.Window
 
 local Chars = {}
@@ -61,8 +62,8 @@ function Chars.Render(frame)
         if coords then b.icon:SetTexCoord(unpack(coords)) end
         b.active = c.guid == (ns.Player.viewing or b.own)
         local class = LOCALIZED_CLASS_NAMES_MALE and LOCALIZED_CLASS_NAMES_MALE[c.me.class] or c.me.class
-        b.tooltip = { c.me.name, ("Level %d %s"):format(c.me.level or 0, class),
-                      i == 1 and "Playing now" or ("Last seen " .. ns.Age(c.me.seen)) }
+        b.tooltip = { c.me.name, L["Level %d %s"]:format(c.me.level or 0, class),
+                      i == 1 and L["Playing now"] or L["Last seen %s"]:format(ns.Age(c.me.seen)) }
         paint(b)
         b:Show()
     end

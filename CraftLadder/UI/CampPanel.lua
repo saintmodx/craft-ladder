@@ -5,6 +5,7 @@
 local _, ns = ...
 local UI = ns.UI
 local C = UI.C
+local L = ns.L
 
 local CampPanel = {}
 ns.CampPanel = CampPanel
@@ -23,22 +24,22 @@ end
 -- "Blacksmithing (skill 1): you know it, 2 in your bags, needs 1 Copper Bar and 1 Coarse Stone"
 local function sourceText(e, src)
     local parts = {}
-    local prof = src.prof and src.prof.name or "No profession"
-    parts[1] = prof .. (src.skill and (" (skill " .. src.skill .. ")") or "") .. ": "
-        .. (src.known and (hex(C.good) .. "you know it|r") or src.has and "you can learn it"
-            or (hex(C.warn) .. "not your profession|r"))
-    if src.owned > 0 then parts[#parts + 1] = hex(C.good) .. src.owned .. " in your bags|r" end
+    local prof = src.prof and src.prof.name or L["No profession"]
+    parts[1] = prof .. (src.skill and L[" (skill %d)"]:format(src.skill) or "") .. ": "
+        .. (src.known and (hex(C.good) .. L["you know it"] .. "|r") or src.has and L["you can learn it"]
+            or (hex(C.warn) .. L["not your profession"] .. "|r"))
+    if src.owned > 0 then parts[#parts + 1] = hex(C.good) .. L["%d in your bags"]:format(src.owned) .. "|r" end
     local mats = {}
     for item, n in pairs(e.mats or {}) do mats[#mats + 1] = n .. " " .. ns.Camp.ItemName(item) end
     table.sort(mats)
-    if #mats > 0 then parts[#parts + 1] = "needs " .. table.concat(mats, ", ") end
+    if #mats > 0 then parts[#parts + 1] = L["needs %s"]:format(table.concat(mats, ", ")) end
     return table.concat(parts, ", ")
 end
 
 local function priceText(src)
     local lines = {}
-    lines[1] = "make " .. (src.cost and ns.Money(src.cost) or (hex(C.bad) .. "no price|r"))
-    lines[2] = "AH " .. (src.ah and ns.Money(src.ah) or (hex(C.muted) .. "not listed|r"))
+    lines[1] = L["make %s"]:format(src.cost and ns.Money(src.cost) or (hex(C.bad) .. L["no price"] .. "|r"))
+    lines[2] = L["AH %s"]:format(src.ah and ns.Money(src.ah) or (hex(C.muted) .. L["not listed"] .. "|r"))
     return table.concat(lines, "\n")
 end
 
@@ -101,7 +102,7 @@ local function fillRow(r, f, useful, level, lookup, byProf)
     UI.SetColor(r.name, useful and C.text or C.muted)
     if f.gives then
         r.gives:SetText(ns.Camp.Gives(f, level)
-            .. (f.exclusive and (hex(C.muted) .. "  (not with " .. f.exclusive .. ")|r") or ""))
+            .. (f.exclusive and (hex(C.muted) .. L["  (not with %s)"]:format(f.exclusive) .. "|r") or ""))
     else
         r.gives:SetText(f.adds or "")
     end
@@ -115,7 +116,7 @@ local function fillRow(r, f, useful, level, lookup, byProf)
         local us = ns.Camp.Source(u, lookup, byProf)
         extra[#extra + 1] = { u.name, sourceText(u, us) }
     end
-    r.more:SetText(#more > 0 and ("Or, the same buff and more: " .. table.concat(more, "; ")) or "")
+    r.more:SetText(#more > 0 and L["Or, the same buff and more: %s"]:format(table.concat(more, "; ")) or "")
     r.extra = extra
 end
 
@@ -145,7 +146,7 @@ function CampPanel.Render(frame)
     local fireIndex = s.fire or ns.Camp.BestFire(function(fire) return ns.Camp.Knows(fire, byProf) end)
     local fire = ns.CAMP.fires[fireIndex] or ns.CAMP.fires[1]
 
-    frame.subtitle:SetText(("Camp: the buffs a campfire gives, for a level %d %s"):format(level, role))
+    frame.subtitle:SetText(L["Camp: the buffs a campfire gives, for a level %d %s"]:format(level, role))
     -- the role (a class with one has no choice) and the campfire
     for i, b in ipairs(panel.roles) do
         b:SetShown(#roles > 1 and roles[i] ~= nil)
@@ -160,7 +161,7 @@ function CampPanel.Render(frame)
         local f = ns.CAMP.fires[i]
         local src = ns.Camp.Source(f, lookup, byProf)
         b:SetActive(f == fire)
-        b.tooltip = { f.name, ("Holds %d camp features. %s; %s."):format(f.slots, sourceText(f, src),
+        b.tooltip = { f.name, L["Holds %d camp features. %s; %s."]:format(f.slots, sourceText(f, src),
             (priceText(src):gsub("\n", ", "))) }
     end
 
@@ -195,16 +196,16 @@ function CampPanel.Render(frame)
     local placed, shownMissing = 0, false
     for _, o in ipairs(order) do
         if o.useful and placed == fire.slots then
-            head(("A %s holds %d: the ones above. Then:"):format(fire.name, fire.slots))
+            head(L["A %s holds %d: the ones above. Then:"]:format(fire.name, fire.slots))
         end
         if not o.useful and not shownMissing then
-            head(("Doesn't help a %s"):format(role))
+            head(L["Doesn't help a %s"]:format(role))
             shownMissing = true
         end
         if o.useful then placed = placed + 1 end
         row(o.feature, o.useful)
     end
-    head("Camp features with no buff")
+    head(L["Camp features with no buff"])
     for _, f in ipairs(ns.CAMP.others) do row(f, true) end
     panel.scroll:SetContentHeight(y)
 end
@@ -218,9 +219,9 @@ function CampPanel.Build(frame, left)
     panel.intro = UI.Label(panel, 11, C.muted)
     panel.intro:SetPoint("TOPLEFT", 14, -12)
     panel.intro:SetWordWrap(true)
-    panel.intro:SetText("Build a campfire, place camp features around it and sit or craft nearby for a while: each"
-        .. " feature gives everyone there its buff. A campfire holds only so many: here they are in the order your"
-        .. " role wants them.")
+    panel.intro:SetText(L["Build a campfire, place camp features around it and sit or craft nearby for a while:" ..
+        " each feature gives everyone there its buff. A campfire holds only so many: here they are in the order" ..
+        " your role wants them."])
     panel.roleLabel = UI.Label(panel, 11, C.text)
     panel.roleLabel:SetPoint("TOPLEFT", 14, -46)
     panel.roleLabel:SetText("Role:")
@@ -235,7 +236,7 @@ function CampPanel.Build(frame, left)
     end
     local fireLabel = UI.Label(panel, 11, C.text)
     fireLabel:SetPoint("TOPLEFT", 330, -46)
-    fireLabel:SetText("Campfire:")
+    fireLabel:SetText(L["Campfire:"])
     panel.fireLabel = fireLabel
     panel.fires = {}
     for i, f in ipairs(ns.CAMP.fires) do

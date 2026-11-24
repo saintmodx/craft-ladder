@@ -6,6 +6,7 @@
 local _, ns = ...
 local UI = ns.UI
 local C = UI.C
+local L = ns.L
 
 local SpecPanel = {}
 ns.SpecPanel = SpecPanel
@@ -85,7 +86,7 @@ local function itemRow(item, have, need, sub, subColor, cost)
     local f = get("item")
     f.item, f.source = item, sub
     f.icon:SetTexture(UI.ItemIcon(item))
-    f.name:SetText(("%s%d / %d|r  %s"):format(hex(have >= need and C.good or C.text), math.floor(math.min(have, need)),
+    f.name:SetText(L["%s%d / %d|r  %s"]:format(hex(have >= need and C.good or C.text), math.floor(math.min(have, need)),
         math.ceil(need), ns.Describe.ItemName(item)))
     f.sub:SetText(sub or "")
     UI.SetColor(f.sub, subColor or C.muted)
@@ -94,9 +95,10 @@ local function itemRow(item, have, need, sub, subColor, cost)
 end
 
 local STATUS = { done = { "done", C.good }, log = { "in your quest log", C.warn } }
+-- the words are translated where they are used: this table is read before the saved language is known
 local function status(s)
     local st = STATUS[s]
-    return st and ("  " .. hex(st[2]) .. st[1] .. "|r") or ""
+    return st and ("  " .. hex(st[2]) .. L[st[1]] .. "|r") or ""
 end
 
 -- What a quest asks that you haven't got, above what the specialization's own quest asks (said at the top): "Needs
@@ -104,12 +106,12 @@ end
 local function needs(q, state, data, guide)
     local parts = {}
     if q.reqLevel and q.reqLevel > state.level and q.reqLevel > (guide.level or 0) then
-        parts[#parts + 1] = ("level %d (you're %d)"):format(q.reqLevel, state.level)
+        parts[#parts + 1] = L["level %d (you're %d)"]:format(q.reqLevel, state.level)
     end
     if q.skill and q.skill > state.skill and q.skill > (guide.skill or 0) then
-        parts[#parts + 1] = ("%s %d (you have %d)"):format(data.name, q.skill, state.skill)
+        parts[#parts + 1] = L["%s %d (you have %d)"]:format(data.name, q.skill, state.skill)
     end
-    if #parts > 0 then line("Needs " .. table.concat(parts, " and ") .. ".", C.bad) end
+    if #parts > 0 then line(L["Needs %s."]:format(table.concat(parts, L[" and "])), C.bad) end
 end
 
 -- Who gives the quest (several givers on your side: any of them) and who it's handed in to, when that's another NPC.
@@ -125,38 +127,38 @@ local function questGivers(data, st)
     -- one of several givers is enough: the first, "or" the others
     local first = true
     for _, q in ipairs(st.quests) do
-        once(data.quests[q].giver, not first and "Or take it here instead:"
-            or ender and "Take the quest:" or "Take and hand in the quest:")
+        once(data.quests[q].giver, not first and L["Or take it here instead:"]
+            or ender and L["Take the quest:"] or L["Take and hand in the quest:"])
         first = false
     end
-    for _, q in ipairs(st.quests) do once(data.quests[q].ender, "Hand it in:") end
+    for _, q in ipairs(st.quests) do once(data.quests[q].ender, L["Hand it in:"]) end
 end
 
 -- An item a quest asks for: how many you have, and the rest made or bought, whichever costs less.
 local function questItem(e)
     local short = e.n - e.have
     if short <= 0 then
-        itemRow(e.item, e.have, e.n, "you have them all", C.good)
+        itemRow(e.item, e.have, e.n, L["you have them all"], C.good)
         return
     end
-    local buy = e.buy and ("auction house %s"):format(ns.Money(e.buy)) or "none at the auction house"
+    local buy = e.buy and L["auction house %s"]:format(ns.Money(e.buy)) or L["none at the auction house"]
     if e.how == "make" and not e.make then
-        itemRow(e.item, e.have, e.n, ("Make %d; some of its ingredients have no price; %s"):format(short, buy), C.warn)
+        itemRow(e.item, e.have, e.n, L["Make %d; some of its ingredients have no price; %s"]:format(short, buy), C.warn)
     elseif e.how == "make" then
-        itemRow(e.item, e.have, e.n, ("Make %d for %s; %s"):format(short, ns.Money(e.make), buy), C.good, e.make)
+        itemRow(e.item, e.have, e.n, L["Make %d for %s; %s"]:format(short, ns.Money(e.make), buy), C.good, e.make)
     elseif e.how == "buy" then
-        itemRow(e.item, e.have, e.n, ("Buy %d: %s%s"):format(short, buy,
-            e.make and (", making them costs " .. ns.Money(e.make)) or ""), C.text, e.buy)
+        itemRow(e.item, e.have, e.n, L["Buy %d: %s%s"]:format(short, buy,
+            e.make and L[", making them costs %s"]:format(ns.Money(e.make)) or ""), C.text, e.buy)
     elseif e.drops then
         local who = {}
         for _, npc in ipairs(e.drops) do
             local name, where = ns.Describe.NPC(npc)
             who[#who + 1] = name .. (where and (" (" .. where .. ")") or "")
         end
-        itemRow(e.item, e.have, e.n, "Drops from " .. table.concat(who, ", "), C.warn)
+        itemRow(e.item, e.have, e.n, L["Drops from %s"]:format(table.concat(who, ", ")), C.warn)
     else
-        itemRow(e.item, e.have, e.n, (e.dropsN and ("Drops from %d kinds of creatures; "):format(e.dropsN) or "")
-            .. "none at the auction house now", C.warn)
+        itemRow(e.item, e.have, e.n, (e.dropsN and L["Drops from %d kinds of creatures; "]:format(e.dropsN) or "")
+            .. L["none at the auction house now"], C.warn)
     end
 end
 
@@ -164,26 +166,28 @@ end
 local function recipeLine(data, state, r)
     local way, rec = r.way, r.rec
     if way and way.kind == "known" then
-        line(rec.name .. ": " .. hex(C.good) .. "you know it|r", C.text)
+        line(ns.Describe.RecipeName(r.spell, rec) .. ": " .. hex(C.good) .. L["you know it"] .. "|r", C.text)
         return
     end
-    local late = rec.learn > state.skill and (hex(C.bad) .. (", learned at %d"):format(rec.learn) .. "|r") or ""
+    local late = rec.learn > state.skill and (hex(C.bad) .. L[", learned at %d"]:format(rec.learn) .. "|r") or ""
     if not way then
         local drops
         for _, g in ipairs(rec.get) do drops = drops or (g.kind == "drop" and g.npcs) end
-        line("Learn " .. rec.name .. ": " .. hex(C.bad) .. (drops and ("its recipe drops from %d kinds of creatures, none at the"
-            .. " auction house now"):format(drops) or "no way to learn it for you now") .. "|r" .. late, C.text)
+        line(L["Learn %s"]:format(ns.Describe.RecipeName(r.spell, rec)) .. ": " .. hex(C.bad)
+            .. (drops and L["its recipe drops from %d kinds of creatures, none at the auction house now"]:format(drops)
+                or L["no way to learn it for you now"]) .. "|r" .. late, C.text)
         return
     end
-    line("Learn " .. rec.name .. ": " .. ns.Describe.Learn(way, data) .. late, C.text)
+    line(L["Learn %s"]:format(ns.Describe.RecipeName(r.spell, rec)) .. ": " .. ns.Describe.Learn(way, data)
+        .. late, C.text)
     if way.kind == "vendor" then
         for _, v in ipairs(ns.Describe.Vendors(data, r.spell, state.faction)) do
-            npcRow(v.npc, "Buy the recipe:", ns.Describe.Price(v.cost or 0, v.costGuess))
+            npcRow(v.npc, L["Buy the recipe:"], ns.Describe.Price(v.cost or 0, v.costGuess))
         end
     elseif way.kind == "trainer" and rec.trainers then
         for _, npc in ipairs(rec.trainers) do
             local n = data.npcs[npc]
-            if n and n.faction:find(state.faction, 1, true) then npcRow(npc, "Learn it from the trainer:") end
+            if n and n.faction:find(state.faction, 1, true) then npcRow(npc, L["Learn it from the trainer:"]) end
         end
     end
     -- a trainer's skill worked out from Classic's: said nowhere else in this view, as every recipe here would say it
@@ -195,26 +199,26 @@ end
 local function questNeeds(data, st, lookup)
     if #st.items == 0 then return end
     local q = data.quests[st.quest]
-    line(("Bring to %s:"):format(q.enderName or q.giverName or "the quest giver"), C.gold)
+    line(L["Bring to %s:"]:format(q.enderName or q.giverName or L["the quest giver"]), C.gold)
     for _, e in ipairs(st.items) do questItem(e) end
     local made = {}
     for item, m in pairs(st.made) do
-        made[#made + 1] = ("%s%d %s%s"):format(m.mining and "smelt " or "", m.n, ns.Describe.ItemName(item),
-            m.have > 0 and (" (besides the " .. m.have .. " you have)") or "")
+        made[#made + 1] = L["%s%d %s%s"]:format(m.mining and L["smelt "] or "", m.n,
+            ns.Describe.ItemName(item), m.have > 0 and L[" (besides the %d you have)"]:format(m.have) or "")
     end
     if #made > 0 then
         table.sort(made)
-        line("Make: " .. table.concat(made, ", "), C.text)
+        line(L["Make: %s"]:format(table.concat(made, ", ")), C.text)
     end
     local mats = {}
     for item, m in pairs(st.mats) do mats[#mats + 1] = item end
     if #mats == 0 then return end
     table.sort(mats, function(a, b) return ns.Describe.ItemName(a) < ns.Describe.ItemName(b) end)
-    line("Ingredients:", C.gold)
+    line(L["Ingredients:"], C.gold)
     for _, item in ipairs(mats) do
         local m = st.mats[item]
-        local sub = m.buy > 0 and (("buy %d: "):format(math.ceil(m.buy - 1e-9)) .. ns.Describe.PriceSource(lookup(item)))
-            or "you have them all"
+        local sub = m.buy > 0 and (L["buy %d: "]:format(math.ceil(m.buy - 1e-9)) .. ns.Describe.PriceSource(lookup(item)))
+            or L["you have them all"]
         itemRow(item, m.have, m.need, sub, m.buy > 0 and (m.noPrice and C.bad or C.muted) or C.good,
             m.buy > 0 and not m.noPrice and m.cost or nil)
     end
@@ -222,18 +226,18 @@ end
 
 local function renderStep(data, state, guide, i, st, lookup)
     if st.kind == "talk" then
-        local name = st.npc and ns.Describe.NPC(st.npc) or "the smith"
-        section(("%d. Talk to %s"):format(i, name) .. status(st.status))
+        local name = st.npc and ns.Describe.NPC(st.npc) or L["the smith"]
+        section(L["%d. Talk to %s"]:format(i, name) .. status(st.status))
         if st.status ~= "done" then
             if st.note then line(st.note, C.text) end
-            if st.npc then npcRow(st.npc, "Talk to:") end
+            if st.npc then npcRow(st.npc, L["Talk to:"]) end
         end
     elseif st.kind == "pick" then
-        section(("%d. Master a weapon: one of them"):format(i) .. status(st.status))
+        section(L["%d. Master a weapon: one of them"]:format(i) .. status(st.status))
         if st.status == "done" then return end
         for _, o in ipairs(st.options) do
             local q = data.quests[o.quest]
-            line(("%s: the quest %s"):format(data.specs[o.spec] or "", q.name) .. status(o.status), C.gold)
+            line(L["%s: the quest %s"]:format(data.specs[o.spec] or "", q.name) .. status(o.status), C.gold)
             if o.status ~= "done" then
                 needs(q, state, data, guide)
                 questGivers(data, o)
@@ -261,9 +265,9 @@ local function recipesStep(data, state, plan)
     end
     local saved = ns.Player.Prof(data)
     local shut = saved.specRecipesFolded == true
-    foldSection("The recipes" .. (toLearn == 0 and status("done") or "")
-        .. (shut and toLearn > 0 and (hex(C.muted) .. ("  %d to learn"):format(toLearn) .. "|r") or ""), shut,
-        { "The recipes", "Click to fold or open." }, function()
+    foldSection(L["The recipes"] .. (toLearn == 0 and status("done") or "")
+        .. (shut and toLearn > 0 and (hex(C.muted) .. L["  %d to learn"]:format(toLearn) .. "|r") or ""), shut,
+        { L["The recipes"], L["Click to fold or open."] }, function()
             saved.specRecipesFolded = not shut or nil
             ns.Window.Refresh(true)
         end)
@@ -292,7 +296,7 @@ function SpecPanel.Render(ladder, data)
             b:SetPoint("TOPLEFT", x, 0)
             x = x + b:GetWidth() + 4
             b:SetActive(g == guide)
-            b.tooltip = { data.specs[g.spec], ("Show the steps to %s."):format(data.specs[g.spec]) }
+            b.tooltip = { data.specs[g.spec], L["Show the steps to %s."]:format(data.specs[g.spec]) }
         end
     end
     for _, p in pairs(pools) do p:ReleaseAll() end
@@ -301,29 +305,30 @@ function SpecPanel.Render(ladder, data)
 
     section(name .. (plan.have and status("done") or ""))
     if plan.have then
-        line("You have this specialization.", C.good)
+        line(L["You have this specialization."], C.good)
     else
         local short = state.level < (guide.level or 0) or state.skill < (guide.skill or 0)
-        line(("Needs level %d and %s %d; you're level %d with %d."):format(guide.level or 0, data.name,
+        line(L["Needs level %d and %s %d; you're level %d with %d."]:format(guide.level or 0, data.name,
             guide.skill or 0, state.level, state.skill), short and C.bad or C.good)
     end
-    line(("Unlocks %d recipes only this specialization can learn."):format(ns.Spec.Unlocks(data, guide.spec)), C.muted)
+    line(L["Unlocks %d recipes only this specialization can learn."]:format(ns.Spec.Unlocks(data, guide.spec)), C.muted)
     if plan.other then
-        line(("You have %s: a character can have only one %s specialization."):format(data.specs[plan.other.spec],
+        line(L["You have %s: a character can have only one %s specialization."]:format(data.specs[plan.other.spec],
             data.name), C.warn)
     end
     if guide.note then line(guide.note, C.muted) end
     if not plan.have then
-        line(("Still to spend: %s, each item made or bought, whichever costs less%s."):format(ns.Money(plan.cost),
-            plan.noPrice and (hex(C.bad) .. "; some have no price|r") or ""), C.text)
+        line(L["Still to spend: %s, each item made or bought, whichever costs less%s."]:format(ns.Money(plan.cost),
+            plan.noPrice and (hex(C.bad) .. L["; some have no price"] .. "|r") or ""), C.text)
     end
     if #plan.recipes > 0 then recipesStep(data, state, plan) end
     for i, st in ipairs(plan.steps) do renderStep(data, state, guide, i, st, lookup) end
     panel.scroll:SetContentHeight(y + 8)
     if guide ~= shownGuide then panel.scroll:ScrollToTop() end
     shownGuide = guide
-    if plan.have then return ("You have %s"):format(name) end
-    return ("To %s: about %s%s"):format(name, ns.Money(plan.cost), plan.noPrice and ", some items unpriced" or "")
+    if plan.have then return L["You have %s"]:format(name) end
+    return L["To %s: about %s%s"]:format(name, ns.Money(plan.cost),
+        plan.noPrice and L[", some items unpriced"] or "")
 end
 
 -- The panel, in the window's list (UI/Window.lua's build calls it): left = where the list starts in the window;

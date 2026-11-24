@@ -148,6 +148,70 @@ local bear = bearAt110({ [3397] = true })
 assert(bear.recipe == 3397 and bear.fromBags and bear.to == 118, "what you have first: Big Bear Steak 110-118")
 assert(bearAt110({}).recipe ~= 3397, "... not when its recipe has still to be bought")
 
+-- the step you're crafting keeps its recipe until you've crafted it through (opts.sticky), however good the other
+-- options look by then: your bags empty into this very step, which makes every other recipe look better. Only the
+-- recipe itself getting worse a point than it was moves the plan.
+do
+    local st = { skill = 260, maxSkill = 300, target = 300, faction = "A", level = 60, known = {}, owned = {} }
+    local function pick(sticky, score, to)
+        return Ladder.Build(data, st, q5,
+            { vendorOnly = true, sticky = sticky and { recipe = sticky, to = to or 300, score = score } }).steps[1]
+    end
+    local best = pick(nil)
+    local other -- another priced recipe at this skill, dearer a point than the plan's own pick
+    for _, o in ipairs(best.options) do
+        if o.recipe ~= best.recipe and o.score and o.score > best.options[1].score then other = other or o end
+    end
+    assert(other, "sticky: this skill has another priced option, dearer a point")
+    assert(pick(other.recipe, other.score).recipe == other.recipe,
+        "the recipe you're on keeps the step while it costs what it did when it was shown")
+    assert(pick(other.recipe, other.score - 2 * math.abs(other.score)).recipe == best.recipe,
+        "... and loses it once that recipe itself has got much dearer a point")
+    -- crafted through to where the step ended, the plan is free again
+    assert(pick(other.recipe, other.score, 260).recipe == best.recipe, "a step already crafted through is held no longer")
+end
+
+-- the held step ends where the player saw it end: its stretch can reach further than the one they were shown, and
+-- carrying it on would swallow the step that followed (the row would vanish under them). At Cooking 3 the plan picks
+-- Herb Baked Egg 3-10; holding Crispy Bat Wing, shown as a step to 4, must give the egg back at 4.
+do
+    local st = { skill = 3, maxSkill = 300, target = 300, faction = "A", level = 60, known = {}, owned = {} }
+    local BAT, EGG = 15935, 8604
+    local batScore
+    for _, o in ipairs(Ladder.Build(data, st, q5, { vendorOnly = true }).steps[1].options) do
+        if o.recipe == BAT then batScore = batScore or o.score end
+    end
+    assert(batScore, "Crispy Bat Wing is an option at Cooking 3")
+    local function hold(to)
+        return Ladder.Build(data, st, q5, { vendorOnly = true, sticky = { recipe = BAT, to = to, score = batScore } }).steps
+    end
+    local long = hold(300)
+    assert(long[1].recipe == BAT and long[1].to == 10, "without an end of its own the hold carries the recipe on")
+    local held = hold(4)
+    assert(held[1].recipe == BAT and held[1].to == 4, "the held step ends where it was shown to end")
+    assert(held[2] and held[2].recipe == EGG, "... and the step that followed is there again")
+end
+
+-- a reagent the step would make itself earns skill too (Bolt of Linen Cloth, 1 to 50): making it is a step of its own,
+-- not a line in that step's shopping list, or the plan hands out points it never counted
+do
+    local tail = ns.ProfessionByKey["tailoring"]
+    local BOLT, CLOTH, THREAD, LINEN_BAG, MAKE_BOLT = 2996, 2589, 2320, 3755, 2963
+    -- bolts dear, what they're made of cheap: the plan would rather make them than buy them
+    local q = function(item, n) return (item == CLOTH or item == THREAD) and 10 * n or 1000 * n end
+    local st = { skill = 1, maxSkill = 300, target = 60, faction = "A", level = 60, known = {}, owned = {} }
+    local l = Ladder.Build(tail, st, q, { vendorOnly = true })
+    assert(l.steps[1].recipe == MAKE_BOLT, "the bolts earn the first points themselves, so they are the first step")
+    for _, s in ipairs(l.steps) do
+        local b = s.buy and s.buy[BOLT]
+        assert(not (b and b.make) or s.from >= 50, "no step makes bolts for itself while they still earn skill")
+    end
+    -- the bag the old plan started with is still an option there, just not the cheapest a point
+    local listed = false
+    for _, o in ipairs(l.steps[1].options or {}) do listed = listed or o.recipe == LINEN_BAG end
+    assert(listed, "the recipe the reagents are for stays in the step's options")
+end
+
 do
 -- Profit: the vendor group also holds what you can't make yet, after everything you can, marked with the skill it
 -- asks (and the level of the rank that would lift your cap to it). The auction house group stays what you can make.
@@ -753,8 +817,7 @@ assert(table.concat(fvs, " ") == "1:known 2:learn 4:level 3:skill" and fv[1].can
     check("... a lesser essence: a third of a greater, after the cut", deWorth(10938), 600 * 0.95 / 3)
     check("... a greater essence: its own price, after the cut", deWorth(10939), 600 * 0.95)
     -- Ho: Enchanting 150 and Tailoring 103, today's prices from both snapshots. Only what's worth more disenchanted
-    -- than sold: what Ho has first (what making it cost doesn't count), then what to make (at a loss last), then what
-    -- Enchanting can't disenchant yet
+    -- than sold: what Ho has first (what making it cost doesn't count), then what to make (at a loss last)
     local hoT = dofile(root .. "tests/fixtures/ho_tailoring.lua")
     local hoE = dofile(root .. "tests/fixtures/ho_enchanting.lua")
     local qho = ns.Prices.Make({ faction = "H", auctionDB = function(item)
@@ -846,18 +909,20 @@ assert(table.concat(fvs, " ") == "1:known 2:learn 4:level 3:skill" and fv[1].can
         enchanters = { { name = "Ho", skill = 150, live = true } }, seen = five })
     local sashSeen = named(withSeen, "Novice Arcanist's Sash")
     assert(sashSeen and sashSeen.de.seen == 5 and sashSeen.seen.n == 5, "... and the ladder prices it so")
+    -- Forever asks no Enchanting to disenchant: at Enchanting 1 the same rows, in the same order, although
+    -- Classic's table asks more than 1 for some of them
     local hoLow = hoRows(1)
     local lowCrafts = groupOf(hoLow, "crafts")
-    local short = false
+    local asksMore, sameOrder = false, true
     for i = lowCrafts.from, lowCrafts.to do
         local r = hoLow.steps[i]
-        local needs = DE.buckets[r.bucket].skill > 1
-        assert((r.needSkill ~= nil) == needs and (r.needSkill or 1) == DE.buckets[r.bucket].skill
-            and not (short and not needs),
-            "Disenchant: at Enchanting 1 what asks more comes last, with the skill it asks")
-        short = short or needs
+        assert(not r.needSkill and not r.alt, "Disenchant: at Enchanting 1 no row asks an Enchanting")
+        asksMore = asksMore or DE.buckets[r.bucket].skill > 1
     end
+    assert(asksMore, "... and Classic would have held some of them back")
     check("... the same rows", #hoLow.steps, #ho.steps)
+    for i = 1, #ho.steps do sameOrder = sameOrder and hoLow.steps[i].recipe == ho.steps[i].recipe end
+    assert(sameOrder, "... in the same order, whatever your Enchanting")
     -- how often one disenchant brings more than it cost: of 75% 4-6 of a 10c dust only 6 beats 55c (a third), and the
     -- 25% 1s shard does
     check("Disenchant: how often one brings more than 55c", Disenchant.Chance({ gives = {
@@ -877,7 +942,8 @@ assert(table.concat(fvs, " ") == "1:known 2:learn 4:level 3:skill" and fv[1].can
     assert(Disenchant.Table(sashBucket, byBucket, sashRec.makes, byItem) == sashTable,
         "... the likeliest came once: the bucket's still")
     -- the auction house: what its last scan lists for less than disenchanting brings, on average. A green sword (Raider
-    -- Shortsword, level 20) at 1s; one gone from the last scan isn't there; a green of level 31-35 asks Enchanting 75
+    -- Shortsword, level 20) at 1s; one gone from the last scan isn't there; a green of level 31-35 (Classic asks
+    -- Enchanting 75 for it) is listed all the same
     local sword, gone, high = 15210, nil, nil
     for item, id in pairs(DE.items) do
         if not DE.bop[item] then
@@ -904,17 +970,22 @@ assert(table.concat(fvs, " ") == "1:known 2:learn 4:level 3:skill" and fv[1].can
         "Disenchant: the sword at 1s is worth buying to disenchant; one gone from the last scan isn't listed")
     check("... how often it pays", sw.chance, Disenchant.Chance(sw.de, ah.worth, 100))
     for i = ahGroup.from + 1, ahGroup.to do
-        local a, b = ah.steps[i - 1], ah.steps[i]
-        local ca, cb = not a.needSkill, not b.needSkill
-        assert(ca and not cb or ca == cb and b.gain <= a.gain, "... what you can disenchant first, the most gained first")
+        assert(ah.steps[i].gain <= ah.steps[i - 1].gain, "... the most gained first")
     end
     local _, aloneBy = ahRows(1)
-    assert(aloneBy[high] and aloneBy[high].needSkill == 75 and not aloneBy[high].alt,
-        "... at Enchanting 1 and no other enchanter, a green of level 31-35 asks 75")
-    local _, lowBy = ahRows(nil, { { name = "Ho", skill = 1, live = true }, { name = "Zug", skill = 200 },
-                                   { name = "Yungzug", skill = 60 } })
-    assert(lowBy[high] and not lowBy[high].needSkill and lowBy[high].alt.name == "Zug",
-        "... the account's best Enchanting counts (Zug's 200): mail it there")
+    assert(aloneBy[high] and not aloneBy[high].needSkill and aloneBy[high].gain == by[high].gain,
+        "... at Enchanting 1 the green of level 31-35 gains the same: Forever asks no skill to disenchant it")
+    -- the rows handed back are taken as they are: a quote that finds nothing gives the same group
+    local empty = ns.Prices.Make({ faction = "H", auctionDB = function() return nil end })
+    local again = Disenchant.Account(empty, { auction = true, chars = {}, auctionRows = ah.auctionRows,
+        enchanters = { { name = "Ho", skill = 150, live = true } } })
+    local kept = nil
+    for _, x in ipairs(again.groups) do if x.key == "auction" then kept = x end end
+    assert(again.auctionRows == ah.auctionRows and again.auction == ah.auction
+        and kept.to - kept.from == ahGroup.to - ahGroup.from and kept.gain == ahGroup.gain
+        and again.steps[kept.from].item == ah.steps[ahGroup.from].item
+        and again.steps[kept.from].each == ah.steps[ahGroup.from].each,
+        "Disenchant: opts.auctionRows are used as they are, nothing is priced again")
 end)()
 -- a real ladder
 local fx = dofile(root .. "tests/fixtures/" .. fixtureName .. ".lua")

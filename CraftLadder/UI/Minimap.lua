@@ -2,6 +2,7 @@
 -- it around the minimap. /craft minimap hides or shows it. It does nothing until clicked, hovered or dragged.
 local _, ns = ...
 local UI = ns.UI
+local L = ns.L
 
 local Mini = {}
 ns.Minimap = Mini
@@ -36,7 +37,7 @@ end
 
 local function tooltip(self)
     GameTooltip:SetOwner(self, "ANCHOR_LEFT")
-    GameTooltip:AddLine("Craft Ladder", UI.C.gold[1], UI.C.gold[2], UI.C.gold[3])
+    GameTooltip:AddLine(L["Craft Ladder"], UI.C.gold[1], UI.C.gold[2], UI.C.gold[3])
     for _, data in ipairs(ns.Professions) do
         local skill, maxSkill = ns.Player.Skill(data)
         GameTooltip:AddDoubleLine(data.name, maxSkill > 0 and ("%d / %d"):format(skill, maxSkill) or "-", 1, 1, 1, 1, 1, 1)
@@ -51,44 +52,47 @@ local function tooltip(self)
         GameTooltip:AddLine(" ")
         GameTooltip:AddLine(data.name, UI.C.gold[1], UI.C.gold[2], UI.C.gold[3])
         if step and step.hour then
-            GameTooltip:AddDoubleLine("Earns most", ("%s, %s an hour"):format(data.zones[step.zone].name,
+            GameTooltip:AddDoubleLine(L["Earns most"], L["%s, %s an hour"]:format(data.zones[step.zone].name,
                 ns.Money(step.perHour)), 1, 1, 1, 1, 1, 1)
         elseif step and (step.kind == "fish" or step.kind == "mine") then
             local fish = step.kind == "fish"
             local g = data.gather or {}
-            GameTooltip:AddDoubleLine("Now", ("%s in %s to %d"):format(fish and "fish" or (g.verb or "mine"):lower(),
+            GameTooltip:AddDoubleLine(L["Now"], L["%s in %s to %d"]:format(fish and L["fish"] or (g.verb or L["mine"]):lower(),
                 data.zones[step.zone].name,
                 step.to), 1, 1, 1, 1, 1, 1)
-            GameTooltip:AddDoubleLine(" ", ("~%d %s, %s"):format(math.ceil(step.crafts), fish and "catches" or (g.many or "nodes"),
+            GameTooltip:AddDoubleLine(" ", ("~%d %s, %s"):format(math.ceil(step.crafts), fish and L["catches"] or (g.many or L["nodes"]),
                 ns.Money(step.cost)), 1, 1, 1, 1, 1, 1)
         elseif step and step.kind == "craft" then
             local rec = data.recipes[step.recipe]
-            GameTooltip:AddDoubleLine("Now", ("%s to %d"):format(rec.name, step.to), 1, 1, 1, 1, 1, 1)
-            GameTooltip:AddDoubleLine(" ", ("~%d crafts, %s"):format(math.ceil(step.crafts), ns.Money(step.cost)), 1, 1, 1, 1, 1, 1)
+            GameTooltip:AddDoubleLine(L["Now"], L["%s to %d"]:format(ns.Describe.RecipeName(step.recipe, rec), step.to),
+                1, 1, 1, 1, 1, 1)
+            GameTooltip:AddDoubleLine(" ", L["~%d crafts, %s"]:format(math.ceil(step.crafts), ns.Money(step.cost)), 1, 1, 1, 1, 1, 1)
         elseif step and step.kind == "food" then
-            GameTooltip:AddDoubleLine("Eat", ("%s, %s"):format(data.recipes[step.recipe].name,
+            GameTooltip:AddDoubleLine(L["Eat"], ("%s, %s"):format(
+                ns.Describe.RecipeName(step.recipe, data.recipes[step.recipe]),
                 ns.Describe.Buff(step.buff)), 1, 1, 1, 1, 1, 1)
         elseif step and step.kind == "profit" then
-            GameTooltip:AddDoubleLine("Earns most", ("%s, +%s a craft"):format(data.recipes[step.recipe].name,
+            GameTooltip:AddDoubleLine(L["Earns most"], L["%s, +%s a craft"]:format(
+                ns.Describe.RecipeName(step.recipe, data.recipes[step.recipe]),
                 ns.Money(step.profit)), 1, 1, 1, 1, 1, 1)
         elseif step then
-            GameTooltip:AddDoubleLine("Now", (step.rank.how == "level" and "reach level " .. step.rank.charLevel
-                or "learn " .. step.rank.name), 1, 1, 1, 1, 1, 1)
+            GameTooltip:AddDoubleLine(L["Now"], (step.rank.how == "level"
+                and L["reach level %d"]:format(step.rank.charLevel)
+                or L["learn %s"]:format(step.rank.name)), 1, 1, 1, 1, 1, 1)
         end
         if #ladder.steps > 0 and step.kind ~= "profit" and step.kind ~= "food" and not step.hour then
-            GameTooltip:AddDoubleLine(("Up to %d"):format(ladder.to), ns.Money(ladder.cost), 1, 1, 1, 1, 1, 1)
+            GameTooltip:AddDoubleLine(L["Up to %d"]:format(ladder.to), ns.Money(ladder.cost), 1, 1, 1, 1, 1, 1)
         end
     end
     local source, scanned = ns.Prices.Source()
     if scanned then
-        GameTooltip:AddDoubleLine("Prices", ("%s, %s"):format(source, ns.Age(scanned)), 1, 1, 1, 0.7, 0.7, 0.7)
+        GameTooltip:AddDoubleLine(L["Prices"], ("%s, %s"):format(source, ns.Age(scanned)), 1, 1, 1, 0.7, 0.7, 0.7)
     end
     local nextScan = ns.Describe.NextScan()
     if nextScan then GameTooltip:AddLine(nextScan, 0.7, 0.7, 0.7) end
     GameTooltip:AddLine(" ")
-    GameTooltip:AddLine("Click: open or close the window", 0.7, 0.7, 0.7)
-    GameTooltip:AddLine("Right-click: the ladder in chat", 0.7, 0.7, 0.7)
-    GameTooltip:AddLine("Drag: move the button", 0.7, 0.7, 0.7)
+    GameTooltip:AddLine(L["Click: open or close the window"], 0.7, 0.7, 0.7)
+    GameTooltip:AddLine(L["Drag: move the button"], 0.7, 0.7, 0.7)
     GameTooltip:Show()
 end
 
@@ -121,7 +125,7 @@ local function build()
     button:SetHighlightTexture("Interface\\Minimap\\UI-Minimap-ZoomButton-Highlight")
 
     button:SetScript("OnClick", function(_, mouse)
-        if mouse == "RightButton" then ns.PrintLadder() else ns.Window.Toggle() end
+        if mouse ~= "RightButton" then ns.Window.Toggle() end
     end)
     button:SetScript("OnEnter", tooltip)
     button:SetScript("OnLeave", UI.HideTooltip)
@@ -139,7 +143,8 @@ function Mini.Toggle()
     local s = settings()
     s.hide = not s.hide
     if button then button:SetShown(not s.hide) end
-    ns.Chat(s.hide and "minimap button hidden - /craft minimap shows it again." or "minimap button shown.")
+    ns.Chat(s.hide and L["minimap button hidden - /craft minimap shows it again."]
+        or L["minimap button shown."])
 end
 
 local frame = CreateFrame("Frame")

@@ -368,6 +368,27 @@ local function markEaters(ctx, data, options)
     end
 end
 
+-- A reagent the step makes itself earns skill too while its own recipe isn't grey: the 156 Bolts of Linen a Linen Bag
+-- step asks for take Tailoring from 1 to 50 by themselves, and the plan counted none of it - it sent the player off to
+-- make them and then, those points in hand, dropped the recipe they were for. So the reagent becomes the step: its own
+-- option already prices that stretch, what it makes stays in the bags for later, and the recipe comes after, from the
+-- skill it really starts at. Returns that option, or nil: when the reagent's points don't cover this stretch the
+-- recipe stays unless making the reagent is no dearer a point, since a few made reagents can't be worth a whole
+-- stretch of them. Smelting earns Mining, not this profession: that stays as it is.
+local function makerFirst(ctx, data, options, chosen, skill, limit)
+    local _, buy = ingredients(ctx, data.recipes[chosen.recipe], chosen.crafts)
+    for _, b in pairs(buy) do
+        local rec = b.make and not b.make.mining and data.recipes[b.make.spell]
+        if rec and Ladder.Color(rec.colors, skill) ~= "grey" then
+            local points = reach(rec.colors, skill, b.make.crafts, limit) - skill
+            for _, o in ipairs(options) do
+                if o ~= chosen and o.recipe == b.make.spell and o.score
+                    and (points >= chosen.to - skill or o.score <= chosen.score) then return o end
+            end
+        end
+    end
+end
+
 local function better(a, b)
     if a.tier ~= b.tier then return a.tier < b.tier end
     if fromWhatYouHave(a) ~= fromWhatYouHave(b) then return fromWhatYouHave(a) end
@@ -432,7 +453,10 @@ end
 --   quote = function(item, n, already, ahOnly) -> copper for buying n more after `already`, or nil (see Prices.Make)
 --   opts  = { favor, maxOptions (6), realPrices = { [item] = what a vendor asked },
 --             choices = { { from, to, recipe, bags }, ... } recipes the player picked for those stretches
---             (bags: the "with what you have" option of that recipe) }
+--             (bags: the "with what you have" option of that recipe),
+--             sticky = { recipe = the recipe the player is crafting now, to = where its step ended, score = what
+--             it cost a point then }: kept for the first step until the player has crafted it through, unless the
+--             recipe itself got worse (see STICKY) }
 -- Returns { from, to, steps = { ... }, cost, crafts, missing = { [item] = true }, stuck = reason or nil }.
 -- A craft step also carries canCook (crafts the character can do right now with what they own) and haveMain (the
 -- same, counting only the ingredients vendors don't sell); ready: how many of its crafts what they own covers as the
@@ -537,6 +561,7 @@ local function craftStep(ctx, data, chosen, skill, to, shown, first)
                    cost = cost + way.cost, options = shown, fromBags = chosen.fromBags,
                    haveMain = haveMain, canCook = canCook, guess = rec.guess }
     if chosen ~= first then step.chosenByYou = true end
+    step.score = chosen.score -- what it cost a point when it was chosen: the hold measures the recipe against this
     step.tool = chosen.tool
     for _, kind in ipairs(rec.tools or {}) do
         local tk = data.toolKinds[kind]
@@ -578,10 +603,18 @@ local function toolDue(ctx, data, skill, late)
     return due
 end
 
+-- How much worse a point the recipe the player is on may get before the plan drops it (opts.sticky). It is measured
+-- against what that recipe cost a point when the step was shown, not against the best option now: while the player
+-- crafts the step its reagents leave the bags, which makes every other recipe look better by comparison, and the step
+-- they were told to craft must not be taken away for that. Only the recipe itself going sour moves the plan. A guess
+-- (ASSUMPTIONS.md).
+local STICKY = 0.25
+
 local function buildOnce(data, state, quote, opts, sunk)
     local ctx = newContext(data, state, quote, opts, sunk)
     -- from the range's start when one is picked (ns.Calculate), with the rank that skill needs
     local skill, cap = state.from or state.skill, state.fromCap or state.maxSkill or 0
+    local startSkill = skill -- where the step the player is on begins: only that one is kept (opts.sticky)
     local target = state.target or cap
     local result = { from = skill, to = target, steps = {}, cost = 0, crafts = 0, missing = {} }
     local steps = result.steps
@@ -641,6 +674,37 @@ local function buildOnce(data, state, quote, opts, sunk)
             table.sort(options, better)
 
             local chosen = options[1]
+            -- a reagent this step would make earns skill of its own: it becomes the step instead (see makerFirst),
+            -- and so does what that one makes, down to MAKE_DEPTH
+            for _ = 1, MAKE_DEPTH do
+                local first = chosen and chosen.score and makerFirst(ctx, data, options, chosen, skill, limit)
+                if not first then break end
+                chosen = first
+            end
+            if chosen and chosen ~= options[1] then -- the plan's own first option: the card and the step read it so
+                for i, o in ipairs(options) do
+                    if o == chosen then
+                        table.remove(options, i)
+                        table.insert(options, 1, o)
+                        break
+                    end
+                end
+            end
+            -- the step the player is on keeps its recipe until they have crafted it through, unless the recipe itself
+            -- has got more than STICKY worse a point since it was shown. It becomes the plan's own first option, not a
+            -- choice made for the player: the card and the step read it the usual way.
+            local heldTo -- where the held step ended before: it may shrink with the bags, never grow
+            if opts.sticky and skill == startSkill and skill < (opts.sticky.to or 0) and opts.sticky.score then
+                for i, o in ipairs(options) do
+                    if o.recipe == opts.sticky.recipe and o.score
+                        and o.score - opts.sticky.score <= STICKY * math.abs(opts.sticky.score) then
+                        table.remove(options, i)
+                        table.insert(options, 1, o)
+                        chosen, heldTo = o, opts.sticky.to
+                        break
+                    end
+                end
+            end
             local wanted = choiceAt(opts.choices, skill)
             if wanted then
                 local sameRecipe
@@ -663,6 +727,9 @@ local function buildOnce(data, state, quote, opts, sunk)
             if not listed then shown[#shown + 1] = chosen end
 
             local to = min(chosen.to, stop)
+            -- the held recipe keeps the step it was shown for, no further: its stretch can be longer than the one the
+            -- player saw, and that would swallow the step after it (the row would vanish under them)
+            if heldTo and chosen.recipe == opts.sticky.recipe then to = min(to, heldTo) end
             ctx.skill = skill
             local step = craftStep(ctx, data, chosen, skill, to, shown, options[1])
             for item, b in pairs(step.buy) do

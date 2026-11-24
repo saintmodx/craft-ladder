@@ -1,0 +1,9 @@
+# Dependabot watches the pinned actions in .github/workflows and opens a pull request when one has a newer
+# commit, with the version comment updated too: the release workflow holds the CurseForge token, so a bump is
+# read and merged by hand, never taken from a moving tag.
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"

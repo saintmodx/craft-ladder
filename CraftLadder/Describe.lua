@@ -14,7 +14,7 @@ end
 function D.NPC(npc)
     local n = ns.Lookup("npcs", npc)
     if not n then return tostring(npc), nil end
-    local zone = n.zone or zoneName(n.map)
+    local zone = zoneName(n.map) or n.zone -- the game's zone name is in the client's language
     local where = zone and n.x and ("%s %s, %s"):format(zone, n.x, n.y) or zone
     return n.name or tostring(npc), where
 end
@@ -24,15 +24,35 @@ function D.Quest(quest)
     return q and q.name or tostring(quest), q
 end
 
-function D.ItemName(item)
-    return ns.Lookup("items", item) or (C_Item and C_Item.GetItemNameByID and C_Item.GetItemNameByID(item))
-        or ("item " .. tostring(item))
+-- The name of an item or a recipe in the language Craft Ladder is set to, when the data has that language
+-- (Data/Names_<code>.lua, built from the client's tables for a client that speaks another language). English is
+-- the data's own, so it needs no table of its own.
+local function translated(section, id)
+    local lang = ns.Language()
+    if lang == "enUS" then return nil end
+    local names = ns.Names and ns.Names[lang]
+    names = names and names[section]
+    return names and names[id]
 end
 
--- What a search box matches on a recipe's row: the name of what it makes, lower case. Not its ingredients: you
--- type what you're looking for, not what it's made of.
-function D.Searchable(rec)
-    return rec.name:lower()
+-- The picked language first, then the game's name (the client's language, and it knows items the data doesn't),
+-- then the data's English. The data also answers in the tests, which have no client.
+function D.ItemName(item)
+    return translated("items", item) or (C_Item and C_Item.GetItemNameByID and C_Item.GetItemNameByID(item))
+        or ns.Lookup("items", item) or ("item " .. tostring(item))
+end
+
+-- What a recipe is called: the picked language, the game's word for it, or the data's English.
+function D.RecipeName(spell, rec)
+    return translated("recipes", spell)
+        or (spell and C_Spell and C_Spell.GetSpellName and C_Spell.GetSpellName(spell)) or (rec and rec.name)
+        or ("recipe " .. tostring(spell))
+end
+
+-- What a search box matches on a recipe's row: the name the row shows, lower case, in the client's own language.
+-- Not its ingredients: you type what you're looking for, not what it's made of.
+function D.Searchable(spell, rec)
+    return D.RecipeName(spell, rec):lower()
 end
 
 -- What a dish raises (Cooking's food): "+20 Strength, +10 Stamina", in this order.
@@ -114,6 +134,16 @@ function D.Vendors(data, spell, faction, favorOK)
     return list
 end
 
+-- How old an Auctionator price is: it keeps what it last saw, so a price stays after the item is gone from the
+-- auction house. Only a stale one is dated (Prices.DayDrift says which); nil days: older than the three weeks of
+-- days Auctionator keeps.
+local function lastSeen(e)
+    if not e.stale then return "" end
+    if not e.ageDays then return ", last seen over three weeks ago" end
+    if e.ageDays == 1 then return ", last seen yesterday" end
+    return (", last seen %d days ago"):format(e.ageDays)
+end
+
 -- Where an ingredient's price came from: "vendor, 36c each" / "auction house, 10c each (cheapest listed 9c),
 -- 1018 listed". The ladder pays the median, so that is the price named; the cheapest listing is one auction.
 function D.PriceSource(e)
@@ -132,7 +162,10 @@ function D.PriceSource(e)
         return ("auction house, %s, %d listed - you searched it %s%s"):format(each, e.qty or 0, ns.Age(e.ts),
             e.partial and ", of the listings loaded" or "")
     end
-    if e.source == "auctionator" then return "auction house (Auctionator), " .. ns.Money(e.unit) .. " each" end
+    if e.source == "auctionator" then
+        return "auction house (Auctionator), " .. ns.Money(e.unit) .. " each"
+            .. (e.qty and (", %d listed"):format(e.qty) or "") .. lastSeen(e)
+    end
     return ""
 end
 

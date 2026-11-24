@@ -44,11 +44,9 @@ QUALITY = {2: "green", 3: "blue", 4: "epic"}
 SEEN = 5  # recorded disenchants of a bucket from which they replace its table (the user's number; Disenchant.SEEN)
 
 
-def effective_class(cls, subclass, inventory_type):
-    """Weapon or armor as disenchanting counts it: a shield or an off-hand item counts as a weapon (CMaNGOS's)."""
-    if cls == ARMOR and (subclass == 6 or inventory_type == 23):
-        return WEAPON
-    return cls
+def disputed(cls, subclass, inventory_type):
+    """A shield or an off-hand item: Classic disenchanted those as weapons, Forever as the armor they are."""
+    return cls == ARMOR and (subclass == 6 or inventory_type == 23)
 
 
 def classic_skill(max_level):
@@ -99,9 +97,11 @@ def main():
     entries = db["disenchant_loot_template"]  # entry -> [(item, chance, group, min, max)]
     votes = defaultdict(Counter)
     for r in db["items"].values():
-        if r["DisenchantID"] not in ("0", ""):
-            cls = effective_class(int(r["class"]), int(r["subclass"]), int(r["InventoryType"]))
-            bid = bucket_of(cls, int(r["Quality"]), int(r["ItemLevel"]))
+        # a shield or an off-hand item votes for no bucket: CMaNGOS has it on the weapon entry, Forever gives it
+        # the armor one, so its vote would carry Classic's answer into the wrong bucket
+        if r["DisenchantID"] not in ("0", "") \
+                and not disputed(int(r["class"]), int(r["subclass"]), int(r["InventoryType"])):
+            bid = bucket_of(int(r["class"]), int(r["Quality"]), int(r["ItemLevel"]))
             if bid:
                 votes[bid][int(r["DisenchantID"])] += 1
     era = {int(r["ID"]) for r in wago.table("ItemDisenchantLoot", ERA, args.refresh)}
@@ -145,8 +145,9 @@ def main():
         s, i = known.get(item), items.get(item)
         if not (s and i) or int(i["ClassID"]) not in (WEAPON, ARMOR) or int(s["OverallQualityID"]) not in QUALITY:
             return None, False
-        cls = effective_class(int(i["ClassID"]), int(i["SubclassID"]), int(i["InventoryType"]))
-        return bucket_of(cls, int(s["OverallQualityID"]), int(s["ItemLevel"])), cls != int(i["ClassID"])
+        cls = int(i["ClassID"])
+        return bucket_of(cls, int(s["OverallQualityID"]), int(s["ItemLevel"])), \
+            disputed(cls, int(i["SubclassID"]), int(i["InventoryType"]))
 
     # the crafted items that can be disenchanted
     out_items, shields, no_de = {}, [], []
@@ -263,7 +264,8 @@ def main():
             " from 61.",
             "- Buckets Forever added (%s): their class and levels' green bucket, one more of everything (checked for"
             " Novice Arcanist's Sash: 2-3 Strange Dust or Lesser Magic Essence)." % ", ".join(map(str, guessed)),
-            "- Shields and off-hand items count as weapons (CMaNGOS's): %d crafted ones (%s)." % (
+            "- Shields and off-hand items count as the armor they are, not as weapons the way Classic had them"
+            " (the user's disenchants, 2026-11-20): %d crafted ones (%s)." % (
                 len(shields), ", ".join(name(x) for x in shields[:12]) + (", ..." if len(shields) > 12 else "")),
             "- %d items Forever's client doesn't list take Classic Era's level, quality and binding (`classic`):"
             " Forever changed about 1%% of the weapons and armor both list." % sum(1 for x in out_items if x in classic),

@@ -22,6 +22,139 @@ version numbers [Semantic Versioning](https://semver.org).
 - Settings has a "Bars over the list" section: untick Buy or craft or Favor to hide that bar, and the view it opens
   goes with it. Both are shown until you say otherwise, and the setting is the account's.
 
+### Changed
+
+- The Merchant's Favor bar is called just "Favor (81)" while the Buy or craft bar shares the line with it; on its
+  own it keeps its full name.
+
+## 1.11.6 - 2026-11-23
+
+### Fixed
+
+- The Disenchant view no longer stops the game for a moment every time your bags change. It used to work out the
+  whole account again on every loot, sale or bag move, and with it the price of every item in the game that can be
+  disenchanted. The "Buy and disenchant" group now keeps what it found until the prices change, so looting a
+  dungeon with the view open costs nothing.
+- Craft Ladder's saved data no longer grows without end. It records every node you gather and every item you
+  disenchant, which is how the addon's own numbers get better; it now keeps the newest 10,000 of each and drops
+  what is older when you log in, so the file stays small and logging in stays quick.
+
+## 1.11.5 - 2026-11-21
+
+### Changed
+
+- The data is read from Forever's client build 1.60.1.71037. Only one recipe changes with it: Orcish War Leggings
+  is learned at Blacksmithing 205, not 210, and its plans are bought at the auction house - the build added the
+  plans as an item of its own, and nothing says who sells or drops them, so the plan no longer sends you to the
+  quest Classic rewarded them with.
+
+## 1.11.4 - 2026-11-21
+
+### Fixed
+
+- Disenchanting no longer asks for a higher Enchanting. In Forever any enchanter disenchants anything, from
+  Enchanting 1, but the Disenchant view still held back the items Classic wanted more for: they were greyed out,
+  pushed to the end of their group, labelled with the skill they supposedly needed and with the character to mail
+  them to, and left out of what the groups and the footer say you can gain. Every row now counts and is sorted by
+  what it brings, so the blues and the higher-level greens sit in the plan where they belong, whatever your
+  Enchanting.
+- Disenchants are recorded again when the cast is instant (the Disenchanter perk) or when auto-loot takes the
+  materials without opening a window. They were missed before, so the odds on a card never became your own.
+- Shields and off-hand items now disenchant as the armor they are: mostly dust, not mostly essence. Classic put
+  them with the weapons and Craft Ladder followed, which made a green off-hand item of level 56-60 look worth
+  about 3g27s disenchanted when it brings about 1g21s - enough to send you buying at the auction house at a loss.
+  453 items moved, and 72 more can be disenchanted that the plan used to leave out.
+- The disenchanting data is Forever's client build 1.60.1.71037.
+
+## 1.11.3 - 2026-11-18
+
+### Fixed
+
+- The step you're crafting stays until you've crafted it through. It used to be dropped a point or two before its
+  end: the reagents in your bags go into that very step, which makes every other recipe look better by comparison,
+  and the plan swapped to one of them - after you had already bought what the step asked for. Now the plan only
+  drops it if that recipe itself has got dearer a point, and it keeps the end it showed you, so the row that comes
+  after it stays in place too (it used to vanish when the held step ran over it). The step you're on is kept
+  with the character now, so a /reload or coming back tomorrow doesn't change what you are in the middle of
+  crafting.
+- The plan no longer sends you off to make reagents and then drops the recipe they were for. Making what a step
+  needs earns skill of its own - the 156 Bolts of Linen Cloth a run of Linen Bags asks for take Tailoring from 1 to
+  50 by themselves - and none of it was counted, so you came back with the reagents already past the step, the plan
+  moved on and the rest of the materials you had bought sat unused. Reagents that still earn skill are now a step of
+  their own, with the points they earn counted, and the recipe comes after, from the skill you really have by then.
+
+## 1.11.2 - 2026-11-18
+
+### Fixed
+
+- A full scan with Auctionator reaches the ladder the moment it ends. Auctionator marks the scan's time when it
+  starts, so the window used to go on showing the prices it had until the next /reload; now its own "scan finished"
+  redraws the ladder and the cards.
+- Auctionator's old prices no longer pass for today's. Auctionator keeps the price it last saw of an item for ever,
+  so an item that wasn't in the last scan kept a price and a "120 listed" from days ago - and a dead high price
+  could send the plan after a recipe nobody is buying. Such a price is now shown with the day it was last seen
+  ("last seen 2 days ago") and counts only for what things cost to buy, not for what a step earns at the auction
+  house.
+- The header no longer promises a scan that brought nothing. Auctionator notes the moment a scan starts and keeps
+  it even when the scan dies halfway, so "scanned 10:51 (22m ago)" could sit over prices days old. When its newest
+  prices are older than that, the header says the day they are from, in yellow - and a client left open past
+  midnight, which makes Auctionator date its own fresh prices a day back, no longer counts as old.
+
+## 1.11.1 - 2026-11-17
+
+### Fixed
+
+- The plan stops changing its mind under you. The recipe of the step you're on is kept while it's still of the
+  same colour and nearly as cheap a skill point, so one craft, a new auction house scan or a trip to a vendor no
+  longer swaps it for a recipe that costs the same, after you've already bought the reagents for the one it showed.
+  It still switches the moment another recipe is really cheaper a point (your reagents ran out, a price moved for
+  real) — and your own pick on a card always wins.
+
+## 1.11.0 - 2026-11-17
+
+### Added
+
+- Craft Ladder speaks nine languages besides English: Deutsch, Español, Français, Italiano, Português,
+  Русский, Українська, 한국어 and 简体中文. Settings has a Language setting at the bottom, each language written in its own
+  language; a new install follows your game client (a Latin American Spanish client reads the Spanish file,
+  a Traditional Chinese one the Simplified file). The whole window is translated, from the menu and the
+  modes down to the long notes on a card about where the numbers come from. The names of items, recipes and
+  zones come from the client itself, so they are in its language; with Russian picked on an English client,
+  Craft Ladder knows the Russian names of 6512 items and 2550 recipes of its own. NPC and quest names stay
+  English: nothing translates them.
+
+  The translations are Craft Ladder's own work, not a native speaker's: if a line reads wrong in your
+  language, say so and it will be fixed.
+
+  The window makes room for them: the buttons over the list (Vendor sales, AH sales, Profit, Food,
+  Specialization) share the width of the list, growing tighter and, if they must, smaller, so the last of
+  them never runs over the step's card; and in Settings every tick sits under the help line above it,
+  however many lines that takes.
+
+### Removed
+
+- `/craft chat` and `/craft chat disenchant` are gone, and a right-click on the minimap button no longer
+  prints the ladder in chat. The window says all of it, and more, and the chat version was the one
+  corner of Craft Ladder nobody could read in Russian.
+
+## 1.10.1 - 2026-11-16
+
+### Changed
+
+- The data is rebuilt from today's AllTheThings and QuestieDB: 366 recipes now say where their plan comes from - a
+  vendor, a quest or a drop - instead of only "buy it at the auction house", and four recipes were added (Draught of
+  Tongues, Revealing Draught, Gurubashi Mojo Madness, Goblin Mortar). The Steam Tonk Controller's schematic is sold
+  at the Darkmoon Faire, not from a quest.
+
+### Fixed
+
+- Skinning no longer sends you after a creature far above your skill because its level was read wrong (Echeyakee, a
+  level 16 rare, counted as needing skill 190).
+
+## 1.10.0 - 2026-11-15
+
+### Added
+
 - The Craft Ladder tab at the auction house has a Full Rescan button: it searches the auction house itself for
   everything the list buys and sells, then puts those prices in the list and in the ladder. Until now the prices
   were whatever your last AuctionDB or Auctionator scan saw, and only what you searched by hand was fresh. The line
@@ -33,9 +166,6 @@ version numbers [Semantic Versioning](https://semver.org).
   ingredient about that one item. These ask whatever the price's age - you clicked for them.
 
 ### Changed
-
-- The bar over the list is shorter: "Favor (81)" instead of "Merchant's Favor recipes (81)", and "Back" instead of
-  "Back to your ladder", so it shares the line with the Buy or craft bar.
 
 - In Profit and in Favor, the auction house tab now lists every ingredient a craft takes, not only the ones you
   still have to buy: an ingredient already in your bags or bank is there, saying how many you need and how many you
@@ -55,6 +185,10 @@ version numbers [Semantic Versioning](https://semver.org).
   searched reagent already changed what it costs. Until now a search of the finished item was thrown away unless at
   least 5 of them were listed, so the price you had just seen with your own eyes was ignored and the step still
   counted on a vendor. A thin market still sells one at the auction house and the rest to a vendor.
+
+## 1.9.3 - 2026-11-13
+
+### Fixed
 
 - All the data is rebuilt from the live Forever client (build 1.60.1.70938): the recipes, their ingredients, the
   trainers, the vendors and the prices are the ones the game shows now. Up to now they came from the last beta

@@ -12,6 +12,7 @@
 local _, ns = ...
 local UI = ns.UI
 local C = UI.C
+local L = ns.L
 
 local Window = {}
 ns.Window = Window
@@ -118,7 +119,7 @@ local function turnsAt(colors, skill)
     local names = { "yellow", "green", "grey" }
     for i = 2, 4 do
         if (colors[i] or 0) > 0 and skill < colors[i] then
-            return (" - %s%s %d|r"):format(hex(STEP_COLOR[names[i - 1]]), names[i - 1], colors[i])
+            return L[" - %s%s %d|r"]:format(hex(STEP_COLOR[names[i - 1]]), names[i - 1], colors[i])
         end
     end
     return ""
@@ -146,7 +147,7 @@ local LOCKS = { kind = "locks" } -- Lockpicking's first row: every lock, by skil
 -- "4 days", "12 hours": how long a recipe with a cooldown waits between crafts.
 local function wait(seconds)
     local hours = math.floor(seconds / 3600 + 0.5)
-    return hours >= 48 and ("%d days"):format(math.floor(hours / 24 + 0.5)) or ("%d hours"):format(hours)
+    return hours >= 48 and L["%d days"]:format(math.floor(hours / 24 + 0.5)) or L["%d hours"]:format(hours)
 end
 
 -- A recipe's icon: the item it makes, or for an enchantment its spell's.
@@ -186,6 +187,9 @@ local function backToCheapest(step)
         if c.to <= step.from or c.from >= step.to then keep[#keep + 1] = c end
     end
     saved.choices = keep
+    -- the step you're on is held to the recipe it last showed (Core.lua's heldSteps), which here is the one being
+    -- dropped: forget it, or the plan puts it straight back
+    saved.onNow = nil
     Window.Refresh()
 end
 
@@ -211,7 +215,7 @@ end
 
 -- "~40 min", "~6.5 h"
 local function duration(minutes)
-    if minutes < 90 then return ("~%d min"):format(math.max(1, math.floor(minutes + 0.5))) end
+    if minutes < 90 then return L["~%d min"]:format(math.max(1, math.floor(minutes + 0.5))) end
     return ("~%.1f h"):format(minutes / 60)
 end
 
@@ -245,17 +249,17 @@ local function stepTooltip(owner, step)
         return
     end
     if step.kind == "locks" then
-        UI.Tooltip(owner, { "All locks", "Every lock a rogue picks, by the skill it needs, and its colour for you." })
+        UI.Tooltip(owner, { L["All locks"], L["Every lock a rogue picks, by the skill it needs, and its colour for you."] })
         return
     end
     if step.kind == "rank" and step.rank.how == "level" then
-        UI.Tooltip(owner, { "Reach level " .. step.rank.charLevel, ("At %d your cap is the level x 5: %d at level %d.")
+        UI.Tooltip(owner, { "Reach level " .. step.rank.charLevel, (L["At %d your cap is the level x 5: %d at level %d."])
             :format(step.from, step.rank.cap, step.rank.charLevel) })
         return
     end
     if step.kind == "rank" then
         local lines = {
-            { "Learn " .. step.rank.name, ("at %d, cap %d"):format(step.from, step.rank.cap) },
+            { "Learn " .. step.rank.name, L["at %d, cap %d"]:format(step.from, step.rank.cap) },
             { "Cost", ns.Describe.Price(step.cost, step.guess) },
         }
         if step.needLevel then lines[#lines + 1] = hex(C.bad) .. "Needs character level " .. step.needLevel .. "|r" end
@@ -271,20 +275,20 @@ local function stepTooltip(owner, step)
         local g = gather()
         UI.Tooltip(owner, {
             g.verb .. " in " .. prof.zones[step.zone].name,
-            { "Skill", ("%d - %d"):format(step.from, step.to) },
+            { L["Skill"], ("%d - %d"):format(step.from, step.to) },
             { (g.many:gsub("^%l", string.upper)), "~" .. math.ceil(step.crafts) },
-            next(prof.recipes) and { "Smelt on the way", barsText(step.bars) } or nil,
-            { "Trainer", ns.Money(step.cost) },
+            next(prof.recipes) and { L["Smelt on the way"], barsText(step.bars) } or nil,
+            { L["Trainer"], ns.Money(step.cost) },
         })
         return
     end
     if step.kind == "fish" then
         UI.Tooltip(owner, {
             "Fish in " .. prof.zones[step.zone].name,
-            { "Skill", ("%d - %d"):format(step.from, step.to) },
-            { "Catches", ("~%d (%s)"):format(math.ceil(step.crafts), duration(ns.Fishing.Minutes(step.casts))) },
-            { "Lure", step.lure and ns.Describe.ItemName(step.lure) or "none" },
-            { "Cost", step.missing and (hex(C.bad) .. "no price|r") or ns.Money(step.cost) },
+            { L["Skill"], ("%d - %d"):format(step.from, step.to) },
+            { L["Catches"], ("~%d (%s)"):format(math.ceil(step.crafts), duration(ns.Fishing.Minutes(step.casts))) },
+            { L["Lure"], step.lure and ns.Describe.ItemName(step.lure) or L["none"] },
+            { L["Cost"], step.missing and (hex(C.bad) .. "no price|r") or ns.Money(step.cost) },
         })
         return
     end
@@ -292,51 +296,49 @@ local function stepTooltip(owner, step)
         local bag = step.kind == "bag"
         local n = bag and step.count or step.made
         UI.ItemTooltip(owner, bag and step.item or step.data.recipes[step.recipe].makes, step.recipe, {
-            bag and { "In your bags", step.count .. (step.bound and ", soulbound" or "") }
-                or { "One craft", ns.Money(step.cost) },
-            { "Disenchanted", ns.Money(step.each * n) .. " on average" },
-            { "Sold", step.sale.how and (ns.Money(step.sale.each * n) .. (step.sale.how == "auction"
-                and " at the auction house" or " at a vendor")) or "nobody buys it" },
-            bag and { "Best", ns.Disenchant.Verdict(step) } or { "Disenchanting one craft", signed(step.profit) },
-            step.needSkill and (hex(C.bad) .. "Disenchanting it needs Enchanting " .. step.needSkill .. "|r") or nil,
+            bag and { L["In your bags"], step.count .. (step.bound and L[", soulbound"] or "") }
+                or { L["One craft"], ns.Money(step.cost) },
+            { L["Disenchanted"], ns.Money(step.each * n) .. " on average" },
+            { L["Sold"], step.sale.how and (ns.Money(step.sale.each * n) .. (step.sale.how == "auction"
+                and L[" at the auction house"] or L[" at a vendor"])) or L["nobody buys it"] },
+            bag and { L["Best"], ns.Disenchant.Verdict(step) } or { L["Disenchanting one craft"], signed(step.profit) },
         })
         return
     end
     if step.kind == "auction" then
         UI.ItemTooltip(owner, step.item, nil, {
-            { "Cheapest listing", ns.Money(step.price) .. (step.listed and (", " .. step.listed .. " listed") or "") },
-            { "Disenchanted", ns.Money(step.each) .. " on average" },
-            { "Gains", signed(step.gain) .. (", more %d%% of the time"):format(math.floor(step.chance * 100 + 0.5)) },
-            step.needSkill and (hex(C.bad) .. "Disenchanting it needs Enchanting " .. step.needSkill .. "|r") or nil,
+            { L["Cheapest listing"], ns.Money(step.price) .. (step.listed and (", " .. step.listed .. " listed") or "") },
+            { L["Disenchanted"], ns.Money(step.each) .. " on average" },
+            { L["Gains"], signed(step.gain) .. L[", more %d%% of the time"]:format(math.floor(step.chance * 100 + 0.5)) },
         })
         return
     end
     local rec = prof.recipes[step.recipe]
     if step.kind == "food" then
         UI.ItemTooltip(owner, rec.makes, step.recipe, {
-            { "Raises", ns.Describe.Buff(step.buff) },
-            { "Cook one", step.cost and ns.Money(step.cost) or "no price" },
-            { "Buy one", step.ah and ns.Money(step.ah) or "not listed" },
+            { L["Raises"], ns.Describe.Buff(step.buff) },
+            { L["Cook one"], step.cost and ns.Money(step.cost) or L["no price"] },
+            { L["Buy one"], step.ah and ns.Money(step.ah) or L["not listed"] },
         })
         return
     end
     if step.kind == "profit" then
         UI.ItemTooltip(owner, rec.makes, step.recipe, {
-            { "One craft", ns.Money(step.cost) .. (step.made > 1 and (", makes " .. step.made) or "") },
-            { "Sells for", ns.Money(step.back) },
-            { "Profit", hex(C.good) .. "+" .. ns.Money(step.profit) .. "|r" },
-            { "Listed", step.listed },
+            { L["One craft"], ns.Money(step.cost) .. (step.made > 1 and (", makes " .. step.made) or "") },
+            { L["Sells for"], ns.Money(step.back) },
+            { L["Profit"], hex(C.good) .. "+" .. ns.Money(step.profit) .. "|r" },
+            { L["Listed"], step.listed },
         })
         return
     end
     local lines = {
-        { "Skill", ("%d - %d, ~%d %s"):format(step.from, step.to, math.ceil(step.crafts), craftsWord()) },
+        { "Skill", L["%d - %d, ~%d %s"]:format(step.from, step.to, math.ceil(step.crafts), craftsWord()) },
         { "Cost", step.missing and (hex(C.bad) .. "no price|r") or ns.Money(step.cost) },
         { "Learn", ns.Describe.Learn(step.learn, prof) },
     }
     local ready = readyCount(step)
     if ready then
-        lines[#lines + 1] = { "Ready", ("%s of ~%d, from what you have (vendor reagents aside)"):format(ready,
+        lines[#lines + 1] = { "Ready", L["%s of ~%d, from what you have (vendor reagents aside)"]:format(ready,
             math.ceil(step.crafts)) }
     end
     UI.ItemTooltip(owner, rec.makes, step.recipe, lines)
@@ -464,11 +466,11 @@ end
 -- above yours), then known, learn now, or the skill or level it waits for.
 local function favorSub(step, rec, state)
     local wear = useLevel(rec.makes)
-    return (wear and wear > 1 and ("%slvl %d|r - "):format(wear > state.level and hex(C.bad) or "", wear) or "")
-        .. (step.status == "known" and (step.canMake > 0 and ("known, make %d now"):format(step.canMake) or "known")
-            or step.status == "learn" and ("learn now (skill %d)"):format(rec.learn)
-            or step.status == "skill" and ("skill %d (you %d)"):format(rec.learn, state.skill)
-            or ("level %d (you %d)"):format(step.level, state.level))
+    return (wear and wear > 1 and L["%slvl %d|r - "]:format(wear > state.level and hex(C.bad) or "", wear) or "")
+        .. (step.status == "known" and (step.canMake > 0 and L["known, make %d now"]:format(step.canMake) or "known")
+            or step.status == "learn" and L["learn now (skill %d)"]:format(rec.learn)
+            or step.status == "skill" and L["skill %d (you %d)"]:format(rec.learn, state.skill)
+            or L["level %d (you %d)"]:format(step.level, state.level))
 end
 
 -- A dish's colour in Food (the row's name, the card's title): its skill-up colour at your skill, as Gold's rows (grey,
@@ -483,62 +485,62 @@ local function fillRow(row, step, index)
     row.icon:SetVertexColor(1, 1, 1) -- a pooled row may have been a red one
     row.accent:SetShown(index == 1)
     local ready = readyCount(step)
-    row.ready:SetText(ready and (ready .. " ready") or "")
+    row.ready:SetText(ready and L["%s ready"]:format(ready) or "")
     if step.kind == "locks" then
         row.icon:SetTexture(prof.icon)
-        row.name:SetText("All locks")
+        row.name:SetText(L["All locks"])
         UI.SetColor(row.name, C.gold)
-        row.sub:SetText("chests, boxes and doors by skill")
+        row.sub:SetText(L["chests, boxes and doors by skill"])
         row.cost:SetText("")
         paintRow(row)
         return
     elseif step.kind == "rank" and step.rank.how == "level" then
         row.icon:SetTexture(prof.icon)
-        row.name:SetText("Reach level " .. step.rank.charLevel)
+        row.name:SetText(L["Reach level %d"]:format(step.rank.charLevel))
         UI.SetColor(row.name, step.needLevel and C.bad or C.gold)
-        row.sub:SetText(("at %d, raises your cap to %d"):format(step.from, step.rank.cap))
+        row.sub:SetText(L["at %d, raises your cap to %d"]:format(step.from, step.rank.cap))
     elseif step.kind == "rank" then
         row.icon:SetTexture(step.rank.item and UI.ItemIcon(step.rank.item) or RANK_ICON[step.rank.how] or prof.icon)
-        row.name:SetText("Learn " .. step.rank.name)
+        row.name:SetText(L["Learn %s"]:format(step.rank.name))
         UI.SetColor(row.name, C.gold)
-        row.sub:SetText(("at %d, raises your cap to %d%s"):format(step.from, step.rank.cap,
+        row.sub:SetText(L["at %d, raises your cap to %d%s"]:format(step.from, step.rank.cap,
             step.needLevel and (" - " .. hex(C.bad) .. "needs level " .. step.needLevel .. "|r") or ""))
     elseif step.kind == "fish" then
         local zone = prof.zones[step.zone]
         row.icon:SetTexture(UI.ItemIcon(zone.top))
-        row.name:SetText("Fish in " .. zone.name)
+        row.name:SetText(L["Fish in %s"]:format(zone.name))
         UI.SetColor(row.name, step.landed >= 1 and C.text or C.warn)
         local extra = step.lure and (" - " .. ns.Describe.ItemName(step.lure)) or ""
-        if step.chosenByYou then extra = extra .. " - " .. hex(C.gold) .. "your pick|r" end
+        if step.chosenByYou then extra = extra .. " - " .. hex(C.gold) .. L["your pick"] .. "|r" end
         if step.hour then
-            row.sub:SetText(("an hour: ~%d catches, %s each%s%s"):format(step.crafts, ns.Money(step.value), extra,
+            row.sub:SetText(L["an hour: ~%d catches, %s each%s%s"]:format(step.crafts, ns.Money(step.value), extra,
                 step.dangerous and (" - " .. hex(C.bad) .. "creatures level " .. zone.levels[1] .. "+|r") or ""))
         else
-            row.sub:SetText(("%d - %d, ~%d catches%s"):format(step.from, step.to, math.ceil(step.crafts), extra))
+            row.sub:SetText(L["%d - %d, ~%d catches%s"]:format(step.from, step.to, math.ceil(step.crafts), extra))
         end
     elseif step.kind == "favor" then
         local rec, state = prof.recipes[step.recipe], ladder.state
         local blocked = step.status == "skill" or step.status == "level" -- red, as the game shows what you can't use
         row.icon:SetTexture(recipeIcon(rec))
         if blocked then row.icon:SetVertexColor(1, 0.15, 0.15) end
-        row.name:SetText(rec.name)
+        row.name:SetText(ns.Describe.RecipeName(step.recipe, rec))
         UI.SetColor(row.name, step.status == "known" and C.good or step.status == "learn" and C.gold or C.bad)
         row.sub:SetText(favorSub(step, rec, state))
     elseif step.kind == "food" then
         local rec = prof.recipes[step.recipe]
         row.icon:SetTexture(UI.ItemIcon(rec.makes))
-        row.name:SetText(rec.name)
+        row.name:SetText(ns.Describe.RecipeName(step.recipe, rec))
         UI.SetColor(row.name, foodColor(step, rec, ladder.state.skill)) -- a dish for later says so in red: "lvl N"
-        row.sub:SetText(("%s%s%s%s"):format(step.eat > 1 and ("%slvl %d|r - "):format(step.later and hex(C.bad) or "",
+        row.sub:SetText(("%s%s%s%s"):format(step.eat > 1 and L["%slvl %d|r - "]:format(step.later and hex(C.bad) or "",
             step.eat) or "", ns.Describe.Buff(step.buff), learnIcon(step.learn),
             step.needSkill and (" - " .. hex(C.bad) .. "skill " .. step.needSkill .. "|r") or ""))
     elseif step.kind == "profit" then
         local rec = prof.recipes[step.recipe]
         row.icon:SetTexture(UI.ItemIcon(rec.makes))
-        row.name:SetText(rec.name)
+        row.name:SetText(ns.Describe.RecipeName(step.recipe, rec))
         -- red for what your skill (or the level its rank asks) can't reach yet; else the skill-up colour, grey white
         UI.SetColor(row.name, step.needSkill and C.bad or step.color ~= "grey" and STEP_COLOR[step.color] or C.text)
-        row.sub:SetText(("%s%s, %s%s%s%s%s%s"):format(step.made > 1 and ("makes " .. step.made .. ", ") or "",
+        row.sub:SetText(L["%s%s, %s%s%s%s%s%s"]:format(step.made > 1 and ("makes " .. step.made .. ", ") or "",
             ns.Money(step.back / step.made) .. " each", step.vendor and "at a vendor" or (step.listed .. " listed"),
             learnIcon(step.learn), -- a recipe to learn first: its card says how
             turnsAt(rec.colors, ladder.state.skill), -- when it stops giving points
@@ -557,29 +559,24 @@ local function fillRow(row, step, index)
     elseif step.kind == "disenchant" then
         local rec = step.data.recipes[step.recipe]
         row.icon:SetTexture(UI.ItemIcon(rec.makes))
-        row.name:SetText(rec.name)
-        -- what needs a higher Enchanting is grey (the user's rule); else the recipe's skill-up colour, as Gold's rows
-        UI.SetColor(row.name, step.needSkill and C.dim or step.color ~= "grey" and STEP_COLOR[step.color] or C.text)
-        row.sub:SetText(("%s, %s, disenchanted ~%s, sold %s%s"):format(step.who or "you", step.data.name,
-            ns.Money(step.each), step.sale.how and ns.Money(step.sale.each) or "-",
-            step.needSkill and (" - " .. hex(C.bad) .. "Enchanting " .. step.needSkill .. "|r") or ""))
+        row.name:SetText(ns.Describe.RecipeName(step.recipe, rec))
+        -- the recipe's skill-up colour, as Gold's rows: disenchanting it asks no Enchanting
+        UI.SetColor(row.name, step.color ~= "grey" and STEP_COLOR[step.color] or C.text)
+        row.sub:SetText(L["%s, %s, disenchanted ~%s, sold %s"]:format(step.who or "you", step.data.name,
+            ns.Money(step.each), step.sale.how and ns.Money(step.sale.each) or "-"))
     elseif step.kind == "bag" then -- what to do with it: disenchant (green) or sell
         row.icon:SetTexture(UI.ItemIcon(step.item))
         row.name:SetText(ns.Describe.ItemName(step.item) .. (step.count > 1 and (" x" .. step.count) or ""))
         UI.SetColor(row.name, step.disenchant and C.good or C.text)
-        row.sub:SetText(("%s's %s - %s: ~%s disenchanted, %s sold%s%s"):format(step.who or "your", step.where or "bags",
+        row.sub:SetText(L["%s's %s - %s: ~%s disenchanted, %s sold%s"]:format(step.who or "your", step.where or "bags",
             ns.Disenchant.Verdict(step), ns.Money(step.each),
-            step.sale.how and ns.Money(step.sale.each) or "-", step.bound and ", soulbound" or "",
-            step.needSkill and (" - " .. hex(C.bad) .. "Enchanting " .. step.needSkill .. "|r") or ""))
+            step.sale.how and ns.Money(step.sale.each) or "-", step.bound and ", soulbound" or ""))
     elseif step.kind == "auction" then -- buy it to disenchant: what one gains on average, and how often it pays
         row.icon:SetTexture(UI.ItemIcon(step.item))
         row.name:SetText(ns.Describe.ItemName(step.item))
-        -- nobody of yours can disenchant it yet: grey (the user's rule, as the recipes')
-        UI.SetColor(row.name, step.needSkill and not step.alt and C.dim or C.text)
-        row.sub:SetText(("buy %s, ~%s disenchanted, pays %d%% of the time%s"):format(ns.Money(step.price),
-            ns.Money(step.each), math.floor(step.chance * 100 + 0.5), step.needSkill and (" - " .. hex(C.bad)
-            .. "Enchanting " .. step.needSkill .. "|r" .. (step.alt and (", " .. step.alt.name .. " has " ..
-            step.alt.skill) or "")) or ""))
+        UI.SetColor(row.name, C.text)
+        row.sub:SetText(L["buy %s, ~%s disenchanted, pays %d%% of the time"]:format(ns.Money(step.price),
+            ns.Money(step.each), math.floor(step.chance * 100 + 0.5)))
     elseif step.kind == "mine" then
         -- the item that gives the most points (Gold: earns the most), then what else counts
         row.icon:SetTexture(UI.ItemIcon(step.mix and step.mix[1] and step.mix[1].item or prof.nodes[step.node].item))
@@ -588,32 +585,34 @@ local function fillRow(row, step, index)
         if step.hour then
             row.sub:SetText(mixText(step))
         else
-            row.sub:SetText(("%d - %d%s: %s"):format(step.from, step.to,
+            row.sub:SetText(L["%d - %d%s: %s"]:format(step.from, step.to,
                 step.chosenByYou and (" " .. hex(C.gold) .. "your pick|r") or "", mixText(step)))
         end
     else
         local rec = prof.recipes[step.recipe]
         row.icon:SetTexture(recipeIcon(rec))
-        row.name:SetText(rec.name)
+        row.name:SetText(ns.Describe.RecipeName(step.recipe, rec))
         UI.SetColor(row.name, STEP_COLOR[step.color] or C.text)
         local way = learnIcon(step.learn) -- first, so a long line cuts off the words, not the icons
         local extra = way
         if step.fromBags then
             extra = extra .. " " .. BAG_ICON -- made from what you have: the card says so first thing
         end
-        if step.keep then extra = extra .. " - " .. hex(C.good) .. "keep them|r" end
-        if step.chosenByYou then extra = extra .. " - " .. hex(C.gold) .. "your pick|r" end
-        if ns.Describe.Unconfirmed(rec, step.learn) then extra = extra .. " - " .. hex(C.warn) .. "unconfirmed|r" end
+        if step.keep then extra = extra .. " - " .. hex(C.good) .. L["keep them"] .. "|r" end
+        if step.chosenByYou then extra = extra .. " - " .. hex(C.gold) .. L["your pick"] .. "|r" end
+        if ns.Describe.Unconfirmed(rec, step.learn) then
+        extra = extra .. " - " .. hex(C.warn) .. L["unconfirmed"] .. "|r"
+    end
         -- AH sales: how many of it the auction house has, as Profit's rows show
-        if step.sale and step.sale.listed then extra = extra .. (", %d listed"):format(step.sale.listed) end
+        if step.sale and step.sale.listed then extra = extra .. L[", %d listed"]:format(step.sale.listed) end
         if step.late then
             local _, _, what = toolUsers(step.tool)
-            row.sub:SetText(("after %d%s, %sneeded for %s|r"):format(step.from, way, hex(C.warn), what))
+            row.sub:SetText(L["after %d%s, %sneeded for %s|r"]:format(step.from, way, hex(C.warn), what))
         elseif step.tool then
-            row.sub:SetText(("%s%s, %smake one and keep it|r"):format(step.to > step.from and
+            row.sub:SetText(L["%s%s, %smake one and keep it|r"]:format(step.to > step.from and
                 ("%d - %d"):format(step.from, step.to) or ("at " .. step.from), way, hex(C.good)))
         else
-            row.sub:SetText(("%d - %d, ~%d %s%s"):format(step.from, step.to, math.ceil(step.crafts), craftsWord(), extra))
+            row.sub:SetText(L["%d - %d, ~%d %s%s"]:format(step.from, step.to, math.ceil(step.crafts), craftsWord(), extra))
         end
     end
     if (step.kind == "fish" or step.kind == "mine") and ladder.mode ~= "skill" then
@@ -622,9 +621,10 @@ local function fillRow(row, step, index)
     elseif step.kind == "mine" then -- Skill: how many (a trainer's fee is in the step's card)
         row.cost:SetText(("~%d %s"):format(math.ceil(step.crafts), gather().many))
     elseif step.kind == "favor" then
-        row.cost:SetText(step.cost and (step.cost .. " favor") or (hex(C.muted) .. "? favor|r"))
+        row.cost:SetText(step.cost and L["%d favor"]:format(step.cost)
+            or (hex(C.muted) .. L["? favor"] .. "|r"))
     elseif step.kind == "food" then -- one dish, cooked from bought ingredients
-        row.cost:SetText(step.cost and ns.Money(step.cost) or (hex(C.bad) .. "no price|r"))
+        row.cost:SetText(step.cost and ns.Money(step.cost) or (hex(C.bad) .. L["no price"] .. "|r"))
     elseif step.kind == "fish" and step.cost == 0 and not step.missing then
         row.cost:SetText("") -- no lures to buy
     elseif step.kind == "buycraft" then -- which is cheaper, and by how much for one craft
@@ -638,7 +638,8 @@ local function fillRow(row, step, index)
     elseif step.kind == "auction" then
         row.cost:SetText(signed(step.gain))
     else
-        row.cost:SetText(step.missing and (hex(C.bad) .. "no price|r") or signed((step.back or 0) - step.cost))
+        row.cost:SetText(step.missing and (hex(C.bad) .. L["no price"] .. "|r")
+            or signed((step.back or 0) - step.cost))
     end
     paintRow(row)
 end
@@ -650,7 +651,7 @@ local function searchProfit(l)
     for i, step in ipairs(l.steps) do
         local rec = l.data.recipes[step.recipe]
         if rec then
-            step.find = step.find or ns.Describe.Searchable(rec)
+            step.find = step.find or ns.Describe.Searchable(step.recipe, rec)
             if step.find:find(want, 1, true) then
                 steps[#steps + 1] = step
                 if i <= (l.vendorRows or 0) then vendorRows = vendorRows + 1 end
@@ -668,12 +669,12 @@ local function renderList()
     rowPool:ReleaseAll()
     local notes = {}
     if ladder.state.maxSkill > 0 and next(prof.recipes) and not next(ns.Player.Prof(prof).known) then
-        notes[#notes + 1] = ("Open your %s window once so Craft Ladder knows which recipes you have."):format(
+        notes[#notes + 1] = L["Open your %s window once so Craft Ladder knows which recipes you have."]:format(
             prof.window or prof.name)
     end
     if ladder.stuck == "no recipe" or ladder.stuck == "no zone" then
-        notes[#notes + 1] = ("No %s found past %d with what Craft Ladder knows."):format(
-            ladder.stuck == "no zone" and "zone" or "recipe",
+        notes[#notes + 1] = L["No %s found past %d with what Craft Ladder knows."]:format(
+            ladder.stuck == "no zone" and L["zone"] or L["recipe"],
             ladder.steps[#ladder.steps] and ladder.steps[#ladder.steps].to or ladder.from)
     end
     list.note:SetText(table.concat(notes, "\n"))
@@ -689,13 +690,16 @@ local function renderList()
     list.favor:SetWidth(barW)
     list.favor:ClearAllPoints()
     list.favor:SetPoint("TOPLEFT", both and (12 + barW + 6) or 12, -30)
-    list.favor.label:SetText(ladder.favor and "Back" or ("Favor (%d)"):format(favorCount))
+    -- the long name doesn't fit half a line, so the bar is called just Favor while both bars show
+    list.favor.label:SetText(ladder.favor and L["Back to your ladder"]
+        or (both and L["Favor (%d)"] or L["Merchant's Favor recipes (%d)"]):format(favorCount))
     list.favor:SetActive(ladder.favor or false)
     list.buy:SetShown(buyCount > 0)
     list.buy:SetWidth(barW)
     list.buy:ClearAllPoints()
     list.buy:SetPoint("TOPLEFT", 12, -30)
-    list.buy.label:SetText(ladder.buy and "Back" or ("Buy or craft (%d)"):format(buyCount))
+    list.buy.label:SetText(ladder.buy and L["Back to your ladder"]
+        or L["Buy or craft (%d)"]:format(buyCount))
     list.buy:SetActive(ladder.buy or false)
     local bar = (favorCount > 0 or buyCount > 0) and 26 or 0
     -- the range the ladder plans, right over its rows (renderRange shows it or not)
@@ -755,8 +759,8 @@ local function renderList()
             local count = g.to - g.from + 1
             -- the Disenchant view: what the group brings in all, next to how many rows it has
             heading(g.name, group and g.gain > 0 and ("%d, +%s"):format(count, ns.Money(g.gain)) or count,
-                { g.name, g.tip or group and group.tip or "Dishes for this role, by what" ..
-                " eating one raises. Click to fold or open." }, function()
+                { g.name, g.tip or group and group.tip or L["Dishes for this role, by what" ..
+                " eating one raises. Click to fold or open."] }, function()
                 if ladder.account then
                     ns.db.disenchantFolded = ns.db.disenchantFolded or {}
                     ns.db.disenchantFolded[g.name] = not ns.db.disenchantFolded[g.name] or nil
@@ -769,16 +773,16 @@ local function renderList()
             end, shutRoles[g.name])
             if not shutRoles[g.name] then
                 if group and g.to < g.from then
-                    heading(group.empty, nil, { "Nothing here", group.tip })
+                    heading(group.empty, nil, { L["Nothing here"], group.tip })
                 end
                 rows(g.from, g.to)
             end
         end
     elseif vendorRows then
-        local nothing = { "Nothing here", "Nothing earns this way at today's prices." }
+        local nothing = { L["Nothing here"], L["Nothing earns this way at today's prices."] }
         if vendorRows > 0 then -- nothing a vendor pays more for: no group at all
-            heading("Sell to a vendor", vendorRows, { "Sell to a vendor", "These cost less to make than a vendor" ..
-                " pays: vendors buy any number, no auction house needed. Click to fold or open." }, function()
+            heading(L["Sell to a vendor"], vendorRows, { L["Sell to a vendor"], L["These cost less to make than a vendor" ..
+                " pays: vendors buy any number, no auction house needed. Click to fold or open."] }, function()
                 local saved = ns.Player.Prof(prof)
                 saved.vendorFolded = not saved.vendorFolded or nil
                 Window.Refresh(true) -- only the view changes
@@ -786,11 +790,11 @@ local function renderList()
             if not folded then rows(1, vendorRows) end
         end
         if vendorRows > 0 then -- only the auction house's: the plain list, no heading to tell them apart
-            heading("Sell at the auction house", #ladder.steps - vendorRows, { "Sell at the auction house", "These" ..
+            heading(L["Sell at the auction house"], #ladder.steps - vendorRows, { L["Sell at the auction house"], L["These" ..
                 " earn more at the auction house: 5 or more listed (or however few when you searched it yourself)," ..
-                " and it pays 1.5 times what a vendor does. How many sell, the auction house doesn't say." })
+                " and it pays 1.5 times what a vendor does. How many sell, the auction house doesn't say."] })
         end
-        if #ladder.steps == vendorRows then heading("nothing at today's prices", nil, nothing) end
+        if #ladder.steps == vendorRows then heading(L["nothing at today's prices"], nil, nothing) end
         rows(vendorRows + 1, #ladder.steps)
     else
         rows(1, #ladder.steps)
@@ -814,27 +818,55 @@ renderDetail = function() ns.Cards.Render(frame, ladder, lookup, prof, selected)
 -- Header, skill bar and footer
 ---------------------------------------------------------------------------------------------------------------
 
+-- The modes and Specialization in one row across the list, 12 in from each side. Another language's words are
+-- longer than English's, so the padding goes first and then the text size, down to where the row still fits: it
+-- must never run over the step's card.
+local function fitBar(bar)
+    local room, pad, size = LIST_W - 24 - 4 * (#bar - 1), 18, 11
+    local function widest()
+        local w = 0
+        for _, b in ipairs(bar) do
+            UI.FontSize(b.label, size)
+            w = w + math.max(40, b.label:GetStringWidth() + pad)
+        end
+        return w
+    end
+    while widest() > room do
+        if pad > 8 then
+            pad = 8
+        elseif size > 8 then
+            size = size - 1
+        else
+            break -- nothing more to give: it is as small as the window allows
+        end
+    end
+    local x = 12
+    for _, b in ipairs(bar) do
+        b:SetWidth(math.max(40, b.label:GetStringWidth() + pad))
+        b:ClearAllPoints()
+        b:SetPoint("TOPLEFT", x, -8)
+        x = x + b:GetWidth() + 4
+    end
+end
+
 local function renderHeader()
     local state = ladder.state
     if ladder.account then -- the Disenchant view: the account's, no modes to pick and no specialization
-        local who = ladder.enchanter
-        frame.subtitle:SetText(("Disenchant, your whole account: %s"):format(who and (who.live
-            and ("your Enchanting %d is the best of yours"):format(who.skill)
-            or ("%s has the most Enchanting, %d"):format(who.name, who.skill))
-            or "no character of yours has Enchanting yet"))
+        frame.subtitle:SetText(L["Disenchant, your whole account: Enchanting 1 disenchants anything"])
         for _, b in ipairs(frame.list.modes) do b:Hide() end
         frame.list.spec:Hide()
         return
     end
-    local plan = state.from and ("the ladder from %d to %d"):format(state.from, state.target)
-        or ("the ladder to %d"):format(state.target)
+    local plan = state.from and L["the ladder from %d to %d"]:format(state.from, state.target)
+        or L["the ladder to %d"]:format(state.target)
     local me = ns.Player.Snap() -- another character: whose, and how old its snapshot is
-    frame.subtitle:SetText(state.maxSkill > 0 and ("%s%s %d / %d, %s%s"):format(me and (me.name .. "'s ") or "",
-        prof.name, state.skill, state.maxSkill, plan, me and (", as of " .. ns.Age(me.seen)) or "")
-        or me and ("%s has no %s yet"):format(me.name, prof.name) or ("No %s yet"):format(prof.name))
-    local tips, x = MODE_TIPS[prof.key] or MODE_TIPS[prof.kind or (prof.resale and "craft")] or {}, 12
+    frame.subtitle:SetText(state.maxSkill > 0 and L["%s%s %d / %d, %s%s"]:format(me and (me.name .. "'s ") or "",
+        prof.name, state.skill, state.maxSkill, plan, me and (", " .. L["as of %s"]:format(ns.Age(me.seen))) or "")
+        or me and L["%s has no %s yet"]:format(me.name, prof.name) or L["No %s yet"]:format(prof.name))
+    local tips = MODE_TIPS[prof.key] or MODE_TIPS[prof.kind or (prof.resale and "craft")] or {}
     local specView = ns.Player.Prof(prof).specView and prof.specGuides ~= nil
-    -- left to right: Skill (Vendor sales), AH sales, Profit, Food (Cooking)
+    -- left to right: Skill (Vendor sales), AH sales, Profit, Food (Cooking), then Specialization
+    local bar = {}
     for _, i in ipairs({ 1, 3, 2, 4 }) do
         local b = frame.list.modes[i]
         local tip = b.mode == "food" and (prof.food and FOOD_TIP or nil) or tips[b.mode]
@@ -842,21 +874,20 @@ local function renderHeader()
         if state.skill >= 300 and (b.mode == "skill" or b.mode == "sell") then tip = nil end
         b:SetShown(tip ~= nil)
         if tip then
-            local name = tips.names and tips.names[b.mode] or b.name
+            -- the words are translated here, not where the tables are written: the language can change
+            local name = L[tips.names and tips.names[b.mode] or b.name]
             b.label:SetText(name)
-            b:SetWidth(math.max(48, b.label:GetStringWidth() + 18))
-            b:ClearAllPoints()
-            b:SetPoint("TOPLEFT", x, -8)
-            x = x + b:GetWidth() + 4
             b:SetActive(b.mode == ladder.mode and not specView)
-            b.tooltip = { name, tip }
+            b.tooltip = { name, L[tip] }
+            bar[#bar + 1] = b
         end
     end
     local spec = frame.list.spec
+    spec.label:SetText(L["Specialization"])
     spec:SetShown(prof.specGuides ~= nil)
-    spec:ClearAllPoints()
-    spec:SetPoint("TOPLEFT", x, -8)
     spec:SetActive(specView)
+    if prof.specGuides then bar[#bar + 1] = spec end
+    fitBar(bar)
 end
 
 -- The list as wide as the window for a specialization's steps (UI/SpecPanel.lua; no card then), or the ladder's.
@@ -988,7 +1019,7 @@ local function renderBar()
     bar.pointer:SetPoint("BOTTOM", bar, "TOPLEFT", hx, 1)
     bar.line:ClearAllPoints()
     bar.line:SetPoint("CENTER", bar, "LEFT", hx, 0)
-    bar.here.text:SetText(("Skill %d"):format(state.skill))
+    bar.here.text:SetText(L["Skill %d"]:format(state.skill))
     local w = bar.here.text:GetStringWidth() + 16
     bar.here:SetWidth(w)
     bar.here:ClearAllPoints()
@@ -1015,30 +1046,35 @@ end
 -- Where the prices come from, how old they are and when AuctionDB may scan next (redrawn every second while open).
 local function renderPrices()
     local source, scanned = ns.Prices.Source()
+    -- Auctionator stamps the time a scan starts and keeps it when the scan fails, so its clock may promise prices it
+    -- never got: when the newest prices are older than this session may date a fresh one (Prices.DayDrift), the day
+    -- is what the header says, not the hour.
+    local days = source == "Auctionator" and ns.Prices.AuctionatorAge()
+    local stale = days and days > ns.Prices.DayDrift()
     if not source then
-        frame.prices:SetText(hex(C.bad) .. "No auction house prices: AuctionDB or Auctionator needed|r")
-    elseif scanned then
+        frame.prices:SetText(hex(C.bad) .. L["No auction house prices: AuctionDB or Auctionator needed"] .. "|r")
+    elseif scanned and not stale then
         -- quiet while fresh; after 3 h a nudge; after 12 h a warning: costs may be off by then
         local age = time() - scanned
         if age > 12 * 3600 then
-            frame.prices:SetText(hex(C.bad) .. ALERT_ICON .. (" %s prices scanned %s, costs may be off: scan at the" ..
-                " auction house|r"):format(source, ns.Age(scanned)))
+            frame.prices:SetText(hex(C.bad) .. ALERT_ICON
+                .. L[" %s prices scanned %s, costs may be off: scan at the auction house|r"]:format(
+                    source, ns.Age(scanned)))
         elseif age > 3 * 3600 then
-            frame.prices:SetText(hex(C.warn) .. ("%s prices scanned %s: scan at the auction house|r"):format(source,
+            frame.prices:SetText(hex(C.warn) .. L["%s prices scanned %s: scan at the auction house|r"]:format(source,
                 ns.Age(scanned)))
         else
-            frame.prices:SetText(hex(C.muted) .. ("Prices: %s, scanned %s (%s)|r"):format(source,
+            frame.prices:SetText(hex(C.muted) .. L["Prices: %s, scanned %s (%s)|r"]:format(source,
                 date("%H:%M", scanned), ns.Age(scanned)))
         end
     else
-        -- Auctionator without a scan of its own: it dates its prices by the day, not the hour
-        local days = source == "Auctionator" and ns.Prices.AuctionatorAge()
-        local when = days and (days == 0 and "today" or days == 1 and "yesterday"
-            or ("%d days ago"):format(days))
+        -- Auctionator without a scan of its own, or with one that brought nothing: it dates its prices by the day
+        local when = days and (days == 0 and L["today"] or days == 1 and L["yesterday"]
+            or L["%d days ago"]:format(days))
         frame.prices:SetText(when
-            and (hex(days >= 2 and C.warn or C.muted)
-                .. ("Prices: Auctionator, newest prices from %s|r"):format(when))
-            or (hex(C.muted) .. "Prices: " .. source .. "|r"))
+            and (hex(stale and C.warn or C.muted)
+                .. L["Prices: Auctionator, newest prices from %s|r"]:format(when))
+            or (hex(C.muted) .. L["Prices: %s"]:format(source) .. "|r"))
     end
     -- AuctionDB's countdown belongs to AuctionDB's prices: nothing to wait for while Auctionator's are read
     local text, state
@@ -1051,50 +1087,50 @@ local function renderFooter()
     if ladder.favor then
         local learn, have = 0, ns.Favor.Have()
         for _, s in ipairs(ladder.steps) do if s.status == "learn" then learn = learn + 1 end end
-        text = ("%d Merchant's Favor recipes, %d you can learn now%s"):format(#ladder.steps, learn,
-            have and ("; you have %d favor"):format(have) or "")
+        text = L["%d Merchant's Favor recipes, %d you can learn now%s"]:format(#ladder.steps, learn,
+            have and L["; you have %d favor"]:format(have) or "")
     elseif ladder.buy then
         local make, shown = 0, #ladder.steps
         for _, s in ipairs(ladder.steps) do if s.diff and s.diff < -0.5 then make = make + 1 end end
-        text = ("%d recipes here, %d cheaper to make than to buy (one craft, at today's prices)"):format(shown, make)
+        text = L["%d recipes here, %d cheaper to make than to buy (one craft, at today's prices)"]:format(shown, make)
     elseif ladder.mode == "food" then
-        text = ("%d dishes for your class; the cost is one dish from bought ingredients"):format(#ladder.steps)
+        text = L["%d dishes for your class; the cost is one dish from bought ingredients"]:format(#ladder.steps)
     elseif ladder.account then
         local de, earn, all = 0, 0, 0
         for _, s in ipairs(ladder.steps) do
             if s.kind == "bag" and s.disenchant then de = de + 1
-            elseif s.kind == "disenchant" and s.profit > 0 and not s.needSkill then earn = earn + 1 end
+            elseif s.kind == "disenchant" and s.profit > 0 then earn = earn + 1 end
         end
         for _, g in ipairs(ladder.groups) do all = all + g.gain end
         text = ("Disenchant %d of yours, buy %d, make %d: about %s in all (at today's prices)")
             :format(de, ladder.auction, earn, ns.Money(all))
     elseif #ladder.steps > 0 and ladder.steps[1].hour then
-        text = ("%d zones at skill %d; the best about %s an hour"):format(#ladder.steps,
+        text = L["%d zones at skill %d; the best about %s an hour"]:format(#ladder.steps,
             ladder.from, ns.Money(ladder.steps[1].perHour))
     elseif #ladder.steps > 0 and ladder.minutes and ladder.mode == "sell" then
-        text = ("Spend %s, catch about %s worth (%s, %s an hour)"):format(ns.Money(ladder.cost), ns.Money(ladder.earn),
+        text = L["Spend %s, catch about %s worth (%s, %s an hour)"]:format(ns.Money(ladder.cost), ns.Money(ladder.earn),
             duration(ladder.minutes), ns.Money(ladder.earn / math.max(1e-9, ladder.minutes / 60)))
     elseif #ladder.steps > 0 and ladder.nodes and ladder.mode == "sell" then
-        text = ("Spend %s, %s about %s worth (%s an hour), about %d %s"):format(ns.Money(ladder.cost),
+        text = L["Spend %s, %s about %s worth (%s an hour), about %d %s"]:format(ns.Money(ladder.cost),
             gather().verb:lower(), ns.Money(ladder.earn), ns.Money(ladder.perHour or 0), math.ceil(ladder.nodes),
             gather().many)
     elseif #ladder.steps > 0 and ladder.steps[1].kind == "profit" then
         local best = 0 -- the best you can make now: what's still above your skill doesn't count here
         for _, s in ipairs(ladder.steps) do if not s.needSkill then best = math.max(best, s.profit) end end
-        text = ("%s%d at the auction house; the best +%s a craft"):format(ladder.vendorRows > 0
+        text = L["%s%d at the auction house; the best +%s a craft"]:format(ladder.vendorRows > 0
             and (ladder.vendorRows .. " sell to a vendor, ") or "", #ladder.steps - ladder.vendorRows, ns.Money(best))
     elseif #ladder.steps > 0 and ladder.nodes then
-        text = ("Total %s, about %d %s%s"):format(ns.Money(ladder.cost), math.ceil(ladder.nodes), gather().many,
+        text = L["Total %s, about %d %s%s"]:format(ns.Money(ladder.cost), math.ceil(ladder.nodes), gather().many,
             ladder.crafts > 0 and (", %d %s"):format(math.ceil(ladder.crafts), prof.doors and "boxes" or "smelts")
             or "")
     elseif #ladder.steps > 0 and ladder.minutes then
-        text = ("Total %s, about %d catches (%s)"):format(ns.Money(ladder.cost), math.ceil(ladder.crafts),
+        text = L["Total %s, about %d catches (%s)"]:format(ns.Money(ladder.cost), math.ceil(ladder.crafts),
             duration(ladder.minutes))
     elseif #ladder.steps > 0 and (ladder.back or 0) > 0 then
-        text = ("Spend %s, about %s back from sales, about %d crafts"):format(ns.Money(ladder.cost), ns.Money(ladder.back),
+        text = L["Spend %s, about %s back from sales, about %d crafts"]:format(ns.Money(ladder.cost), ns.Money(ladder.back),
             math.ceil(ladder.crafts))
     elseif #ladder.steps > 0 then
-        text = ("Total %s, about %d crafts"):format(ns.Money(ladder.cost), math.ceil(ladder.crafts))
+        text = L["Total %s, about %d crafts"]:format(ns.Money(ladder.cost), math.ceil(ladder.crafts))
     end
     frame.total:SetText(text)
     renderPrices()
@@ -1150,7 +1186,7 @@ local function buildBar()
             frame.range.to:SetText(r[2])
             saveRange()
         end)
-        hit:SetScript("OnEnter", function(self) UI.Tooltip(self, { r[3], ("Plan the ladder to %d."):format(r[2]) }) end)
+        hit:SetScript("OnEnter", function(self) UI.Tooltip(self, { r[3], L["Plan the ladder to %d."]:format(r[2]) }) end)
         hit:SetScript("OnLeave", UI.HideTooltip)
         bar.rankHits[i] = hit
     end
@@ -1265,9 +1301,9 @@ local function buildGrip()
         relayout()
     end)
     grip:SetScript("OnEnter", function(self)
-        UI.Tooltip(self, { "Window size", "Drag: make the window bigger.",
-            ("Ctrl + mouse wheel: bigger or smaller text (now %d%%)."):format(frame:GetScale() * 100 + 0.5),
-            "Right-click: back to the normal size." })
+        UI.Tooltip(self, { L["Window size"], L["Drag: make the window bigger."],
+            L["Ctrl + mouse wheel: bigger or smaller text (now %d%%)."]:format(frame:GetScale() * 100 + 0.5),
+            L["Right-click: back to the normal size."] })
     end)
     grip:SetScript("OnLeave", UI.HideTooltip)
     frame.grip = grip
@@ -1332,19 +1368,19 @@ local function build()
     icon:SetTexture(UI.MEDIA .. "logo") -- whatever is shown: the menu and the subtitle say which
     frame.title = UI.Label(frame, 17, C.gold)
     frame.title:SetPoint("TOPLEFT", icon, "TOPRIGHT", 10, -1)
-    frame.title:SetText("Craft Ladder")
+    frame.title:SetText(L["Craft Ladder"])
     frame.subtitle = UI.Label(frame, 11, C.muted)
     frame.subtitle:SetPoint("TOPLEFT", frame.title, "BOTTOMLEFT", 0, -4)
     local close = UI.IconButton(frame, "close", 20, C.muted, function() frame:Hide() end)
     close:SetPoint("TOPRIGHT", -12, -14)
-    close.tooltip = { "Close", "Escape closes it too." }
+    close.tooltip = { L["Close"], L["Escape closes it too."] }
     local settings = UI.Button(frame, "Settings", 70, 20, function()
         settingsOpen = not settingsOpen
         Window.Refresh(true) -- the ladder is the same: only the card's place changes
     end)
     settings:SetPoint("TOPRIGHT", close, "TOPLEFT", -10, 0)
-    settings.tooltip = { "Settings", "Which auction house addon the prices are read from, and which of its listed" ..
-        " prices an ingredient costs." }
+    settings.tooltip = { L["Settings"], L["Which auction house addon the prices are read from, and which of its listed" ..
+        " prices an ingredient costs."] }
     frame.settingsButton = settings
     ns.Menu.Build(frame) -- the menu (left)
     ns.Chars.Build(frame) -- the account's characters (left of the window)
@@ -1355,10 +1391,10 @@ local function build()
     UI.Panel(idle, C.panel, C.edge, 8)
     idle.title = UI.Label(idle, 17, C.gold, nil, "CENTER")
     idle.title:SetPoint("CENTER", 0, 12)
-    idle.title:SetText("Your hands are idle, adventurer.")
+    idle.title:SetText(L["Your hands are idle, adventurer."])
     idle.sub = UI.Label(idle, 12, C.muted, nil, "CENTER")
     idle.sub:SetPoint("TOP", idle.title, "BOTTOM", 0, -8)
-    idle.sub:SetText("The trainers are waiting: learn a profession.")
+    idle.sub:SetText(L["The trainers are waiting: learn a profession."])
     idle:Hide()
     frame.idle = idle
     ns.CampPanel.Build(frame, LEFT) -- the menu's Camp: this instead of the ladder
@@ -1401,8 +1437,8 @@ local function build()
         p.specView, p.favorView, p.buyView = true, nil, nil
         Window.Refresh(true)
     end)
-    list.spec.tooltip = { "Specialization", "The steps to each of its specializations: the quests, what they ask" ..
-        " for and what you have of it, the recipes, and what's still to make or buy." }
+    list.spec.tooltip = { L["Specialization"], L["The steps to each of its specializations: the quests, what they ask" ..
+        " for and what you have of it, the recipes, and what's still to make or buy."] }
     list.favor = UI.Button(list, "", LIST_W - 24, 20, function()
         local p = ns.Player.Prof(prof)
         p.favorView = not p.favorView or nil
@@ -1410,8 +1446,8 @@ local function build()
         Window.Refresh(true) -- only the view changes: the ladder needn't be calculated again
     end)
     list.favor:SetPoint("TOPLEFT", 12, -30)
-    list.favor.tooltip = { "Merchant's Favor recipes", "What the supply camps' quartermaster sells for Merchant's Favor:" ..
-        " its price and level (seen at a quartermaster), your skill, what you know and can make." }
+    list.favor.tooltip = { L["Merchant's Favor recipes"], L["What the supply camps' quartermaster sells for Merchant's Favor:" ..
+        " its price and level (seen at a quartermaster), your skill, what you know and can make."] }
     -- every recipe of the profession, what it costs to make against what it costs to buy
     list.buy = UI.Button(list, "", LIST_W - 24, 20, function()
         local p = ns.Player.Prof(prof)
@@ -1421,8 +1457,8 @@ local function build()
         Window.Refresh(true) -- the rows are calculated once, from the ladder already there
     end)
     list.buy:SetPoint("TOPLEFT", 12, -30)
-    list.buy.tooltip = { "Buy or craft", "Every recipe of this profession: what one craft's ingredients cost at" ..
-        " today's prices against what buying the thing itself costs. The ones you know come first." }
+    list.buy.tooltip = { L["Buy or craft"], L["Every recipe of this profession: what one craft's ingredients cost at" ..
+        " today's prices against what buying the thing itself costs. The ones you know come first."] }
     list.note = UI.Label(list, 11, C.warn)
     list.note:SetPoint("TOPLEFT", 12, -32)
     list.note:SetWidth(LIST_W - 24)
@@ -1481,11 +1517,11 @@ local function build()
     end)
     detail.head = head
     detail.back = UI.Button(detail.scroll.child, "Back to cheapest", 120, 20, function(self) backToCheapest(self.step) end)
-    detail.back.tooltip = { "Back to cheapest", "Use the cheapest recipe for this step again." }
+    detail.back.tooltip = { L["Back to cheapest"], L["Use the cheapest recipe for this step again."] }
     detail.search = UI.Button(detail.scroll.child, "Search the auction house", 180, 22,
         function(self) ns.Cards.Search(self.item) end)
-    detail.search.tooltip = { "Search the auction house", "Auctionator's Shopping tab with this item. The auction" ..
-        " house must be open." }
+    detail.search.tooltip = { L["Search the auction house"], L["Auctionator's Shopping tab with this item. The auction" ..
+        " house must be open."] }
     detail.search:Hide()
     local craft = CreateFrame("Frame", nil, detail.scroll.child)
     craft:SetSize(DETAIL_CW, 24)
@@ -1523,7 +1559,7 @@ local function build()
         Window.Refresh()
     end)
     frame.favor:SetPoint("BOTTOMLEFT", LEFT + LIST_W + 10, 14)
-    frame.favor.tooltip = { "Merchant's Favor recipes", "Also use recipes bought with Merchant's Favor." }
+    frame.favor.tooltip = { L["Merchant's Favor recipes"], L["Also use recipes bought with Merchant's Favor."] }
     -- the range the ladder plans, over the list (renderList places it): From and To, typed (Enter) or the mouse wheel
     -- (Shift: 10 at a time); Reset
     local range = CreateFrame("Frame", nil, frame.list)
@@ -1579,7 +1615,7 @@ local function build()
         Window.Refresh()
     end)
     range.reset:SetPoint("LEFT", range.to, "RIGHT", 10, 0)
-    range.reset.tooltip = { "Reset", "The ladder from your skill to 300 again." }
+    range.reset.tooltip = { L["Reset"], L["The ladder from your skill to 300 again."] }
     range.find = CreateFrame("EditBox", nil, range)
     range.find:SetSize(118, 20)
     UI.Panel(range.find, C.panel2, C.edge, 5, -4)
@@ -1591,7 +1627,7 @@ local function build()
     range.find:SetPoint("RIGHT", 0, 0)
     range.find.hint = UI.Label(range.find, 11, C.muted)
     range.find.hint:SetPoint("LEFT", 7, 0)
-    range.find.hint:SetText("search")
+    range.find.hint:SetText(L["search"])
     range.find:SetScript("OnTextChanged", function(self, user)
         self.hint:SetShown(self:GetText() == "")
         if not user then return end -- the box filled from the saved text, not typed in
@@ -1605,8 +1641,8 @@ local function build()
         self:ClearFocus()
         Window.Refresh(true)
     end)
-    range.find:SetScript("OnEnter", function(self) UI.Tooltip(self, { "Search",
-        "Type part of a name: the rows left are the ones that make something of that name. Escape clears it." }) end)
+    range.find:SetScript("OnEnter", function(self) UI.Tooltip(self, { L["Search"],
+        L["Type part of a name: the rows left are the ones that make something of that name. Escape clears it."] }) end)
     range.find:SetScript("OnLeave", UI.HideTooltip)
     frame.range = range
     buildGrip()
@@ -1645,8 +1681,29 @@ local function build()
             if frame:IsShown() then Window.Refresh(true) end
         end)
     end)
+    -- Auctionator stamps its scan time when a scan starts, not when it ends, so its prices land minutes after that
+    -- clock moved and nothing else says they are there (AuctionDB's time is its finished scan's). Its own event is
+    -- what says the database has them. Registered once, when the window is first opened: Auctionator has loaded by
+    -- then, whatever the order the game loaded the addons in.
+    local listening = false
+    local function watchAuctionator()
+        if listening or not (Auctionator and Auctionator.EventBus and Auctionator.EventBus.Register) then return end
+        local names = {}
+        for _, scan in ipairs({ Auctionator.FullScan or {}, Auctionator.IncrementalScan or {} }) do
+            local done = scan.Events and scan.Events.ScanComplete
+            if done then names[#names + 1] = done end
+        end
+        if #names == 0 then return end
+        listening = pcall(Auctionator.EventBus.Register, Auctionator.EventBus, { ReceiveEvent = function()
+            ns.Prices.Scanned()
+            version = version + 1
+            if frame:IsShown() then Window.Refresh(true) end
+        end }, names)
+    end
+
     frame:SetScript("OnShow", function()
         fitScreen()
+        watchAuctionator()
         for _, e in ipairs(CRAFT_WATCH) do pcall(craftEvents.RegisterEvent, craftEvents, e) end
         shownProf = nil -- opening shows the row you looked at last, else the step you're on
         Window.Refresh(true)
@@ -1699,7 +1756,11 @@ function Window.Refresh(cached)
         ladder, lookup = cache[key].ladder, cache[key].lookup
     else
         if account then -- an `and ... or` here would keep only the first of the three it returns
-            ladder, lookup, ms = ns.CalculateDisenchant()
+            -- a bag change can't move the auction house's rows, and pricing every item that can be disenchanted is
+            -- the most of the work: they are kept while everything else `fresh` looks at is the same
+            local old = cache[key]
+            local keep = old and old.version == version and old.scan == lastScan() and old.ladder.auctionRows
+            ladder, lookup, ms = ns.CalculateDisenchant(keep or nil)
         else
             ladder, lookup, ms = ns.Calculate(data)
         end
@@ -1749,7 +1810,7 @@ function Window.Refresh(cached)
         f:SetShown(not idle)
     end
     if idle then
-        frame.subtitle:SetText("No profession yet")
+        frame.subtitle:SetText(L["No profession yet"])
         frame.favor:Hide()
         frame.range:Hide()
         frame.settings:Hide()

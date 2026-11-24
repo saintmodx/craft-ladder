@@ -44,7 +44,7 @@ function BuyCraft.Rows(base)
                           canCook = select(2, ns.Ladder.HaveCrafts({ owned = state.owned or {},
                               vendor = data.vendorPrices or {}, faction = state.faction }, rec)),
                           owned = (state.owned or {})[rec.makes],
-                          find = ns.Describe.Searchable(rec) }
+                          find = ns.Describe.Searchable(spell, rec) }
             if row.cost and row.price then
                 row.diff = row.cost - row.price
                 row.each = row.diff / made

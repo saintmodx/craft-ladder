@@ -14,6 +14,7 @@ ns.Cards = Cards
 -- shared with the window (UI/Window.lua)
 local S = Window.Shared
 local W, DETAIL_CW, STEP_COLOR, BAG_ICON, RANK_ICON = S.W, S.DETAIL_CW, S.STEP_COLOR, S.BAG_ICON, S.RANK_ICON
+local LIST_W, CARD_MIN_CW = S.LIST_W, S.CARD_MIN_CW
 local craftsWord, wait, recipeIcon, toolUsers, gather = S.craftsWord, S.wait, S.recipeIcon, S.toolUsers, S.gather
 local duration, barsText, useLevel, signed = S.duration, S.barsText, S.useLevel, S.signed
 local hex = UI.Hex
@@ -573,6 +574,8 @@ local function craftBar(step, rec)
     if prof.kind or ns.Player.viewing then return end -- gathering and Lockpicking: nothing to craft here; nor for
                                                       -- another character
     local bar = frame.detail.craft
+    bar:SetWidth(CW)
+    bar.note:SetWidth(math.max(60, CW - 196)) -- right of the box and the Craft button
     bar.step, bar.rec, bar.need = step, rec, math.ceil(step.crafts)
     bar:ClearAllPoints()
     bar:SetPoint("TOPLEFT", 0, -y)
@@ -1667,7 +1670,8 @@ end
 
 local function renderDetail()
     local d = frame.detail
-    CW = math.max(DETAIL_CW, frame:GetWidth() - (W - DETAIL_CW))
+    -- what a bigger window adds, less what the splitter gave the list; never under what the card needs
+    CW = math.max(CARD_MIN_CW, frame:GetWidth() - (W - DETAIL_CW) - (Window.ListWidth() - LIST_W))
     d.head:Fit(CW)
     for _, p in pairs(pools) do p:ReleaseAll() end
     d.head:Hide()

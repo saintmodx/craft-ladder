@@ -883,4 +883,9 @@ ns.Locales.koKR = {
         "지금 만들 수 있는 것, 배우는 숙련도순. 클릭하면 접거나 펼칩니다.",
     ["The rest of the profession's recipes: what each would cost to make, and how to learn it. Click to fold" ..
         " or open."] = "이 전문 기술의 남은 제조법: 각각 만들면 드는 비용과 배우는 방법. 클릭하면 접거나 펼칩니다.",
+
+    -- The splitter between the list and the step's details
+    ["List width"] = "목록 너비",
+    ["Drag it: the list takes the room and the step's details give it, down to as much as they need to be" ..
+        " read."] = "끌어 보세요: 목록이 자리를 가져가고 단계 상세가 내줍니다. 상세는 읽을 수 있는 만큼은 남깁니다.",
 }

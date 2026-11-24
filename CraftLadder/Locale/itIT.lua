@@ -985,4 +985,10 @@ ns.Locales.itIT = {
     ["The rest of the profession's recipes: what each would cost to make, and how to learn it. Click to fold" ..
         " or open."] = "Le altre ricette della professione: quanto costerebbe creare ognuna, e come impararla." ..
         " Clic per chiudere o aprire.",
+
+    -- The splitter between the list and the step's details
+    ["List width"] = "Larghezza della lista",
+    ["Drag it: the list takes the room and the step's details give it, down to as much as they need to be" ..
+        " read."] = "Trascinalo: la lista prende lo spazio e i dettagli lo cedono, fino a quanto serve loro" ..
+        " per restare leggibili.",
 }

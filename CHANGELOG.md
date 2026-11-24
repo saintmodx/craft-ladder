@@ -7,6 +7,12 @@ version numbers [Semantic Versioning](https://semver.org).
 
 ### Added
 
+- The list of steps can be made wider: drag the line between it and the step's details to the right and the list
+  takes the room, to the left and it gives it back. Long names and the two bars over the list get the space they
+  need. The details never give up more than the window added, so nothing in them is ever cut short - make the
+  window bigger (drag its corner) and that is the room the list can take. The width is the account's and holds
+  through a /reload.
+
 - **Buy or craft**: a bar over the list, next to the Merchant's Favor one, shows every recipe of the profession with
   what one craft's ingredients cost at today's prices against what buying the same thing costs, and says which is
   cheaper and by how much. Meant for the materials you keep remaking: leather, bars, cloth, bolts, oils. The recipes

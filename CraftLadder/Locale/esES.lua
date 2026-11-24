@@ -989,4 +989,10 @@ ns.Locales.esES = {
     ["The rest of the profession's recipes: what each would cost to make, and how to learn it. Click to fold" ..
         " or open."] = "El resto de las recetas de la profesión: lo que costaría fabricar cada una, y cómo" ..
         " aprenderla. Clic para plegar o desplegar.",
+
+    -- The splitter between the list and the step's details
+    ["List width"] = "Ancho de la lista",
+    ["Drag it: the list takes the room and the step's details give it, down to as much as they need to be" ..
+        " read."] = "Arrástralo: la lista toma el espacio y los detalles lo ceden, hasta lo que necesitan para" ..
+        " leerse.",
 }

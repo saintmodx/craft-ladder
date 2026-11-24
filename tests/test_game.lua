@@ -466,6 +466,51 @@ expect("... Ctrl + wheel stops where 1038 x 560 still fits", frame:GetScale() * 
 UIParent:SetSize(1920, 1080)
 mock.click(frame.grip, "RightButton")
 
+-- the splitter between the list and the step's details: dragged right the list takes the room a bigger window
+-- brought, and the details never go under the width they have at the smallest window (their lines would clip)
+do
+    expect("the smallest window has nothing to give: the list stays 360", frame:GetWidth() == 1038
+        and frame.list:GetWidth() == 360 and frame.split:IsShown())
+    ns.Window.SetListWidth(500)
+    expect("... the splitter has nowhere to go there", frame.list:GetWidth() == 360
+        and CraftLadderDB.listWidth == nil)
+    frame:SetSize(1300, 700)
+    ns.Window.Refresh(true)
+    local most = 1300 - 170 - 488 - 20 -- the menu, the details' least, the gap and the edge
+    mock.cursor = { 500, 300 }
+    frame.split.scripts.OnEnter(frame.split)
+    frame.split.scripts.OnMouseDown(frame.split)
+    mock.cursor = { 560, 300 }
+    frame.split.scripts.OnUpdate(frame.split)
+    frame.split.scripts.OnMouseUp(frame.split)
+    frame.split.scripts.OnLeave(frame.split)
+    expect("dragged 60 right: the list is 420 wide, saved for the account", frame.list:GetWidth() == 420
+        and CraftLadderDB.listWidth == 420)
+    expect("... the rows, the range and the footer follow", rows()[1]:GetWidth() == 420 - 26
+        and frame.range:GetWidth() == 420 - 24 and frame.total:GetWidth() == 420 - 8)
+    expect("... and the details give up exactly that room", frame.detail.head:GetWidth() == 1300 - 580 - 60)
+    ns.Window.SetListWidth(1300) -- as far right as the mouse can drag it
+    ns.Window.Refresh(true)
+    expect("... it stops where the details are as wide as at the smallest window",
+        frame.list:GetWidth() == most and frame.detail.head:GetWidth() == 488 - 30)
+    -- the window made smaller again: the list gives the room back, and takes it again when the window grows
+    frame:SetSize(1038, 560)
+    frame.grip.scripts.OnMouseDown(frame.grip, "LeftButton")
+    frame.grip.scripts.OnMouseUp(frame.grip, "LeftButton")
+    expect("a smaller window takes the room back from the list", frame.list:GetWidth() == 360
+        and CraftLadderDB.listWidth == most)
+    frame:SetSize(1300, 700)
+    ns.Window.Refresh(true)
+    expect("... and a wider one gives it back", frame.list:GetWidth() == most)
+    ns.Window.SetListWidth(100) -- and all the way back
+    ns.Window.Refresh(true)
+    expect("... dragged back to 360 nothing is saved", frame.list:GetWidth() == 360
+        and CraftLadderDB.listWidth == nil and frame.detail.head:GetWidth() == 1300 - 580)
+    frame:SetSize(1038, 560)
+    CraftLadderDB.windowSize = nil
+    ns.Window.Refresh(true)
+end
+
 -- the game's own tooltips of the dishes
 local function hover(w) w.scripts.OnEnter(w); local item = rawget(GameTooltip, "tipItem"); w.scripts.OnLeave(w); return item end
 local dish = ns.COOKING.recipes[rows()[1].step.recipe].makes

@@ -983,4 +983,9 @@ ns.Locales.ptBR = {
     ["The rest of the profession's recipes: what each would cost to make, and how to learn it. Click to fold" ..
         " or open."] = "As demais receitas da profissão: quanto custaria fazer cada uma, e como aprendê-la." ..
         " Clique para fechar ou abrir.",
+
+    -- The splitter between the list and the step's details
+    ["List width"] = "Largura da lista",
+    ["Drag it: the list takes the room and the step's details give it, down to as much as they need to be" ..
+        " read."] = "Arraste: a lista toma o espaço e os detalhes cedem, até o que precisam para serem lidos.",
 }

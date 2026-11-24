@@ -970,4 +970,10 @@ ns.Locales.ukUA = {
     ["The rest of the profession's recipes: what each would cost to make, and how to learn it. Click to fold" ..
         " or open."] = "Решта рецептів професії: у що стало б створення кожного і як його вивчити. Клік, щоб" ..
         " згорнути або розгорнути.",
+
+    -- The splitter between the list and the step's details
+    ["List width"] = "Ширина списку",
+    ["Drag it: the list takes the room and the step's details give it, down to as much as they need to be" ..
+        " read."] = "Потягніть: список забирає місце, подробиці кроку віддають — до того, скільки їм потрібно," ..
+        " щоб їх можна було читати.",
 }

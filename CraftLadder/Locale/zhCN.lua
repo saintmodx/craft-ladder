@@ -855,4 +855,9 @@ ns.Locales.zhCN = {
         "你现在就能做的东西，按学会所需技能排列。点击可折叠或展开。",
     ["The rest of the profession's recipes: what each would cost to make, and how to learn it. Click to fold" ..
         " or open."] = "这个专业其余的配方：每个做出来要多少钱，以及怎么学。点击可折叠或展开。",
+
+    -- The splitter between the list and the step's details
+    ["List width"] = "列表宽度",
+    ["Drag it: the list takes the room and the step's details give it, down to as much as they need to be" ..
+        " read."] = "拖动它：列表占走空间，步骤详情让出空间，直到详情只剩下够看清的宽度。",
 }

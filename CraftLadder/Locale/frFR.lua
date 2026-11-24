@@ -1003,4 +1003,10 @@ ns.Locales.frFR = {
     ["The rest of the profession's recipes: what each would cost to make, and how to learn it. Click to fold" ..
         " or open."] = "Les autres recettes du métier : ce que chacune coûterait à fabriquer, et comment" ..
         " l'apprendre. Clic pour plier ou déplier.",
+
+    -- The splitter between the list and the step's details
+    ["List width"] = "Largeur de la liste",
+    ["Drag it: the list takes the room and the step's details give it, down to as much as they need to be" ..
+        " read."] = "Tire-le : la liste prend la place et les détails la cèdent, jusqu'à ce qu'il leur faut" ..
+        " pour rester lisibles.",
 }

@@ -964,4 +964,10 @@ ns.Locales.ruRU = {
     ["The rest of the profession's recipes: what each would cost to make, and how to learn it. Click to fold" ..
         " or open."] = "Остальные рецепты профессии: во что встало бы создание каждого и как его выучить. Клик" ..
         " сворачивает и разворачивает.",
+
+    -- The splitter between the list and the step's details
+    ["List width"] = "Ширина списка",
+    ["Drag it: the list takes the room and the step's details give it, down to as much as they need to be" ..
+        " read."] = "Потяните: список забирает место, подробности шага отдают — до того, сколько им нужно," ..
+        " чтобы их можно было читать.",
 }

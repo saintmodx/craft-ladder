@@ -20,10 +20,12 @@ ns.Window = Window
 local W, H = 1038, 560 -- the smallest the window gets; drag its corner to make it bigger
 local MAX_W, MAX_H = 1600, 1200
 local MIN_SCALE, MAX_SCALE = 1, 1.5 -- Ctrl + mouse wheel
-local LIST_W = 360
+local LIST_W = 360 -- the ladder's list: its narrowest, and the width it starts at
+local CARD_MIN = 488 -- the step's card never goes under this: what it has at LIST_W, so its lines never clip
 local MENU_W = 150
 local LEFT = 12 + MENU_W + 8 -- where the skill bar, the ladder and the footer start, right of the menu
 local DETAIL_CW = W - LEFT - LIST_W - 8 - 12 - 22 - 8 -- width of the step details' content at the smallest size
+local CARD_MIN_CW = CARD_MIN - 22 - 8 -- the same for the narrowest card: its scroll bar and the gap taken off
 local RANK_NAMES = { { 0, 75, "Apprentice" }, { 75, 150, "Journeyman" }, { 150, 225, "Expert" }, { 225, 300, "Artisan" } }
 -- the mode switch by profession: Skill | AH sales | Profit (crafting's Skill is named Vendor sales)
 local MODE_TIPS = {
@@ -95,6 +97,24 @@ end
 
 local frame
 local ladder, lookup
+
+-- How wide the ladder's list is now: what the splitter was dragged to (ns.db.listWidth, the account's), never
+-- narrower than LIST_W and never so wide that the card would go under CARD_MIN at this window size.
+local function listWidth()
+    local room = (frame and frame:GetWidth() or W) - LEFT - CARD_MIN - 20 -- 8 between the two, 12 at the edge
+    return math.max(LIST_W, math.min(ns.db and ns.db.listWidth or LIST_W, math.floor(room)))
+end
+Window.ListWidth = listWidth
+
+-- The splitter dragged, or the window made smaller: the list takes what it can of the width asked for. The default
+-- is saved as nothing, as everywhere else here.
+function Window.SetListWidth(w)
+    local room = (frame and frame:GetWidth() or W) - LEFT - CARD_MIN - 20
+    w = math.max(LIST_W, math.min(math.floor(w + 0.5), math.floor(room)))
+    ns.db.listWidth = w > LIST_W and w or nil
+    if frame and frame.list then frame.list:SetWidth(listWidth()) end
+    return listWidth()
+end
 local prof -- the profession shown (its data)
 local findText = "" -- the search box: the Buy or craft view's and Profit's
 local selected = 1
@@ -481,6 +501,10 @@ local function foodColor(step, rec, skill)
 end
 
 local function fillRow(row, step, index)
+    local lw = listWidth()
+    row:SetWidth(lw - 26)
+    row.name:SetWidth(lw - 26 - 44 - 72)
+    row.sub:SetWidth(lw - 26 - 44 - 72)
     row.index, row.step = index, step
     row.icon:SetVertexColor(1, 1, 1) -- a pooled row may have been a red one
     row.accent:SetShown(index == 1)
@@ -685,7 +709,9 @@ local function renderList()
     local buyCount = not ladder.account and ns.Settings.Bar("buy") and ns.BuyCraft.Count(prof) or 0
     -- the two bars share the line when a profession has both: Buy or craft left, Favor right
     local both = favorCount > 0 and buyCount > 0
-    local barW = both and (LIST_W - 30) / 2 or LIST_W - 24
+    local lw = listWidth()
+    local barW = both and (lw - 30) / 2 or lw - 24
+    list.note:SetWidth(lw - 24)
     list.favor:SetShown(favorCount > 0)
     list.favor:SetWidth(barW)
     list.favor:ClearAllPoints()
@@ -735,6 +761,7 @@ local function renderList()
     end
     local function heading(text, count, tooltip, toggle, shut)
         local h = headPool:Get(list.scroll.child)
+        h:SetWidth(listWidth() - 26)
         h:SetPoint("TOPLEFT", 2, -y)
         h.title:SetText(text)
         UI.SetColor(h.title, count and C.gold or C.muted)
@@ -805,7 +832,7 @@ end
 -- The step details (right) are UI/Cards.lua's, the menu (left) UI/Menu.lua's: what they share with the window
 ---------------------------------------------------------------------------------------------------------------
 
-Window.Shared = { W = W, DETAIL_CW = DETAIL_CW, MENU_W = MENU_W, STEP_COLOR = STEP_COLOR, BAG_ICON = BAG_ICON,
+Window.Shared = { W = W, DETAIL_CW = DETAIL_CW, LIST_W = LIST_W, CARD_MIN_CW = CARD_MIN_CW, MENU_W = MENU_W, STEP_COLOR = STEP_COLOR, BAG_ICON = BAG_ICON,
                   RANK_ICON = RANK_ICON, craftsWord = craftsWord, wait = wait, recipeIcon = recipeIcon,
                   toolUsers = toolUsers, gather = gather, duration = duration, barsText = barsText,
                   useLevel = useLevel, favorSub = favorSub, foodColor = foodColor, MODE_TIPS = MODE_TIPS,
@@ -821,7 +848,7 @@ renderDetail = function() ns.Cards.Render(frame, ladder, lookup, prof, selected)
 -- longer than English's, so the padding goes first and then the text size, down to where the row still fits: it
 -- must never run over the step's card.
 local function fitBar(bar)
-    local room, pad, size = LIST_W - 24 - 4 * (#bar - 1), 18, 11
+    local room, pad, size = listWidth() - 24 - 4 * (#bar - 1), 18, 11
     local function widest()
         local w = 0
         for _, b in ipairs(bar) do
@@ -895,7 +922,8 @@ local function widenList(wide)
     list:ClearAllPoints()
     list:SetPoint("TOPLEFT", LEFT, -130)
     list:SetPoint("BOTTOMLEFT", LEFT, 42)
-    if wide then list:SetPoint("BOTTOMRIGHT", -12, 42) else list:SetWidth(LIST_W) end
+    if wide then list:SetPoint("BOTTOMRIGHT", -12, 42) else list:SetWidth(listWidth()) end
+    frame.split:SetShown(not wide) -- the Specialization view has no card to give room to
     list.scroll:SetShown(not wide)
     if wide then
         list.note:Hide()
@@ -947,6 +975,7 @@ end
 -- specialization's steps), saying what the ladder plans; Reset only when it isn't the default. The Buy or craft
 -- view filters by skill with the same boxes, and it and Profit have the search box next to them.
 local function renderRange(spec)
+    frame.range:SetWidth(listWidth() - 24)
     local state, r = ladder.state, frame.range
     local skills = not ladder.buy -- Profit: the search box alone, nothing to plan there
     if ladder.buy or (ladder.mode == "gold" and prof.resale and not ladder.favor) then
@@ -1082,6 +1111,10 @@ local function renderPrices()
 end
 
 local function renderFooter()
+    local lw = listWidth()
+    frame.total:SetWidth(lw - 8)
+    frame.favor:ClearAllPoints()
+    frame.favor:SetPoint("BOTTOMLEFT", LEFT + lw + 10, 14)
     local text = ""
     if ladder.favor then
         local learn, have = 0, ns.Favor.Have()
@@ -1217,6 +1250,7 @@ end
 -- The details and the bar laid out again for the window's size now.
 local function relayout()
     if not frame:IsShown() then return end
+    if frame.list then frame.list:SetWidth(listWidth()) end -- a smaller window: the list gives the card its room back
     if frame.camp:IsShown() then
         ns.CampPanel.Render(frame) -- its rows' text wraps to the new width
     elseif ladder and frame.spec:IsShown() then
@@ -1269,6 +1303,43 @@ local function zoom(delta)
 end
 
 -- The corner: drag it to make the window bigger; right-click it for the normal size and scale.
+-- The splitter between the list and the step's card: dragged right the list takes the room, dragged left it gives
+-- it back. The card keeps CARD_MIN whatever happens.
+local function buildSplit()
+    local split = CreateFrame("Button", nil, frame.list)
+    split:SetWidth(8)
+    split:SetPoint("TOPLEFT", frame.list, "TOPRIGHT", 0, 0)
+    split:SetPoint("BOTTOMLEFT", frame.list, "BOTTOMRIGHT", 0, 0)
+    local line = split:CreateTexture(nil, "ARTWORK")
+    line:SetPoint("CENTER")
+    line:SetSize(2, 40)
+    local function paint(c) line:SetColorTexture(c[1], c[2], c[3], 1) end
+    paint(C.edge)
+    split:SetScript("OnEnter", function(self)
+        paint(C.gold)
+        UI.Tooltip(self, { L["List width"], L["Drag it: the list takes the room and the step's details give it," ..
+            " down to as much as they need to be read."] })
+    end)
+    split:SetScript("OnLeave", function()
+        paint(C.edge)
+        UI.HideTooltip()
+    end)
+    -- while it is held, only the two panels follow the mouse: the rows, the bars and the card are drawn once, on
+    -- letting go (a draw a frame would be the whole list again)
+    split:SetScript("OnMouseDown", function(self)
+        local x = GetCursorPosition() / frame:GetEffectiveScale()
+        self.from, self.wide = x, listWidth()
+        self:SetScript("OnUpdate", function(s)
+            Window.SetListWidth(s.wide + GetCursorPosition() / frame:GetEffectiveScale() - s.from)
+        end)
+    end)
+    split:SetScript("OnMouseUp", function(self)
+        self:SetScript("OnUpdate", nil)
+        Window.Refresh(true)
+    end)
+    frame.split = split
+end
+
 local function buildGrip()
     local grip = CreateFrame("Button", nil, frame)
     grip:SetSize(14, 14)
@@ -1414,7 +1485,7 @@ local function build()
     local list = CreateFrame("Frame", nil, frame)
     list:SetPoint("TOPLEFT", LEFT, -130)
     list:SetPoint("BOTTOMLEFT", LEFT, 42)
-    list:SetWidth(LIST_W)
+    list:SetWidth(listWidth())
     UI.Panel(list, C.panel, C.edge, 8)
     -- plan for the skill, or for gold (placed by renderHeader: the professions have different ones)
     list.modes = {}
@@ -1644,6 +1715,7 @@ local function build()
         L["Type part of a name: the rows left are the ones that make something of that name. Escape clears it."] }) end)
     range.find:SetScript("OnLeave", UI.HideTooltip)
     frame.range = range
+    buildSplit()
     buildGrip()
 
     -- the Craft bar follows the profession window, its recipe list and combat, only while the window is open

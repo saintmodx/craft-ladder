@@ -14,7 +14,8 @@ version numbers [Semantic Versioning](https://semver.org).
   boxes over the list leave only the skills you want, and the search box leaves the recipes whose item matches what
   you type. A row's card compares both sides and lists what one craft takes. What's in your
   bags doesn't make a craft free here: both sides are prices, so the answer doesn't change every time you buy
-  something.
+  something. The bar works like the modes over the list: it stays lit while the view is open, and Skill, Profit or
+  another mode brings the ladder back.
 
 - Profit has the same search box over its list: type part of a name and only the recipes that make something of
   that name stay.

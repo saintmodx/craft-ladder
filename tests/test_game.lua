@@ -828,8 +828,12 @@ do
     expect("Mining: Buy or craft is its smelting recipes, smelt against buy", #smelts > 0
         and smelts[1].step.kind == "buycraft"
         and strip(frame.detail.head.line2.text):find("^Make ") and not frame.detail.craft.shown)
-    mock.click(frame.list.buy)
-    expect("... and the bar brings the zones back", rows()[1].step.kind == "mine")
+    local wasMode = char().prof.mining.mode
+    mock.click(frame.list.modes[1])
+    expect("... and a mode button brings the zones back", rows()[1].step.kind == "mine"
+        and not char().prof.mining.buyView)
+    ns.Player.Prof(ns.ProfessionByKey.mining).mode = wasMode
+    ns.Window.Refresh()
 end
 local mineOpt, smeltOpt
 for _, o in ipairs(options()) do
@@ -1140,7 +1144,7 @@ do
     local known = 0
     for _, r in ipairs(all) do if r.step.known then known = known + 1 end end
     expect("Buy or craft: every recipe, in two groups, the ones you know first", #all > #mine
-        and all[1].step.kind == "buycraft" and strip(frame.list.buy.label.text) == "Back to your ladder"
+        and all[1].step.kind == "buycraft" and strip(frame.list.buy.label.text):find("^Buy or craft %(%d+%)$")
         and #heads == 2 and strip(heads[1].title.text) == "Recipes you know"
         and strip(heads[2].title.text) == "Not known yet" and known == #mine and all[#mine].step.known
         and all[#mine + 1].step.known == nil
@@ -1202,9 +1206,16 @@ do
         and rows()[1].step.known == nil)
     mock.click(headings()[1])
     expect("... and opens again", not char().prof.blacksmithing.buyFolded["Recipes you know"])
+    expect("... the bar stays lit while the view is open, and no mode button does", frame.list.buy.active
+        and not frame.list.modes[2].active)
     mock.click(frame.list.buy)
-    expect("... the bar again: back to the ladder", rows()[1].step.kind ~= "buycraft"
+    expect("... clicking it again changes nothing: it is not a way back", rows()[1].step.kind == "buycraft")
+    local wasMode = char().prof.blacksmithing.mode
+    mock.click(frame.list.modes[2])
+    expect("... a mode button leads back to the ladder", rows()[1].step.kind ~= "buycraft"
         and not char().prof.blacksmithing.buyView)
+    ns.Player.Prof(ns.BLACKSMITHING).mode = wasMode
+    ns.Window.Refresh()
     for _, spell in ipairs(mine) do ns.Player.Prof(ns.BLACKSMITHING).known[spell] = nil end
     ns.Window.Refresh()
 end

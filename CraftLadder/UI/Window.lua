@@ -698,8 +698,7 @@ local function renderList()
     list.buy:SetWidth(barW)
     list.buy:ClearAllPoints()
     list.buy:SetPoint("TOPLEFT", 12, -30)
-    list.buy.label:SetText(ladder.buy and L["Back to your ladder"]
-        or L["Buy or craft (%d)"]:format(buyCount))
+    list.buy.label:SetText(L["Buy or craft (%d)"]:format(buyCount))
     list.buy:SetActive(ladder.buy or false)
     local bar = (favorCount > 0 or buyCount > 0) and 26 or 0
     -- the range the ladder plans, right over its rows (renderRange shows it or not)
@@ -877,7 +876,7 @@ local function renderHeader()
             -- the words are translated here, not where the tables are written: the language can change
             local name = L[tips.names and tips.names[b.mode] or b.name]
             b.label:SetText(name)
-            b:SetActive(b.mode == ladder.mode and not specView)
+            b:SetActive(b.mode == ladder.mode and not specView and not ladder.buy)
             b.tooltip = { name, L[tip] }
             bar[#bar + 1] = b
         end
@@ -1451,8 +1450,8 @@ local function build()
     -- every recipe of the profession, what it costs to make against what it costs to buy
     list.buy = UI.Button(list, "", LIST_W - 24, 20, function()
         local p = ns.Player.Prof(prof)
-        p.buyView = not p.buyView or nil
-        if p.buyView then p.favorView, p.specView = nil, nil end
+        if p.buyView then return end -- a mode like the others: a mode button leads back, as from Specialization
+        p.buyView, p.favorView, p.specView = true, nil, nil
         findText = ""
         Window.Refresh(true) -- the rows are calculated once, from the ladder already there
     end)

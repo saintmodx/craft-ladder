@@ -930,4 +930,50 @@ ns.Locales.ukUA = {
         "Врятуйте 15 поранених солдатів бинтами, які дає лікар, поки 6 із них не померли.",
     ["Then learn the mastery from the trainer who gave you the quest."] = "Потім вивчіть майстерність у" ..
         " вчителя, який дав завдання.",
+
+    -- Buy or craft: the bar over the list, its groups, its rows and its card
+    [", %s an item"] = ", %s за штуку",
+    ["No price for one of the two sides yet."] = "Для однієї з двох сторін ціни поки немає.",
+    ["Cheaper to make: one craft saves %s%s."] = "Зробити дешевше: одне створення економить %s%s.",
+    ["Cheaper to buy: making it costs %s more%s."] = "Купити дешевше: зробити коштує на %s більше%s.",
+    ["The same either way at today's prices."] = "За сьогоднішніми цінами однаково і так, і так.",
+    ["Make %s, buy %s%s"] = "Зробити %s, купити %s%s",
+    [" (one craft makes %d)"] = " (одне створення дає %d)",
+    ["%s has no price: Craft Ladder can't say what a craft costs. Search the auction house for it, or scan" ..
+        " again."] = "У %s немає ціни: Craft Ladder не може сказати, у що стане створення. Знайдіть його на" ..
+        " аукціоні або пересканувайте.",
+    ["Nothing says what %s costs to buy: nobody lists it, no vendor sells it, or it's soulbound (made only," ..
+        " never bought)."] = "Ніщо не каже, у що стане покупка %s: ніхто його не виставляє, торговці не" ..
+        " продають, або він прив'язується до персонажа (тільки створити, купити не можна).",
+    ["%d listed at the auction house now."] = "Зараз на аукціоні виставлено %d.",
+    ["Making it needs %s %d, and yours is %d."] = "Для створення потрібна навичка %s %d, а у вас %d.",
+    ["You have %s: they're priced here all the same, since you could sell them instead."] =
+        "У вас є %s: тут вони все одно пораховані за ціною, адже їх можна й продати.",
+    ["Nothing matches"] = "Нічого не знайдено",
+    ["Nothing here is called %s."] = "Тут немає нічого з назвою %s.",
+    ["Favor (%d)"] = "Прихильність (%d)",
+    ["Buy or craft (%d)"] = "Купити або зробити (%d)",
+    ["%d recipes here, %d cheaper to make than to buy (one craft, at today's prices)"] =
+        "Тут %d рецептів, %d дешевше зробити, ніж купити (одне створення, за сьогоднішніми цінами)",
+    ["Buy or craft"] = "Купити або зробити",
+    ["Every recipe of this profession: what one craft's ingredients cost at today's prices against what buying" ..
+        " the thing itself costs. The ones you know come first."] = "Усі рецепти цієї професії: у що стануть" ..
+        " складники одного створення за сьогоднішніми цінами проти того, у що стане покупка самої речі." ..
+        " Спочатку ті, що ви знаєте.",
+    ["search"] = "пошук",
+    ["Type part of a name: the rows left are the ones that make something of that name. Escape clears it."] =
+        "Введіть частину назви: залишаться рядки, які роблять річ із такою назвою. Escape очищає.",
+    ["Recipes you know"] = "Рецепти, які ви знаєте",
+    ["Not known yet"] = "Ще не вивчені",
+    ["What you can make now, by the skill it's learned at. Click to fold or open."] =
+        "Що ви можете зробити зараз, за навичкою, на якій це вивчають. Клік, щоб згорнути або розгорнути.",
+    ["The rest of the profession's recipes: what each would cost to make, and how to learn it. Click to fold" ..
+        " or open."] = "Решта рецептів професії: у що стало б створення кожного і як його вивчити. Клік, щоб" ..
+        " згорнути або розгорнути.",
+
+    -- The splitter between the list and the step's details
+    ["List width"] = "Ширина списку",
+    ["Drag it: the list takes the room and the step's details give it, down to as much as they need to be" ..
+        " read."] = "Потягніть: список забирає місце, подробиці кроку віддають — до того, скільки їм потрібно," ..
+        " щоб їх можна було читати.",
 }

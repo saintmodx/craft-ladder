@@ -847,4 +847,45 @@ ns.Locales.koKR = {
     ["Save 15 wounded soldiers with the Triage Bandages the doctor gives you, before 6 of them die."] =
         "의사가 주는 응급 붕대로 부상병 6명이 죽기 전에 15명을 살리세요.",
     ["Then learn the mastery from the trainer who gave you the quest."] = "그런 다음 퀘스트를 준 교관에게서 숙련을 배우세요.",
+
+    -- Buy or craft: the bar over the list, its groups, its rows and its card
+    [", %s an item"] = ", 개당 %s",
+    ["No price for one of the two sides yet."] = "두 쪽 중 하나는 아직 가격이 없습니다.",
+    ["Cheaper to make: one craft saves %s%s."] = "만드는 쪽이 쌉니다: 한 번 제작에 %s%s 절약.",
+    ["Cheaper to buy: making it costs %s more%s."] = "사는 쪽이 쌉니다: 만들면 %s 더 듭니다%s.",
+    ["The same either way at today's prices."] = "오늘 가격으로는 어느 쪽이든 같습니다.",
+    ["Make %s, buy %s%s"] = "제작 %s, 구매 %s%s",
+    [" (one craft makes %d)"] = " (한 번 제작에 %d개)",
+    ["%s has no price: Craft Ladder can't say what a craft costs. Search the auction house for it, or scan" ..
+        " again."] = "%s의 가격이 없습니다: Craft Ladder가 제작 비용을 알 수 없습니다. 경매장에서 찾아보거나 다시 검색하세요.",
+    ["Nothing says what %s costs to buy: nobody lists it, no vendor sells it, or it's soulbound (made only," ..
+        " never bought)."] = "%s의 구매 가격을 알 길이 없습니다: 등록한 사람도, 파는 상인도 없거나, 귀속 아이템입니다(만들 수만 있고 살 수는 없음).",
+    ["%d listed at the auction house now."] = "지금 경매장에 %d개 등록.",
+    ["Making it needs %s %d, and yours is %d."] = "만들려면 %s %d이(가) 필요하고 당신은 %d입니다.",
+    ["You have %s: they're priced here all the same, since you could sell them instead."] =
+        "%s 보유: 대신 팔 수도 있으니 여기서도 가격으로 셉니다.",
+    ["Nothing matches"] = "일치하는 것 없음",
+    ["Nothing here is called %s."] = "여기에 %s(이)라는 것은 없습니다.",
+    ["Favor (%d)"] = "호의 (%d)",
+    ["Buy or craft (%d)"] = "구매 또는 제작 (%d)",
+    ["%d recipes here, %d cheaper to make than to buy (one craft, at today's prices)"] =
+        "여기 제조법 %d개, 그중 %d개는 사기보다 만드는 쪽이 쌉니다 (한 번 제작, 오늘 가격)",
+    ["Buy or craft"] = "구매 또는 제작",
+    ["Every recipe of this profession: what one craft's ingredients cost at today's prices against what buying" ..
+        " the thing itself costs. The ones you know come first."] = "이 전문 기술의 모든 제조법: 한 번 제작에 드는 재료값을 오늘 가격으로," ..
+        " 물건 자체를 사는 값과 나란히 봅니다. 이미 아는 것이 먼저 나옵니다.",
+    ["search"] = "찾기",
+    ["Type part of a name: the rows left are the ones that make something of that name. Escape clears it."] =
+        "이름의 일부를 입력하세요: 그 이름의 물건을 만드는 줄만 남습니다. Esc로 비웁니다.",
+    ["Recipes you know"] = "알고 있는 제조법",
+    ["Not known yet"] = "아직 모르는 것",
+    ["What you can make now, by the skill it's learned at. Click to fold or open."] =
+        "지금 만들 수 있는 것, 배우는 숙련도순. 클릭하면 접거나 펼칩니다.",
+    ["The rest of the profession's recipes: what each would cost to make, and how to learn it. Click to fold" ..
+        " or open."] = "이 전문 기술의 남은 제조법: 각각 만들면 드는 비용과 배우는 방법. 클릭하면 접거나 펼칩니다.",
+
+    -- The splitter between the list and the step's details
+    ["List width"] = "목록 너비",
+    ["Drag it: the list takes the room and the step's details give it, down to as much as they need to be" ..
+        " read."] = "끌어 보세요: 목록이 자리를 가져가고 단계 상세가 내줍니다. 상세는 읽을 수 있는 만큼은 남깁니다.",
 }

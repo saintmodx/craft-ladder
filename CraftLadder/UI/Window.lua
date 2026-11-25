@@ -20,10 +20,12 @@ ns.Window = Window
 local W, H = 1038, 560 -- the smallest the window gets; drag its corner to make it bigger
 local MAX_W, MAX_H = 1600, 1200
 local MIN_SCALE, MAX_SCALE = 1, 1.5 -- Ctrl + mouse wheel
-local LIST_W = 360
+local LIST_W = 360 -- the ladder's list: its narrowest, and the width it starts at
+local CARD_MIN = 488 -- the step's card never goes under this: what it has at LIST_W, so its lines never clip
 local MENU_W = 150
 local LEFT = 12 + MENU_W + 8 -- where the skill bar, the ladder and the footer start, right of the menu
 local DETAIL_CW = W - LEFT - LIST_W - 8 - 12 - 22 - 8 -- width of the step details' content at the smallest size
+local CARD_MIN_CW = CARD_MIN - 22 - 8 -- the same for the narrowest card: its scroll bar and the gap taken off
 local RANK_NAMES = { { 0, 75, "Apprentice" }, { 75, 150, "Journeyman" }, { 150, 225, "Expert" }, { 225, 300, "Artisan" } }
 -- the mode switch by profession: Skill | AH sales | Profit (crafting's Skill is named Vendor sales)
 local MODE_TIPS = {
@@ -95,7 +97,26 @@ end
 
 local frame
 local ladder, lookup
+
+-- How wide the ladder's list is now: what the splitter was dragged to (ns.db.listWidth, the account's), never
+-- narrower than LIST_W and never so wide that the card would go under CARD_MIN at this window size.
+local function listWidth()
+    local room = (frame and frame:GetWidth() or W) - LEFT - CARD_MIN - 20 -- 8 between the two, 12 at the edge
+    return math.max(LIST_W, math.min(ns.db and ns.db.listWidth or LIST_W, math.floor(room)))
+end
+Window.ListWidth = listWidth
+
+-- The splitter dragged, or the window made smaller: the list takes what it can of the width asked for. The default
+-- is saved as nothing, as everywhere else here.
+function Window.SetListWidth(w)
+    local room = (frame and frame:GetWidth() or W) - LEFT - CARD_MIN - 20
+    w = math.max(LIST_W, math.min(math.floor(w + 0.5), math.floor(room)))
+    ns.db.listWidth = w > LIST_W and w or nil
+    if frame and frame.list then frame.list:SetWidth(listWidth()) end
+    return listWidth()
+end
 local prof -- the profession shown (its data)
+local findText = "" -- the search box: the Buy or craft view's and Profit's
 local selected = 1
 local shownProf -- the profession the list showed last (nil: the window was just opened)
 -- The ladders calculated: [profession key .. ":" .. mode] = { ladder, lookup, version, bags, scan }. version counts the
@@ -243,7 +264,7 @@ end
 -- The game's tooltip of the dish (or book), with the step under it.
 local function stepTooltip(owner, step)
     if not step then return end
-    if step.kind == "favor" then
+    if step.kind == "favor" or step.kind == "buycraft" then
         UI.ItemTooltip(owner, prof.recipes[step.recipe].makes, step.recipe)
         return
     end
@@ -480,6 +501,10 @@ local function foodColor(step, rec, skill)
 end
 
 local function fillRow(row, step, index)
+    local lw = listWidth()
+    row:SetWidth(lw - 26)
+    row.name:SetWidth(lw - 26 - 44 - 72)
+    row.sub:SetWidth(lw - 26 - 44 - 72)
     row.index, row.step = index, step
     row.icon:SetVertexColor(1, 1, 1) -- a pooled row may have been a red one
     row.accent:SetShown(index == 1)
@@ -547,6 +572,14 @@ local function fillRow(row, step, index)
                 .. (step.needLevel and (", lvl " .. step.needLevel) or "") .. "|r") or "",
             step.cooldown and (" - " .. hex(C.warn) .. "once in " .. wait(step.cooldown) .. "|r") or "",
             ns.Describe.Unconfirmed(rec, step.learn) and (" - " .. hex(C.warn) .. "unconfirmed|r") or ""))
+    elseif step.kind == "buycraft" then
+        local rec = prof.recipes[step.recipe]
+        row.icon:SetTexture(UI.ItemIcon(rec.makes))
+        row.name:SetText(rec.name)
+        UI.SetColor(row.name, step.needSkill and C.bad or step.color ~= "grey" and STEP_COLOR[step.color] or C.text)
+        row.sub:SetText(("%d | make %s, buy %s%s%s"):format(step.from,
+            step.cost and ns.Money(step.cost) or "-", step.price and ns.Money(step.price) or "-",
+            step.made > 1 and (", makes " .. step.made) or "", learnIcon(step.learn)))
     elseif step.kind == "disenchant" then
         local rec = step.data.recipes[step.recipe]
         row.icon:SetTexture(UI.ItemIcon(rec.makes))
@@ -618,6 +651,12 @@ local function fillRow(row, step, index)
         row.cost:SetText(step.cost and ns.Money(step.cost) or (hex(C.bad) .. L["no price"] .. "|r"))
     elseif step.kind == "fish" and step.cost == 0 and not step.missing then
         row.cost:SetText("") -- no lures to buy
+    elseif step.kind == "buycraft" then -- which is cheaper, and by how much for one craft
+        row.cost:SetText(step.diff == nil and (hex(C.muted) .. "no price|r")
+            or step.diff < -0.5 and (hex(C.good) .. "Make|r")
+            or step.diff > 0.5 and (hex(C.bad) .. "Buy|r") or (hex(C.muted) .. "Same|r"))
+        row.ready:SetText(step.diff and math.abs(step.diff) >= 0.5 and ("saves " .. ns.Money(math.abs(step.diff))) or "")
+        UI.SetColor(row.ready, C.good)
     elseif step.kind == "bag" then -- disenchanting: what it gains over selling; selling: what it brings
         row.cost:SetText(step.disenchant and signed(step.gain) or ns.Money(step.sale.each * step.count))
     elseif step.kind == "auction" then
@@ -627,6 +666,26 @@ local function fillRow(row, step, index)
             or signed((step.back or 0) - step.cost))
     end
     paintRow(row)
+end
+
+-- Profit under a search: only the rows whose item's name matches, with the vendor group's count moved with them.
+local function searchProfit(l)
+    local want = findText:lower()
+    local steps, vendorRows = {}, 0
+    for i, step in ipairs(l.steps) do
+        local rec = l.data.recipes[step.recipe]
+        if rec then
+            step.find = step.find or ns.Describe.Searchable(step.recipe, rec)
+            if step.find:find(want, 1, true) then
+                steps[#steps + 1] = step
+                if i <= (l.vendorRows or 0) then vendorRows = vendorRows + 1 end
+            end
+        end
+    end
+    local out = {}
+    for k, v in pairs(l) do out[k] = v end
+    out.steps, out.vendorRows, out.find = steps, l.vendorRows and vendorRows or nil, findText
+    return out
 end
 
 local function renderList()
@@ -646,12 +705,28 @@ local function renderList()
     list.note:SetShown(#notes > 0)
     -- the bar that switches to the Merchant's Favor recipes and back (a profession whose quartermaster sells some;
     -- not in the Disenchant view, which is no profession's ladder)
-    local favorCount = not ladder.account and ns.Favor.Count(prof) or 0
+    local favorCount = not ladder.account and ns.Settings.Bar("favor") and ns.Favor.Count(prof) or 0
+    local buyCount = not ladder.account and ns.Settings.Bar("buy") and ns.BuyCraft.Count(prof) or 0
+    -- the two bars share the line when a profession has both: Buy or craft left, Favor right
+    local both = favorCount > 0 and buyCount > 0
+    local lw = listWidth()
+    local barW = both and (lw - 30) / 2 or lw - 24
+    list.note:SetWidth(lw - 24)
     list.favor:SetShown(favorCount > 0)
+    list.favor:SetWidth(barW)
+    list.favor:ClearAllPoints()
+    list.favor:SetPoint("TOPLEFT", both and (12 + barW + 6) or 12, -30)
+    -- the long name doesn't fit half a line, so the bar is called just Favor while both bars show
     list.favor.label:SetText(ladder.favor and L["Back to your ladder"]
-        or L["Merchant's Favor recipes (%d)"]:format(favorCount))
+        or (both and L["Favor (%d)"] or L["Merchant's Favor recipes (%d)"]):format(favorCount))
     list.favor:SetActive(ladder.favor or false)
-    local bar = favorCount > 0 and 26 or 0
+    list.buy:SetShown(buyCount > 0)
+    list.buy:SetWidth(barW)
+    list.buy:ClearAllPoints()
+    list.buy:SetPoint("TOPLEFT", 12, -30)
+    list.buy.label:SetText(L["Buy or craft (%d)"]:format(buyCount))
+    list.buy:SetActive(ladder.buy or false)
+    local bar = (favorCount > 0 or buyCount > 0) and 26 or 0
     -- the range the ladder plans, right over its rows (renderRange shows it or not)
     frame.range:SetPoint("TOPLEFT", 12, -32 - bar)
     bar = bar + (frame.range:IsShown() and 28 or 0)
@@ -675,7 +750,8 @@ local function renderList()
     -- Food: a group per role, each folds; a class with one role (a rogue) gets the plain list. The Disenchant view's
     -- three groups fold the same way, but they're the account's, so what's folded is saved for the account.
     local roles = ladder.groups and #ladder.groups > 1 and ladder.groups
-    local shutRoles = (ladder.account and ns.db.disenchantFolded or ns.Player.Prof(prof).foodFolded) or {}
+    local foldKey = ladder.foldKey or "foodFolded"
+    local shutRoles = (ladder.account and ns.db.disenchantFolded or ns.Player.Prof(prof)[foldKey]) or {}
     for _, g in ipairs(roles or {}) do -- the picked row in a folded group gives way to the first one shown
         if selected >= g.from and selected <= g.to and shutRoles[g.name] then
             for _, o in ipairs(ladder.groups) do
@@ -685,6 +761,7 @@ local function renderList()
     end
     local function heading(text, count, tooltip, toggle, shut)
         local h = headPool:Get(list.scroll.child)
+        h:SetWidth(listWidth() - 26)
         h:SetPoint("TOPLEFT", 2, -y)
         h.title:SetText(text)
         UI.SetColor(h.title, count and C.gold or C.muted)
@@ -707,22 +784,22 @@ local function renderList()
             local group = ladder.account and DISENCHANT_GROUPS[g.key]
             local count = g.to - g.from + 1
             -- the Disenchant view: what the group brings in all, next to how many rows it has
-            heading(g.name, group and g.gain > 0 and ("%d, +%s"):format(count, ns.Money(g.gain)) or count,
-                { g.name, group and group.tip or L["Dishes for this role, by what" ..
+            heading(L[g.name], group and g.gain > 0 and ("%d, +%s"):format(count, ns.Money(g.gain)) or count,
+                { L[g.name], L[g.tip or group and group.tip or "Dishes for this role, by what" ..
                 " eating one raises. Click to fold or open."] }, function()
                 if ladder.account then
                     ns.db.disenchantFolded = ns.db.disenchantFolded or {}
                     ns.db.disenchantFolded[g.name] = not ns.db.disenchantFolded[g.name] or nil
                 else
                     local saved = ns.Player.Prof(prof)
-                    saved.foodFolded = saved.foodFolded or {}
-                    saved.foodFolded[g.name] = not saved.foodFolded[g.name] or nil
+                    saved[foldKey] = saved[foldKey] or {}
+                    saved[foldKey][g.name] = not saved[foldKey][g.name] or nil
                 end
                 Window.Refresh(true) -- only the view changes
             end, shutRoles[g.name])
             if not shutRoles[g.name] then
                 if group and g.to < g.from then
-                    heading(group.empty, nil, { L["Nothing here"], group.tip })
+                    heading(L[group.empty], nil, { L["Nothing here"], L[group.tip] })
                 end
                 rows(g.from, g.to)
             end
@@ -755,7 +832,7 @@ end
 -- The step details (right) are UI/Cards.lua's, the menu (left) UI/Menu.lua's: what they share with the window
 ---------------------------------------------------------------------------------------------------------------
 
-Window.Shared = { W = W, DETAIL_CW = DETAIL_CW, MENU_W = MENU_W, STEP_COLOR = STEP_COLOR, BAG_ICON = BAG_ICON,
+Window.Shared = { W = W, DETAIL_CW = DETAIL_CW, LIST_W = LIST_W, CARD_MIN_CW = CARD_MIN_CW, MENU_W = MENU_W, STEP_COLOR = STEP_COLOR, BAG_ICON = BAG_ICON,
                   RANK_ICON = RANK_ICON, craftsWord = craftsWord, wait = wait, recipeIcon = recipeIcon,
                   toolUsers = toolUsers, gather = gather, duration = duration, barsText = barsText,
                   useLevel = useLevel, favorSub = favorSub, foodColor = foodColor, MODE_TIPS = MODE_TIPS,
@@ -771,7 +848,7 @@ renderDetail = function() ns.Cards.Render(frame, ladder, lookup, prof, selected)
 -- longer than English's, so the padding goes first and then the text size, down to where the row still fits: it
 -- must never run over the step's card.
 local function fitBar(bar)
-    local room, pad, size = LIST_W - 24 - 4 * (#bar - 1), 18, 11
+    local room, pad, size = listWidth() - 24 - 4 * (#bar - 1), 18, 11
     local function widest()
         local w = 0
         for _, b in ipairs(bar) do
@@ -826,7 +903,7 @@ local function renderHeader()
             -- the words are translated here, not where the tables are written: the language can change
             local name = L[tips.names and tips.names[b.mode] or b.name]
             b.label:SetText(name)
-            b:SetActive(b.mode == ladder.mode and not specView)
+            b:SetActive(b.mode == ladder.mode and not specView and not ladder.buy)
             b.tooltip = { name, L[tip] }
             bar[#bar + 1] = b
         end
@@ -845,7 +922,8 @@ local function widenList(wide)
     list:ClearAllPoints()
     list:SetPoint("TOPLEFT", LEFT, -130)
     list:SetPoint("BOTTOMLEFT", LEFT, 42)
-    if wide then list:SetPoint("BOTTOMRIGHT", -12, 42) else list:SetWidth(LIST_W) end
+    if wide then list:SetPoint("BOTTOMRIGHT", -12, 42) else list:SetWidth(listWidth()) end
+    frame.split:SetShown(not wide) -- the Specialization view has no card to give room to
     list.scroll:SetShown(not wide)
     if wide then
         list.note:Hide()
@@ -860,6 +938,18 @@ end
 -- level's); To is above it, at most 300. Calculated again only when it changed.
 local function saveRange()
     local skill, r = ladder.state.skill, frame.range
+    if ladder.buy then -- the Buy or craft view: they only hide rows, so they go as low as 0
+        local p = ns.Player.Prof(prof)
+        local from = math.max(0, math.min(300, tonumber(r.from:GetText()) or 0))
+        local to = math.max(from, math.min(300, tonumber(r.to:GetText()) or 300))
+        r.from:SetText(from)
+        r.to:SetText(to)
+        local old = p.buyRange or {}
+        if from == (old.from or 0) and to == (old.to or 300) then return end
+        p.buyRange = (from > 0 or to < 300) and { from = from, to = to } or nil
+        Window.Refresh(true) -- the rows are there: only which of them show changes
+        return
+    end
     local from = prof.levelCaps and skill or math.max(skill, math.min(299, tonumber(r.from:GetText()) or skill))
     local to = math.max(from + 1, math.min(300, tonumber(r.to:GetText()) or 300))
     r.from:SetText(from)
@@ -882,9 +972,38 @@ local function saveRangeSoon()
 end
 
 -- The range's boxes: with a ladder only (not Profit, Food, Disenchant, the Merchant's Favor recipes or a
--- specialization's steps), saying what the ladder plans; Reset only when it isn't the default.
+-- specialization's steps), saying what the ladder plans; Reset only when it isn't the default. The Buy or craft
+-- view filters by skill with the same boxes, and it and Profit have the search box next to them.
 local function renderRange(spec)
+    frame.range:SetWidth(listWidth() - 24)
     local state, r = ladder.state, frame.range
+    local skills = not ladder.buy -- Profit: the search box alone, nothing to plan there
+    if ladder.buy or (ladder.mode == "gold" and prof.resale and not ladder.favor) then
+        local saved = ladder.buy and (ns.Player.Prof(prof).buyRange or {}) or {}
+        r:SetShown(not spec)
+        r.find:Show()
+        if not r.find:HasFocus() then r.find:SetText(findText or "") end
+        for _, f in ipairs({ r.from, r.to, r.reset, r.fromLabel, r.toLabel }) do f:SetShown(ladder.buy) end
+        -- Profit has the row to itself: the box takes the whole width. The Buy or craft view shares it with the
+        -- skill boxes, so there it keeps to the right.
+        r.find:ClearAllPoints()
+        if ladder.buy then
+            r.find:SetWidth(118)
+            r.find:SetPoint("RIGHT", 0, 0)
+        else
+            r.find:SetPoint("LEFT", 0, 0)
+            r.find:SetPoint("RIGHT", 0, 0)
+        end
+        if ladder.buy then
+            r.from.shown, r.to.shown = saved.from or 0, saved.to or 300
+            if not r.from:HasFocus() then r.from:SetText(r.from.shown) end
+            if not r.to:HasFocus() then r.to:SetText(r.to.shown) end
+            r.reset:SetEnabled(saved.from ~= nil or (findText or "") ~= "")
+        end
+        return
+    end
+    r.find:Hide()
+    for _, f in ipairs({ r.from, r.to, r.reset, r.fromLabel, r.toLabel }) do f:Show() end
     r:SetShown((ladder.mode == "skill" or ladder.mode == "sell") and not ladder.favor and not spec
         and state.skill < 300)
     r.from.shown, r.to.shown = state.from or state.skill, state.target
@@ -937,7 +1056,8 @@ local function renderBar()
         local fs = bar.rankText[i]
         local current = state.skill >= r[1] and state.skill < r[2] or (r[2] == 300 and state.skill >= 300)
         UI.SetColor(fs, current and C.gold or C.dim)
-        bar.rankHits[i]:SetShown(frame.range:IsShown() and not prof.levelCaps and r[2] > state.skill)
+        -- the From / To boxes, not only the row they sit in: Profit shows that row for its search box alone
+        bar.rankHits[i]:SetShown(frame.range.to:IsShown() and not prof.levelCaps and r[2] > state.skill)
     end
     -- outside the range the ladder plans: darker
     local from, to = state.from or state.skill, state.target
@@ -991,12 +1111,20 @@ local function renderPrices()
 end
 
 local function renderFooter()
+    local lw = listWidth()
+    frame.total:SetWidth(lw - 8)
+    frame.favor:ClearAllPoints()
+    frame.favor:SetPoint("BOTTOMLEFT", LEFT + lw + 10, 14)
     local text = ""
     if ladder.favor then
         local learn, have = 0, ns.Favor.Have()
         for _, s in ipairs(ladder.steps) do if s.status == "learn" then learn = learn + 1 end end
         text = L["%d Merchant's Favor recipes, %d you can learn now%s"]:format(#ladder.steps, learn,
             have and L["; you have %d favor"]:format(have) or "")
+    elseif ladder.buy then
+        local make, shown = 0, #ladder.steps
+        for _, s in ipairs(ladder.steps) do if s.diff and s.diff < -0.5 then make = make + 1 end end
+        text = L["%d recipes here, %d cheaper to make than to buy (one craft, at today's prices)"]:format(shown, make)
     elseif ladder.mode == "food" then
         text = L["%d dishes for your class; the cost is one dish from bought ingredients"]:format(#ladder.steps)
     elseif ladder.account then
@@ -1122,6 +1250,7 @@ end
 -- The details and the bar laid out again for the window's size now.
 local function relayout()
     if not frame:IsShown() then return end
+    if frame.list then frame.list:SetWidth(listWidth()) end -- a smaller window: the list gives the card its room back
     if frame.camp:IsShown() then
         ns.CampPanel.Render(frame) -- its rows' text wraps to the new width
     elseif ladder and frame.spec:IsShown() then
@@ -1174,6 +1303,43 @@ local function zoom(delta)
 end
 
 -- The corner: drag it to make the window bigger; right-click it for the normal size and scale.
+-- The splitter between the list and the step's card: dragged right the list takes the room, dragged left it gives
+-- it back. The card keeps CARD_MIN whatever happens.
+local function buildSplit()
+    local split = CreateFrame("Button", nil, frame.list)
+    split:SetWidth(8)
+    split:SetPoint("TOPLEFT", frame.list, "TOPRIGHT", 0, 0)
+    split:SetPoint("BOTTOMLEFT", frame.list, "BOTTOMRIGHT", 0, 0)
+    local line = split:CreateTexture(nil, "ARTWORK")
+    line:SetPoint("CENTER")
+    line:SetSize(2, 40)
+    local function paint(c) line:SetColorTexture(c[1], c[2], c[3], 1) end
+    paint(C.edge)
+    split:SetScript("OnEnter", function(self)
+        paint(C.gold)
+        UI.Tooltip(self, { L["List width"], L["Drag it: the list takes the room and the step's details give it," ..
+            " down to as much as they need to be read."] })
+    end)
+    split:SetScript("OnLeave", function()
+        paint(C.edge)
+        UI.HideTooltip()
+    end)
+    -- while it is held, only the two panels follow the mouse: the rows, the bars and the card are drawn once, on
+    -- letting go (a draw a frame would be the whole list again)
+    split:SetScript("OnMouseDown", function(self)
+        local x = GetCursorPosition() / frame:GetEffectiveScale()
+        self.from, self.wide = x, listWidth()
+        self:SetScript("OnUpdate", function(s)
+            Window.SetListWidth(s.wide + GetCursorPosition() / frame:GetEffectiveScale() - s.from)
+        end)
+    end)
+    split:SetScript("OnMouseUp", function(self)
+        self:SetScript("OnUpdate", nil)
+        Window.Refresh(true)
+    end)
+    frame.split = split
+end
+
 local function buildGrip()
     local grip = CreateFrame("Button", nil, frame)
     grip:SetSize(14, 14)
@@ -1319,7 +1485,7 @@ local function build()
     local list = CreateFrame("Frame", nil, frame)
     list:SetPoint("TOPLEFT", LEFT, -130)
     list:SetPoint("BOTTOMLEFT", LEFT, 42)
-    list:SetWidth(LIST_W)
+    list:SetWidth(listWidth())
     UI.Panel(list, C.panel, C.edge, 8)
     -- plan for the skill, or for gold (placed by renderHeader: the professions have different ones)
     list.modes = {}
@@ -1327,7 +1493,8 @@ local function build()
                          { "food", "Food", 48 } }) do
         local b = UI.Button(list, m[2], m[3], 18, function()
             ns.Player.Prof(prof).mode = m[1]
-            ns.Player.Prof(prof).favorView, ns.Player.Prof(prof).specView = nil, nil
+            local p = ns.Player.Prof(prof)
+            p.favorView, p.specView, p.buyView = nil, nil, nil
             Window.Refresh(true) -- back to a mode already calculated: drawn again
         end)
         b.mode, b.name = m[1], m[2]
@@ -1336,7 +1503,8 @@ local function build()
     -- the steps to a specialization (Blacksmithing, Engineering, Leatherworking): UI/SpecPanel.lua, instead of the
     -- ladder and its card
     list.spec = UI.Button(list, "Specialization", 96, 18, function()
-        ns.Player.Prof(prof).specView, ns.Player.Prof(prof).favorView = true, nil
+        local p = ns.Player.Prof(prof)
+        p.specView, p.favorView, p.buyView = true, nil, nil
         Window.Refresh(true)
     end)
     list.spec.tooltip = { L["Specialization"], L["The steps to each of its specializations: the quests, what they ask" ..
@@ -1344,11 +1512,23 @@ local function build()
     list.favor = UI.Button(list, "", LIST_W - 24, 20, function()
         local p = ns.Player.Prof(prof)
         p.favorView = not p.favorView or nil
+        if p.favorView then p.buyView = nil end
         Window.Refresh(true) -- only the view changes: the ladder needn't be calculated again
     end)
     list.favor:SetPoint("TOPLEFT", 12, -30)
     list.favor.tooltip = { L["Merchant's Favor recipes"], L["What the supply camps' quartermaster sells for Merchant's Favor:" ..
         " its price and level (seen at a quartermaster), your skill, what you know and can make."] }
+    -- every recipe of the profession, what it costs to make against what it costs to buy
+    list.buy = UI.Button(list, "", LIST_W - 24, 20, function()
+        local p = ns.Player.Prof(prof)
+        if p.buyView then return end -- a mode like the others: a mode button leads back, as from Specialization
+        p.buyView, p.favorView, p.specView = true, nil, nil
+        findText = ""
+        Window.Refresh(true) -- the rows are calculated once, from the ladder already there
+    end)
+    list.buy:SetPoint("TOPLEFT", 12, -30)
+    list.buy.tooltip = { L["Buy or craft"], L["Every recipe of this profession: what one craft's ingredients cost at" ..
+        " today's prices against what buying the thing itself costs. The ones you know come first."] }
     list.note = UI.Label(list, 11, C.warn)
     list.note:SetPoint("TOPLEFT", 12, -32)
     list.note:SetWidth(LIST_W - 24)
@@ -1482,22 +1662,60 @@ local function build()
     local fromLabel = UI.Label(range, 11, C.muted)
     fromLabel:SetText("From")
     fromLabel:SetPoint("LEFT")
+    range.fromLabel = fromLabel
     range.from = box({ "From", "The skill the ladder starts at: yours, or higher to plan ahead (as if you had reached" ..
         " it). Type it (Enter), or the mouse wheel (Shift: 10 at a time)." })
     range.from:SetPoint("LEFT", fromLabel, "RIGHT", 6, 0)
     local toLabel = UI.Label(range, 11, C.muted)
+    range.toLabel = toLabel
     toLabel:SetText("to")
     toLabel:SetPoint("LEFT", range.from, "RIGHT", 6, 0)
     range.to = box({ "To", "The skill the ladder plans to: 300, or lower to stop sooner. Type it (Enter), or the" ..
         " mouse wheel (Shift: 10 at a time). A rank's name under the bar plans to its end." })
     range.to:SetPoint("LEFT", toLabel, "RIGHT", 6, 0)
     range.reset = UI.Button(range, "Reset", 50, 20, function()
+        if ladder.buy then
+            ns.Player.Prof(prof).buyRange = nil
+            findText = ""
+            range.find:SetText("")
+            Window.Refresh(true)
+            return
+        end
         ns.Player.Prof(prof).range = nil
         Window.Refresh()
     end)
     range.reset:SetPoint("LEFT", range.to, "RIGHT", 10, 0)
     range.reset.tooltip = { L["Reset"], L["The ladder from your skill to 300 again."] }
+    range.find = CreateFrame("EditBox", nil, range)
+    range.find:SetSize(118, 20)
+    UI.Panel(range.find, C.panel2, C.edge, 5, -4)
+    range.find:SetFont(UI.FONT, 12, "")
+    range.find:SetTextColor(C.text[1], C.text[2], C.text[3])
+    range.find:SetMaxLetters(30)
+    range.find:SetAutoFocus(false)
+    range.find:SetTextInsets(6, 6, 0, 0)
+    range.find:SetPoint("RIGHT", 0, 0)
+    range.find.hint = UI.Label(range.find, 11, C.muted)
+    range.find.hint:SetPoint("LEFT", 7, 0)
+    range.find.hint:SetText(L["search"])
+    range.find:SetScript("OnTextChanged", function(self, user)
+        self.hint:SetShown(self:GetText() == "")
+        if not user then return end -- the box filled from the saved text, not typed in
+        findText = self:GetText()
+        Window.Refresh(true)
+    end)
+    range.find:SetScript("OnEnterPressed", range.find.ClearFocus)
+    range.find:SetScript("OnEscapePressed", function(self)
+        self:SetText("")
+        findText = ""
+        self:ClearFocus()
+        Window.Refresh(true)
+    end)
+    range.find:SetScript("OnEnter", function(self) UI.Tooltip(self, { L["Search"],
+        L["Type part of a name: the rows left are the ones that make something of that name. Escape clears it."] }) end)
+    range.find:SetScript("OnLeave", UI.HideTooltip)
     frame.range = range
+    buildSplit()
     buildGrip()
 
     -- the Craft bar follows the profession window, its recipe list and combat, only while the window is open
@@ -1621,7 +1839,8 @@ function Window.Refresh(cached)
     end
     drawnScan = cache[key].scan
     if not ns.Player.Prof(ladder.data).favorView then frame.favorRounds = 0 end
-    if not account and ns.Player.Prof(ladder.data).favorView and ns.Favor.Count(ladder.data) > 0 then
+    if not account and ns.Player.Prof(ladder.data).favorView and ns.Favor.Count(ladder.data) > 0
+        and ns.Settings.Bar("favor") then
         ladder = ns.Favor.Ladder(ladder, ns.db.favorPrices or {})
         -- the levels to wear what they make come from the game's item data: again once it has loaded them (5 times
         -- at most)
@@ -1636,6 +1855,16 @@ function Window.Refresh(cached)
                 end)
             end
         end
+    end
+    local buyProf = not account and ns.Player.Prof(ladder.data)
+    if shownProf ~= ladder.data then findText = "" end -- another profession: the search box starts empty
+    if buyProf and buyProf.buyView and ns.BuyCraft.Count(ladder.data) > 0 and ns.Settings.Bar("buy") then
+        cache[key].buy = cache[key].buy or ns.BuyCraft.Rows(ladder)
+        local r = buyProf.buyRange or {}
+        ladder = ns.BuyCraft.Ladder(ladder, cache[key].buy, { from = r.from, to = r.to, find = findText })
+    end
+    if ladder.mode == "gold" and ladder.data.resale and not ladder.buy and not ladder.favor and findText ~= "" then
+        ladder = searchProfit(ladder)
     end
     prof = ladder.data
     ns.lastCalcMs = ms or ns.lastCalcMs

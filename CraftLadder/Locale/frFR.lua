@@ -961,4 +961,52 @@ ns.Locales.frFR = {
         " eux meurent.",
     ["Then learn the mastery from the trainer who gave you the quest."] = "Apprends ensuite la maîtrise chez" ..
         " le maître qui t'a donné la quête.",
+
+    -- Buy or craft: the bar over the list, its groups, its rows and its card
+    [", %s an item"] = ", %s par pièce",
+    ["No price for one of the two sides yet."] = "Pas encore de prix pour l'un des deux côtés.",
+    ["Cheaper to make: one craft saves %s%s."] = "Moins cher à fabriquer : une fabrication économise %s%s.",
+    ["Cheaper to buy: making it costs %s more%s."] = "Moins cher à acheter : fabriquer coûte %s de plus%s.",
+    ["The same either way at today's prices."] = "Aux prix d'aujourd'hui, c'est pareil dans les deux cas.",
+    ["Make %s, buy %s%s"] = "Fabriquer %s, acheter %s%s",
+    [" (one craft makes %d)"] = " (une fabrication en fait %d)",
+    ["%s has no price: Craft Ladder can't say what a craft costs. Search the auction house for it, or scan" ..
+        " again."] = "%s n'a pas de prix : Craft Ladder ne peut pas dire ce que coûte une fabrication." ..
+        " Cherche-le à l'hôtel des ventes, ou rescanne.",
+    ["Nothing says what %s costs to buy: nobody lists it, no vendor sells it, or it's soulbound (made only," ..
+        " never bought)."] = "Rien ne dit ce que %s coûte à l'achat : personne ne le met en vente, aucun" ..
+        " marchand ne le vend, ou il est lié à l'âme (fabriqué seulement, jamais acheté).",
+    ["%d listed at the auction house now."] = "%d en vente à l'hôtel des ventes en ce moment.",
+    ["Making it needs %s %d, and yours is %d."] = "Pour la fabriquer il faut %s %d, et le tien est %d.",
+    ["You have %s: they're priced here all the same, since you could sell them instead."] =
+        "Tu as %s : ils sont quand même comptés à leur prix ici, puisque tu pourrais les vendre à la place.",
+    ["Nothing matches"] = "Rien ne correspond",
+    ["Nothing here is called %s."] = "Rien ici ne s'appelle %s.",
+    ["Favor (%d)"] = "Faveur (%d)",
+    ["Buy or craft (%d)"] = "Acheter/fabriquer (%d)",
+    ["%d recipes here, %d cheaper to make than to buy (one craft, at today's prices)"] =
+        "%d recettes ici, %d moins chères à fabriquer qu'à acheter (une fabrication, aux prix d'aujourd'hui)",
+    ["Buy or craft"] = "Acheter ou fabriquer",
+    ["Every recipe of this profession: what one craft's ingredients cost at today's prices against what buying" ..
+        " the thing itself costs. The ones you know come first."] = "Chaque recette de ce métier : ce que" ..
+        " coûtent les composants d'une fabrication aux prix d'aujourd'hui, face au prix de l'objet lui-même." ..
+        " Celles que tu connais d'abord.",
+    ["search"] = "rechercher",
+    ["Type part of a name: the rows left are the ones that make something of that name. Escape clears it."] =
+        "Tape une partie d'un nom : il reste les lignes qui fabriquent quelque chose de ce nom. Échap" ..
+        " l'efface.",
+    ["Recipes you know"] = "Recettes que tu connais",
+    ["Not known yet"] = "Pas encore connues",
+    ["What you can make now, by the skill it's learned at. Click to fold or open."] =
+        "Ce que tu peux fabriquer maintenant, selon la compétence à laquelle on l'apprend. Clic pour plier ou" ..
+        " déplier.",
+    ["The rest of the profession's recipes: what each would cost to make, and how to learn it. Click to fold" ..
+        " or open."] = "Les autres recettes du métier : ce que chacune coûterait à fabriquer, et comment" ..
+        " l'apprendre. Clic pour plier ou déplier.",
+
+    -- The splitter between the list and the step's details
+    ["List width"] = "Largeur de la liste",
+    ["Drag it: the list takes the room and the step's details give it, down to as much as they need to be" ..
+        " read."] = "Tire-le : la liste prend la place et les détails la cèdent, jusqu'à ce qu'il leur faut" ..
+        " pour rester lisibles.",
 }

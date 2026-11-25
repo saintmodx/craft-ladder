@@ -49,6 +49,12 @@ function D.RecipeName(spell, rec)
         or ("recipe " .. tostring(spell))
 end
 
+-- What a search box matches on a recipe's row: the name the row shows, lower case, in the client's own language.
+-- Not its ingredients: you type what you're looking for, not what it's made of.
+function D.Searchable(spell, rec)
+    return D.RecipeName(spell, rec):lower()
+end
+
 -- What a dish raises (Cooking's food): "+20 Strength, +10 Stamina", in this order.
 local BUFFS = { { "str", "Strength" }, { "agi", "Agility" }, { "sta", "Stamina" }, { "int", "Intellect" },
                 { "spi", "Spirit" }, { "ap", "attack power" }, { "rap", "ranged attack power" },

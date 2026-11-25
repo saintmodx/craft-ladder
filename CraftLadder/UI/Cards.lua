@@ -14,6 +14,7 @@ ns.Cards = Cards
 -- shared with the window (UI/Window.lua)
 local S = Window.Shared
 local W, DETAIL_CW, STEP_COLOR, BAG_ICON, RANK_ICON = S.W, S.DETAIL_CW, S.STEP_COLOR, S.BAG_ICON, S.RANK_ICON
+local LIST_W, CARD_MIN_CW = S.LIST_W, S.CARD_MIN_CW
 local craftsWord, wait, recipeIcon, toolUsers, gather = S.craftsWord, S.wait, S.recipeIcon, S.toolUsers, S.gather
 local duration, barsText, useLevel, signed = S.duration, S.barsText, S.useLevel, S.signed
 local hex = UI.Hex
@@ -573,6 +574,8 @@ local function craftBar(step, rec)
     if prof.kind or ns.Player.viewing then return end -- gathering and Lockpicking: nothing to craft here; nor for
                                                       -- another character
     local bar = frame.detail.craft
+    bar:SetWidth(CW)
+    bar.note:SetWidth(math.max(60, CW - 196)) -- right of the box and the Craft button
     bar.step, bar.rec, bar.need = step, rec, math.ceil(step.crafts)
     bar:ClearAllPoints()
     bar:SetPoint("TOPLEFT", 0, -y)
@@ -865,6 +868,55 @@ local function profitDetail(step)
         " with 5 or more listed, or however few when you searched it yourself; it counts only when it pays 1.5 times" ..
         " what a vendor does. How many sell, the auction house doesn't say. Prices change: look again before buying."],
         C.muted)
+end
+
+-- Buy or craft: one craft's ingredients at today's prices against what buying the same thing costs, and which is
+-- cheaper. Both sides are prices: what's in your bags is a note here, not a discount.
+local function buyDetail(step)
+    local rec = prof.recipes[step.recipe]
+    local each = step.each and math.abs(step.each)
+    local perItem = step.made > 1 and each and (L[", %s an item"]):format(ns.Money(each)) or ""
+    local verdict, color
+    if step.diff == nil then
+        verdict, color = L["No price for one of the two sides yet."], C.muted
+    elseif step.diff < -0.5 then
+        verdict, color = (L["Cheaper to make: one craft saves %s%s."]):format(ns.Money(-step.diff), perItem), C.good
+    elseif step.diff > 0.5 then
+        verdict, color = (L["Cheaper to buy: making it costs %s more%s."]):format(ns.Money(step.diff), perItem),
+            C.bad
+    else
+        verdict, color = L["The same either way at today's prices."], C.muted
+    end
+    headline(UI.ItemIcon(rec.makes), ns.Describe.RecipeName(step.recipe, rec), step.needSkill and C.bad
+            or step.color ~= "grey" and STEP_COLOR[step.color] or C.text,
+        verdict,
+        (L["Make %s, buy %s%s"]):format(step.cost and ns.Money(step.cost) or "?",
+            step.price and ns.Money(step.price) or "?",
+            step.made > 1 and (L[" (one craft makes %d)"]):format(step.made) or ""))
+    UI.SetColor(frame.detail.head.line1, color)
+    if step.missing then
+        line((L["%s has no price: Craft Ladder can't say what a craft costs. Search the auction house for it, or scan" ..
+            " again."]):format(ns.Describe.ItemName(step.missing)), C.warn)
+    elseif not step.price then
+        line((L["Nothing says what %s costs to buy: nobody lists it, no vendor sells it, or it's soulbound (made" ..
+            " only, never bought)."]):format(ns.Describe.ItemName(rec.makes)), C.warn)
+    elseif step.listed then
+        line((L["%d listed at the auction house now."]):format(step.listed), C.muted)
+    end
+    if step.needSkill then
+        line((L["Making it needs %s %d, and yours is %d."]):format(prof.name, step.needSkill,
+            ladder.state.skill), C.bad)
+    end
+    line(colorsText(rec.colors), C.muted)
+    if step.known then
+        craftBar(step, rec)
+    else
+        learnSection(step, rec)
+    end
+    recipeNotes(rec, step.learn)
+    if step.cooldown then line((L["Once in %s: the recipe has a cooldown."]):format(wait(step.cooldown)), C.warn) end
+    oneCraft(step, rec)
+    ownedNote(rec, L["You have %s: they're priced here all the same, since you could sell them instead."])
 end
 
 -- What disenchanting gives (Disenchant mode, a bag's item or a recipe's): one disenchant's outcomes, what n bring, and
@@ -1618,7 +1670,8 @@ end
 
 local function renderDetail()
     local d = frame.detail
-    CW = math.max(DETAIL_CW, frame:GetWidth() - (W - DETAIL_CW))
+    -- what a bigger window adds, less what the splitter gave the list; never under what the card needs
+    CW = math.max(CARD_MIN_CW, frame:GetWidth() - (W - DETAIL_CW) - (Window.ListWidth() - LIST_W))
     d.head:Fit(CW)
     for _, p in pairs(pools) do p:ReleaseAll() end
     d.head:Hide()
@@ -1643,6 +1696,9 @@ local function renderDetail()
             " disenchant, and "] .. (ladder.known == 0 and L["none of the recipes they know makes something to disenchant: open a" ..
                 " crafting profession's window once so Craft Ladder knows its recipes."] or L["nothing they can make is" ..
                 " worth more disenchanted than sold at today's prices."]), "")
+    elseif not step and ladder.find then -- Profit under a search that matches nothing
+        headline(prof.icon, L["Nothing matches"], C.gold,
+            (L["Nothing here is called %s."]):format(ladder.find), "")
     elseif not step and ladder.mode == "gold" and prof.resale then
         headline(prof.icon, L["Nothing earns now"], C.gold,
             L["Nothing you can make sells for more than it costs at today's prices."], "")
@@ -1669,6 +1725,8 @@ local function renderDetail()
         foodDetail(step)
     elseif step.kind == "profit" then
         profitDetail(step)
+    elseif step.kind == "buycraft" then
+        buyDetail(step)
     elseif step.kind == "disenchant" then
         prof = step.data
         disenchantDetail(step)

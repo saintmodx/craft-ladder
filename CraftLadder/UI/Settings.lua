@@ -1,7 +1,7 @@
 -- Craft Ladder: the Settings menu of the main window (the header's Settings button), shown instead of a step's card:
--- which auction house addon the prices are read from, and which of its listed prices buying pays. The settings are
--- the account's (ns.db.prices), the same for every character and profession; changing one calculates the ladders
--- again.
+-- which auction house addon the prices are read from, which of its listed prices buying pays, and which bars show
+-- over the list. The settings are the account's (ns.db.prices, ns.db.bars), the same for every character and
+-- profession; changing one calculates the ladders again.
 local _, ns = ...
 local UI = ns.UI
 local C = UI.C
@@ -18,7 +18,15 @@ local function saved()
     return ns.db.prices
 end
 
--- The two groups of ticks, in English: Settings.Render puts them on the screen in the language picked, so the
+-- The bars over the list: shown unless this says otherwise (nil = shown, as everywhere else here).
+local function bars()
+    ns.db.bars = ns.db.bars or {}
+    return ns.db.bars
+end
+
+function Settings.Bar(key) return bars()[key] ~= false end
+
+-- The groups of ticks, in English: Settings.Render puts them on the screen in the language picked, so the
 -- language can change without a /reload. { value, label, help }; the first value is the default (saved as nil).
 local SOURCES = {
     { "auctionDB", "AuctionDB", "Its last full scan of your faction's auction house: the lowest price, the"
@@ -31,21 +39,35 @@ local HOWS = {
     { "min", "The cheapest listing", "What the ladder cost before: the lowest price of the scan. Cheaper"
         .. " than what you will really pay, unless you are quick." },
 }
+-- the bars over the list, one tick each: a hidden one's view closes with it
+local BARS = {
+    { "buy", "Buy or craft", "Every recipe of the profession: what making it costs against what buying it"
+        .. " costs." },
+    { "favor", "Favor", "The recipes the supply camps' quartermasters sell for Merchant's Favor." },
+}
 local LANGUAGE_TIP = "Craft Ladder's own words. Item, recipe and zone names come from your game client, in its"
     .. " language. A few buttons take a /reload to change."
 local FOOT = "What you sell is always priced at the cheapest listing, the one you undercut."
 
 -- A group of ticks, one of them picked: the ticked one can't be unticked, clicking another moves the tick. key is
--- the saved key. Only the widgets are made here; Render puts the words in and places them.
-local function group(title, choices, key)
+-- the saved key. With bar, each tick is its own instead: it shows or hides that bar over the list. Only the widgets
+-- are made here; Render puts the words in and places them.
+local function group(title, choices, key, bar)
     local g = { title = title, label = UI.Label(panel, 12, C.gold), checks = {} }
     for _, c in ipairs(choices) do
-        local check = UI.Check(panel, c[2], function()
-            saved()[key] = c[1] ~= choices[1][1] and c[1] or nil
-            Settings.Render()
-            Window.Refresh() -- the prices changed: every ladder is out of date
+        local check = UI.Check(panel, c[2], function(checked)
+            if bar then
+                if checked then bars()[c[1]] = nil else bars()[c[1]] = false end
+                Settings.Render()
+                Window.Refresh(true) -- only which bars show changes
+            else
+                saved()[key] = c[1] ~= choices[1][1] and c[1] or nil
+                Settings.Render()
+                Window.Refresh() -- the prices changed: every ladder is out of date
+            end
         end)
-        check.value, check.key, check.word, check.helpWord = c[1], key, c[2], c[3]
+        check.value, check.key, check.word, check.helpWord = c[1], key or false, c[2], c[3]
+        check.bar = bar and c[1] or false
         check.help = UI.Label(panel, 11, C.muted)
         check.help:SetWordWrap(true)
         g.checks[#g.checks + 1] = check
@@ -66,6 +88,7 @@ function Settings.Build(frame)
     panel.missing = UI.Label(panel, 11, C.warn)
     panel.missing:SetWordWrap(true)
     group("An ingredient costs", HOWS, "how")
+    group("Bars over the list", BARS, nil, true)
     -- the language Craft Ladder speaks, at the bottom: each one written in its own language. Item, recipe and zone
     -- names come from the client whatever is picked here.
     panel.lang = UI.Label(panel, 12, C.gold)
@@ -124,8 +147,12 @@ function Settings.Render()
     for _, check in ipairs(panel.checks) do
         check.label:SetText(L[check.word])
         check.help:SetText(L[check.helpWord])
-        local picked = p[check.key] or (check.key == "source" and "auctionDB" or "median")
-        check:SetChecked(check.value == picked)
+        if check.bar then
+            check:SetChecked(Settings.Bar(check.bar))
+        else
+            local picked = p[check.key] or (check.key == "source" and "auctionDB" or "median")
+            check:SetChecked(check.value == picked)
+        end
     end
     local source = ns.Prices.Source()
     local picked = p.source == "auctionator" and "Auctionator" or "AuctionDB"

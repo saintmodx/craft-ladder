@@ -3,6 +3,37 @@
 What's new in Craft Ladder, newest first. The format follows [Keep a Changelog](https://keepachangelog.com), the
 version numbers [Semantic Versioning](https://semver.org).
 
+## Unreleased
+
+### Added
+
+- The list of steps can be made wider: drag the line between it and the step's details to the right and the list
+  takes the room, to the left and it gives it back. Long names and the two bars over the list get the space they
+  need. The details never give up more than the window added, so nothing in them is ever cut short - make the
+  window bigger (drag its corner) and that is the room the list can take. The width is the account's and holds
+  through a /reload.
+
+- **Buy or craft**: a bar over the list, next to the Merchant's Favor one, shows every recipe of the profession with
+  what one craft's ingredients cost at today's prices against what buying the same thing costs, and says which is
+  cheaper and by how much. Meant for the materials you keep remaking: leather, bars, cloth, bolts, oils. The recipes
+  you know come first, the rest under them, each group folds, and both are by the skill they're learned at. The
+  boxes over the list leave only the skills you want, and the search box leaves the recipes whose item matches what
+  you type. A row's card compares both sides and lists what one craft takes. What's in your
+  bags doesn't make a craft free here: both sides are prices, so the answer doesn't change every time you buy
+  something. The bar works like the modes over the list: it stays lit while the view is open, and Skill, Profit or
+  another mode brings the ladder back.
+
+- Profit has the same search box over its list: type part of a name and only the recipes that make something of
+  that name stay.
+
+- Settings has a "Bars over the list" section: untick Buy or craft or Favor to hide that bar, and the view it opens
+  goes with it. Both are shown until you say otherwise, and the setting is the account's.
+
+### Changed
+
+- The Merchant's Favor bar is called just "Favor (81)" while the Buy or craft bar shares the line with it; on its
+  own it keeps its full name.
+
 ## 1.11.6 - 2026-11-23
 
 ### Fixed

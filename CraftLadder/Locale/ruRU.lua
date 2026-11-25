@@ -924,4 +924,50 @@ ns.Locales.ruRU = {
         "Спасите 15 раненых солдат бинтами, которые даёт врач, пока 6 из них не умрут.",
     ["Then learn the mastery from the trainer who gave you the quest."] = "Потом изучите мастерство у учителя," ..
         " который дал задание.",
+
+    -- Buy or craft: the bar over the list, its groups, its rows and its card
+    [", %s an item"] = ", %s за штуку",
+    ["No price for one of the two sides yet."] = "Для одной из двух сторон цены пока нет.",
+    ["Cheaper to make: one craft saves %s%s."] = "Сделать дешевле: одно создание экономит %s%s.",
+    ["Cheaper to buy: making it costs %s more%s."] = "Купить дешевле: сделать стоит на %s больше%s.",
+    ["The same either way at today's prices."] = "По сегодняшним ценам одинаково и так и так.",
+    ["Make %s, buy %s%s"] = "Сделать %s, купить %s%s",
+    [" (one craft makes %d)"] = " (одно создание даёт %d)",
+    ["%s has no price: Craft Ladder can't say what a craft costs. Search the auction house for it, or scan" ..
+        " again."] = "У %s нет цены: Craft Ladder не может сказать, во что встанет создание. Найдите его на" ..
+        " аукционе или пересканируйте.",
+    ["Nothing says what %s costs to buy: nobody lists it, no vendor sells it, or it's soulbound (made only," ..
+        " never bought)."] = "Ничто не говорит, во что встанет покупка %s: никто его не выставляет, торговцы" ..
+        " не продают, или он привязывается к персонажу (только создать, купить нельзя).",
+    ["%d listed at the auction house now."] = "Сейчас на аукционе выставлено %d.",
+    ["Making it needs %s %d, and yours is %d."] = "Для создания нужен навык %s %d, а у вас %d.",
+    ["You have %s: they're priced here all the same, since you could sell them instead."] =
+        "У вас есть %s: здесь они всё равно посчитаны по цене, ведь их можно и продать.",
+    ["Nothing matches"] = "Ничего не найдено",
+    ["Nothing here is called %s."] = "Здесь нет ничего с названием %s.",
+    ["Favor (%d)"] = "Благосклонность (%d)",
+    ["Buy or craft (%d)"] = "Купить или сделать (%d)",
+    ["%d recipes here, %d cheaper to make than to buy (one craft, at today's prices)"] =
+        "Здесь %d рецептов, %d дешевле сделать, чем купить (одно создание, по сегодняшним ценам)",
+    ["Buy or craft"] = "Купить или сделать",
+    ["Every recipe of this profession: what one craft's ingredients cost at today's prices against what buying" ..
+        " the thing itself costs. The ones you know come first."] = "Все рецепты этой профессии: во что" ..
+        " встанут ингредиенты одного создания по сегодняшним ценам против того, во что встанет покупка самой" ..
+        " вещи. Сначала те, что вы знаете.",
+    ["search"] = "поиск",
+    ["Type part of a name: the rows left are the ones that make something of that name. Escape clears it."] =
+        "Введите часть названия: останутся строки, которые делают вещь с таким названием. Escape очищает.",
+    ["Recipes you know"] = "Рецепты, которые вы знаете",
+    ["Not known yet"] = "Ещё не изучены",
+    ["What you can make now, by the skill it's learned at. Click to fold or open."] =
+        "Что вы можете сделать сейчас, по навыку, на котором это изучают. Клик сворачивает и разворачивает.",
+    ["The rest of the profession's recipes: what each would cost to make, and how to learn it. Click to fold" ..
+        " or open."] = "Остальные рецепты профессии: во что встало бы создание каждого и как его выучить. Клик" ..
+        " сворачивает и разворачивает.",
+
+    -- The splitter between the list and the step's details
+    ["List width"] = "Ширина списка",
+    ["Drag it: the list takes the room and the step's details give it, down to as much as they need to be" ..
+        " read."] = "Потяните: список забирает место, подробности шага отдают — до того, сколько им нужно," ..
+        " чтобы их можно было читать.",
 }

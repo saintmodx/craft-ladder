@@ -3,6 +3,14 @@
 What's new in Craft Ladder, newest first. The format follows [Keep a Changelog](https://keepachangelog.com), the
 version numbers [Semantic Versioning](https://semver.org).
 
+## Unreleased
+
+### Changed
+
+- Data rebuilt from the 1.60.1.71139 client: poisons no longer sell to a vendor and are bound when picked up, so
+  they count for nothing in Vendor sales and AH sales. Leatherworking has a new recipe, Centaur Hoofwarmers
+  (skill 165, its pattern from Gorhak).
+
 ## 1.12.1 - 2026-11-26
 
 ### Fixed

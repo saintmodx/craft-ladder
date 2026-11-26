@@ -415,9 +415,12 @@ function AuctionTab.Refresh(cached)
     stepPool:ReleaseAll()
     pending = nil
     local tips = data and data.resale and ns.Window.Shared.MODE_TIPS.craft
+    -- at 300 the two levelling ladders have no rows left: the window hides them, so does the tab
+    local maxed = data and ns.Player.Skill(data) >= 300
     local lastMode
     for _, b in ipairs(panel.modes) do
-        b:SetShown(tips ~= nil and (b.mode ~= "favor" or ns.Favor.Count(data) > 0))
+        b:SetShown(tips ~= nil and (b.mode ~= "favor" or ns.Favor.Count(data) > 0)
+            and not (maxed and (b.mode == "skill" or b.mode == "sell")))
         if b:IsShown() then -- next to the last one shown: no gap where Favor is hidden
             b:ClearAllPoints()
             b:SetPoint("TOPLEFT", lastMode or panel, lastMode and "TOPRIGHT" or "TOPLEFT", lastMode and 4 or 14,

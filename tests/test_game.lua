@@ -2213,6 +2213,22 @@ bsProf.mode = nil
 -- the Disenchant view is the menu's, for the whole account: the auction house tab has no mode for it
 expect("... no Disenchant mode in the auction house tab", #ahPanel.modes == 4)
 char().ahProf = "blacksmithing"
+-- at 300 there is nothing left to level: the tab drops Vendor sales and AH sales too, so no button does nothing
+do
+    fx.blacksmithing.skill, fx.blacksmithing.maxSkill = 300, 300
+    mock.fire("SKILL_LINES_CHANGED")
+    ns.Window.Invalidate()
+    ns.AuctionTab.Refresh()
+    expect("... at 300 the tab has no Vendor sales and no AH sales: Profit is first and lit",
+        not ahPanel.modes[1]:IsShown() and not ahPanel.modes[2]:IsShown() and ahPanel.modes[3]:IsShown()
+        and ahPanel.modes[3].active and ahPanel.modes[3].point[4] == 14)
+    fx.blacksmithing.skill, fx.blacksmithing.maxSkill = 141, 150
+    mock.fire("SKILL_LINES_CHANGED")
+    ns.Window.Invalidate()
+    ns.AuctionTab.Refresh()
+    expect("... under 300 they are back, Vendor sales first", ahPanel.modes[1]:IsShown()
+        and ahPanel.modes[2]:IsShown() and ahPanel.modes[1].point[4] == 14)
+end
 Auctionator = nil
 
 -- Camp: the menu's entry shows its panel instead of the ladder, the class's role (a warrior: Melee and Tank), a row

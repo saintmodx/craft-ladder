@@ -3,6 +3,13 @@
 What's new in Craft Ladder, newest first. The format follows [Keep a Changelog](https://keepachangelog.com), the
 version numbers [Semantic Versioning](https://semver.org).
 
+## Unreleased
+
+### Fixed
+
+- At the auction house, a profession already at 300 no longer offers Vendor sales and AH sales: there is nothing
+  left to level, so those buttons did nothing. Profit and Favor stay, as in the addon's own window.
+
 ## 1.12.0 - 2026-11-25
 
 ### Added
